@@ -1,0 +1,160 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Livewire\Livewire;
+use Tests\TestCase;
+
+class AccountTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected bool $seed = true;
+
+    public function test_guests_are_redirected_to_login(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        $this->get('/ka/account')->assertRedirect(url('/ka?login=1'));
+    }
+
+    public function test_account_page_renders_in_each_language(): void
+    {
+        $user = User::factory()->create(['name' => 'ნინო ბერიძე']);
+
+        foreach (['ka' => '/ka/account', 'en' => '/en/account'] as $locale => $uri) {
+            $this->refreshApplicationWithLocale($locale);
+
+            $this->actingAs($user)
+                ->get($uri)
+                ->assertOk()
+                ->assertSee(__('account.hello', ['name' => 'ნინო'], $locale))
+                ->assertSee($user->email);
+        }
+    }
+
+    public function test_profile_can_be_updated(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test('pages::account', ['tab' => 'profile'])
+            ->set('name', 'გიორგი მაისურაძე')
+            ->set('phone', '+995 555 12 34 56')
+            ->set('email', 'giorgi@example.com')
+            ->call('saveProfile')
+            ->assertHasNoErrors()
+            ->assertSet('profileSaved', true);
+
+        $user->refresh();
+        $this->assertSame('გიორგი მაისურაძე', $user->name);
+        $this->assertSame('+995 555 12 34 56', $user->phone);
+        $this->assertSame('giorgi@example.com', $user->email);
+        $this->assertNull($user->email_verified_at);
+    }
+
+    public function test_profile_email_must_be_unique(): void
+    {
+        User::factory()->create(['email' => 'taken@example.com']);
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test('pages::account')
+            ->set('email', 'taken@example.com')
+            ->set('phone', 'not a phone!')
+            ->call('saveProfile')
+            ->assertHasErrors(['email' => 'unique', 'phone' => 'regex']);
+    }
+
+    public function test_password_can_be_changed_with_current_password(): void
+    {
+        $user = User::factory()->create(['password' => 'old-password']);
+
+        Livewire::actingAs($user)
+            ->test('pages::account')
+            ->set('current_password', 'wrong-password')
+            ->set('password', 'new-secret-password')
+            ->call('updatePassword')
+            ->assertHasErrors(['current_password' => 'current_password'])
+            ->set('current_password', 'old-password')
+            ->call('updatePassword')
+            ->assertHasNoErrors()
+            ->assertSet('passwordUpdated', true)
+            ->assertSet('current_password', '');
+
+        $this->assertTrue(Hash::check('new-secret-password', $user->refresh()->password));
+    }
+
+    public function test_notification_preferences_toggle(): void
+    {
+        $user = User::factory()->create();
+
+        $this->assertFalse($user->wantsNotification('promo'));
+
+        Livewire::actingAs($user)
+            ->test('pages::account')
+            ->call('toggleNotification', 'promo')
+            ->call('toggleNotification', 'sms')
+            ->call('toggleNotification', 'unknown');
+
+        $user->refresh();
+        $this->assertTrue($user->wantsNotification('promo'));
+        $this->assertFalse($user->wantsNotification('sms'));
+        $this->assertTrue($user->wantsNotification('mail'));
+    }
+
+    public function test_addresses_can_be_managed(): void
+    {
+        $user = User::factory()->create();
+
+        $component = Livewire::actingAs($user)
+            ->test('pages::account', ['tab' => 'addresses'])
+            ->set('addressTitle', 'სახლი')
+            ->set('addressLine', 'თბილისი, ჭავჭავაძის გამზ. 21')
+            ->call('addAddress')
+            ->assertHasNoErrors()
+            ->set('addressTitle', 'ოფისი')
+            ->set('addressLine', 'თბილისი, ვაჟა-ფშაველას 71')
+            ->call('addAddress');
+
+        [$home, $office] = $user->addresses()->orderBy('id')->get();
+        $this->assertTrue($home->is_default);
+        $this->assertFalse($office->is_default);
+
+        $component->call('makeDefaultAddress', $office->id);
+        $this->assertTrue($office->refresh()->is_default);
+        $this->assertFalse($home->refresh()->is_default);
+
+        $component->call('deleteAddress', $office->id);
+        $this->assertTrue($home->refresh()->is_default);
+        $this->assertSame(1, $user->addresses()->count());
+    }
+
+    public function test_users_cannot_touch_other_users_addresses(): void
+    {
+        $owner = User::factory()->create();
+        $address = $owner->addresses()->create(['title' => 'სახლი', 'line' => 'თბილისი', 'is_default' => true]);
+
+        Livewire::actingAs(User::factory()->create())
+            ->test('pages::account')
+            ->call('deleteAddress', $address->id)
+            ->assertNotFound();
+
+        $this->assertDatabaseHas('addresses', ['id' => $address->id]);
+    }
+
+    public function test_user_can_log_out_from_account(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)
+            ->test('pages::account')
+            ->call('logout')
+            ->assertRedirect();
+
+        $this->assertGuest();
+    }
+}

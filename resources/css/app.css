@@ -1,0 +1,247 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../../app/**/*.php';
+
+@theme inline {
+    --font-sans: var(--font-family-body);
+    --font-caps: var(--font-family-caps);
+    --font-mtavruli: var(--font-family-mtavruli);
+    --font-display: var(--font-family-montserrat);
+    --font-ui: var(--font-family-manrope);
+}
+
+@theme {
+
+    --color-navy: #0A1633;
+    --color-brand: #0B63F6;
+    --color-brand-dark: #0848B8;
+    --color-brand-bright: #2A7BFF;
+    --color-sky: #14B4FF;
+    --color-sale: #E5484D;
+    --color-star: #F5A524;
+    --color-ok: #14804A;
+    --color-ok-soft: #E7F7EE;
+    --color-muted: #5B6B86;
+    --color-subtle: #8A97AE;
+    --color-faint: #B4C3E0;
+    --color-line: #E3E9F3;
+    --color-line-soft: #EEF2F8;
+    --color-line-mid: #E9EDF4;
+    --color-soft: #F3F5F9;
+    --color-tint: #EAF2FF;
+    --color-tint-strong: #DCE9FF;
+    --color-card: #F5F7FB;
+    --color-field: #F6F8FC;
+    --color-foot: #AEB9CF;
+    --color-foot-dim: #8193B5;
+
+    --animate-progress: elio-progress 7s linear forwards;
+    --animate-fade: elio-fade 0.2s ease;
+    --animate-slide-in: elio-slide-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+    --animate-slide-left: elio-slide-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+    --animate-drop: elio-drop 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    --animate-toast: elio-toast 0.25s ease;
+
+    @keyframes elio-progress {
+        from { width: 0; }
+        to { width: 100%; }
+    }
+
+    @keyframes elio-fade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes elio-slide-in {
+        from { transform: translateX(-32px); opacity: 0; }
+        to { transform: none; opacity: 1; }
+    }
+
+    @keyframes elio-slide-left {
+        from { transform: translateX(32px); opacity: 0; }
+        to { transform: none; opacity: 1; }
+    }
+
+    @keyframes elio-drop {
+        from { transform: translateY(-6px); opacity: 0; }
+        to { transform: none; opacity: 1; }
+    }
+
+    @keyframes elio-toast {
+        from { transform: translate(-50%, 12px); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-white font-sans text-navy antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: var(--font-caps);
+        text-transform: uppercase;
+    }
+
+    a {
+        @apply text-brand no-underline;
+    }
+
+    a:hover {
+        @apply text-brand-dark;
+    }
+
+    button {
+        cursor: pointer;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-brand);
+        outline-offset: 2px;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    input[data-range] {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 24px;
+        margin: 0;
+        background: transparent;
+        pointer-events: none;
+        appearance: none;
+    }
+
+    input[data-range]::-webkit-slider-thumb {
+        width: 20px;
+        height: 20px;
+        border: 3px solid var(--color-brand);
+        border-radius: 50%;
+        background: #fff;
+        box-shadow: 0 2px 6px rgba(10, 22, 51, 0.2);
+        cursor: pointer;
+        pointer-events: auto;
+        appearance: none;
+    }
+
+    input[data-range]::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border: 3px solid var(--color-brand);
+        border-radius: 50%;
+        background: #fff;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
+    input[data-range]::-webkit-slider-runnable-track {
+        background: transparent;
+    }
+
+    input[data-range]::-moz-range-track {
+        background: transparent;
+    }
+}
+
+@utility scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(10 22 51 / 0.16) transparent;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: rgb(10 22 51 / 0.16);
+    }
+
+    &::-webkit-scrollbar-button {
+        display: none;
+    }
+}
+
+@utility scroll-thin-dark {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.16) transparent;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: rgb(255 255 255 / 0.16);
+    }
+
+    &::-webkit-scrollbar-button {
+        display: none;
+    }
+}
+
+@utility no-scrollbar {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+@utility carousel {
+    display: grid;
+    grid-auto-flow: column;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    padding: 6px 6px 28px;
+    margin: -6px -6px -28px;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+
+    & > * {
+        scroll-snap-align: start;
+    }
+}
+
+[data-card]:hover [data-reveal] {
+    opacity: 1;
+}
+
+[data-card]:hover [data-addbtn='idle'] {
+    background: var(--color-brand);
+    color: #fff;
+}
+
+@media (hover: none) {
+    [data-reveal] {
+        opacity: 1;
+    }
+}

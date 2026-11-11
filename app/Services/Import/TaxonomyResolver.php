@@ -1,0 +1,394 @@
+<?php
+
+namespace App\Services\Import;
+
+use App\Models\Attribute;
+use App\Models\AttributeValue;
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Product;
+use App\Models\Supplier;
+use App\Support\Locales;
+use App\Support\Slug;
+use App\Support\Text;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
+class TaxonomyResolver
+{
+    public const TRAIL = ' > ';
+
+    protected const HIT_FLUSH_AT = 50;
+
+    protected array $memo = [];
+
+    protected array $pendingHits = [];
+
+    protected const EMPTY_VALUES = ['-', '–', '—', 'N/A', 'n/a', 'null', 'None'];
+
+    public function category(Supplier $supplier, ?string $name): ?Category
+    {
+
+        $name = trim((string) Text::utf8($name));
+
+        if ($name === '') {
+            return null;
+        }
+
+        $key = "cat:{$supplier->id}:{$name}";
+
+        if (array_key_exists($key, $this->memo)) {
+
+            if ($this->memo[$key] === null) {
+                $this->countHit('supplier_category_map', $supplier, $name);
+            }
+
+            return $this->memo[$key];
+        }
+
+        $candidates = $this->trailCandidates($name);
+
+        $rows = DB::table('supplier_category_map')
+            ->where('supplier_id', $supplier->id)
+            ->whereIn('external_name', $candidates)
+            ->get()
+            ->keyBy('external_name');
+
+        foreach ($candidates as $candidate) {
+            if (! $categoryId = $rows[$candidate]->category_id ?? null) {
+                continue;
+            }
+
+            if ($candidate !== $name) {
+                $this->park('supplier_category_map', $supplier, $name);
+            }
+
+            return $this->memo[$key] = Category::find($categoryId);
+        }
+
+        $this->park('supplier_category_map', $supplier, $name);
+
+        return $this->memo[$key] = null;
+    }
+
+    protected function trailCandidates(string $name): array
+    {
+        $parts = array_map('trim', explode(self::TRAIL, $name));
+        $candidates = [];
+
+        for ($i = count($parts); $i > 0; $i--) {
+            $candidates[] = implode(self::TRAIL, array_slice($parts, 0, $i));
+        }
+
+        $candidates[] = end($parts);
+
+        return array_values(array_filter(array_unique($candidates), fn (string $c) => $c !== ''));
+    }
+
+    public static function trail(?string ...$names): ?string
+    {
+        $parts = array_values(array_filter(array_map(
+            fn (?string $n) => trim((string) $n),
+            $names,
+        ), fn (string $n) => $n !== ''));
+
+        return $parts ? implode(self::TRAIL, $parts) : null;
+    }
+
+    public function brand(?string $name): ?Brand
+    {
+        $name = trim((string) $name);
+
+        if ($name === '') {
+            return null;
+        }
+
+        $slug = $this->fit(Slug::make($name) ?: Str::slug($name), 255);
+
+        return $this->memo["brand:{$slug}"] ??= Brand::firstOrCreate(
+            ['slug' => $slug],
+            ['name' => $name, 'is_active' => true],
+        );
+    }
+
+    public function attributeValue(Attribute $attribute, array $rows): ?AttributeValue
+    {
+        $rows = $this->normalizeProductRows($attribute, $rows);
+
+        $default = Locales::default();
+
+        $raw = trim((string) (collect($rows)->firstWhere('locale', $default)['value']
+            ?? collect($rows)->first()['value']
+            ?? ''));
+
+        if ($raw === '' || in_array($raw, self::EMPTY_VALUES, true)) {
+            return null;
+        }
+
+        $code = self::valueCode($raw);
+
+        if ($code === '') {
+            return null;
+        }
+
+        $typed = $this->typedValue($attribute, $raw);
+        $key = "av:{$attribute->id}:{$code}";
+
+        if (isset($this->memo[$key])) {
+            $value = $this->memo[$key];
+
+            return $typed === null || $this->matchesTypedValue($attribute, $value, $typed) ? $value : null;
+        }
+
+        $value = AttributeValue::firstOrCreate(
+            ['attribute_id' => $attribute->id, 'code' => $code],
+            [
+                'sort_order' => 0,
+                'color_hex' => collect($rows)->pluck('color')->filter()->first(),
+            ],
+        );
+
+        if ($value->wasRecentlyCreated) {
+            $value->saveTranslations(
+                collect($rows)
+                    ->filter(fn ($r) => filled($r['value'] ?? null) && ! in_array(trim($r['value']), self::EMPTY_VALUES, true))
+                    ->mapWithKeys(fn ($r) => [$r['locale'] => ['label' => trim($r['value'])]])
+                    ->all()
+            );
+        }
+
+        if ($typed !== null && ! $this->matchesTypedValue($attribute, $value, $typed)) {
+            return null;
+        }
+
+        return $this->memo[$key] = $value;
+    }
+
+    protected function typedValue(Attribute $attribute, string $raw): ?string
+    {
+        return match ($attribute->code) {
+            RoomArea::ATTRIBUTE_CODE => RoomArea::normalize($raw, $attribute->unit),
+            ScreenSize::ATTRIBUTE_CODE => ScreenSize::normalize($raw),
+            default => null,
+        };
+    }
+
+    protected function matchesTypedValue(Attribute $attribute, AttributeValue $value, string $expected): bool
+    {
+        $default = Locales::default();
+        $found = false;
+
+        foreach ($value->translations()->get(['locale', 'label']) as $translation) {
+            $label = trim((string) $translation->label);
+
+            if ($label === '') {
+                continue;
+            }
+
+            if ($this->typedValue($attribute, $label) !== $expected) {
+                return false;
+            }
+
+            $found = $found || $translation->locale === $default;
+        }
+
+        return $found;
+    }
+
+    public function normalizeProductRows(Attribute $attribute, array $rows, ?Product $product = null): array
+    {
+        if ($attribute->code === ScreenSize::ATTRIBUTE_CODE
+            && $product !== null && in_array((int) $product->category_id, ImportRules::categoryIds('screen_size'), true)) {
+            return ScreenSize::normalizeRows($rows);
+        }
+
+        return $attribute->code === RoomArea::ATTRIBUTE_CODE
+            ? RoomArea::normalizeRows($rows, $attribute->unit)
+            : $rows;
+    }
+
+    public function normalizeValue(Attribute $attribute, string $value): ?string
+    {
+        return $attribute->code === RoomArea::ATTRIBUTE_CODE
+            ? RoomArea::normalize($value, $attribute->unit)
+            : $value;
+    }
+
+    public function productAttribute(Supplier $supplier, Product $product, string $name, array $rows, bool $filterable = false): ?Attribute
+    {
+        $name = trim((string) Text::utf8($name));
+        $categoryId = $product->category_id !== null ? (int) $product->category_id : null;
+
+        if (ScreenSize::matches($categoryId, $name, $rows)) {
+            $key = 'attr:television-diagonal';
+
+            if (isset($this->memo[$key])) {
+                return $this->memo[$key];
+            }
+
+            if ($attribute = Attribute::where('code', ScreenSize::ATTRIBUTE_CODE)->first()) {
+                return $this->memo[$key] = $attribute;
+            }
+        }
+
+        if (RoomArea::matches($categoryId, $name, $rows)) {
+            $key = 'attr:room-area';
+
+            if (isset($this->memo[$key])) {
+                return $this->memo[$key];
+            }
+
+            if ($attribute = Attribute::where('code', RoomArea::ATTRIBUTE_CODE)->first()) {
+
+                return $this->memo[$key] = $attribute;
+            }
+        }
+
+        return $this->attribute($supplier, $name, $filterable);
+    }
+
+    protected function attributeCode(string $name): string
+    {
+        $code = Slug::make($name) ?: Str::slug($name);
+
+        return $code !== '' ? $this->fit($code) : 'spec-'.substr(md5($name), 0, 8);
+    }
+
+    public static function valueCode(string $raw): string
+    {
+        $raw = trim($raw);
+
+        if ($raw === '' || in_array($raw, self::EMPTY_VALUES, true)) {
+            return '';
+        }
+
+        return self::fitTo(Slug::make($raw) ?: Str::slug($raw));
+    }
+
+    public static function fitTo(string $slug, int $max = 64): string
+    {
+        if (mb_strlen($slug) <= $max) {
+            return $slug;
+        }
+
+        return rtrim(mb_substr($slug, 0, $max - 9), '-').'-'.substr(md5($slug), 0, 8);
+    }
+
+    protected function fit(string $slug, int $max = 64): string
+    {
+        if (mb_strlen($slug) <= $max) {
+            return $slug;
+        }
+
+        return rtrim(mb_substr($slug, 0, $max - 9), '-').'-'.substr(md5($slug), 0, 8);
+    }
+
+    protected function park(string $table, Supplier $supplier, string $name): void
+    {
+        $exists = DB::table($table)
+            ->where('supplier_id', $supplier->id)
+            ->where('external_name', $name)
+            ->exists();
+
+        $exists
+            ? DB::table($table)->where('supplier_id', $supplier->id)->where('external_name', $name)
+                ->update(['hits' => DB::raw('hits + 1'), 'updated_at' => now()])
+            : DB::table($table)->insert([
+                'supplier_id' => $supplier->id,
+                'external_name' => $name,
+                'hits' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+    }
+
+    public function attribute(Supplier $supplier, string $name, bool $filterable = false): ?Attribute
+    {
+
+        $name = trim((string) Text::utf8($name));
+
+        if ($name === '') {
+            return null;
+        }
+
+        $key = "attr:{$supplier->id}:{$name}";
+
+        if (isset($this->memo[$key])) {
+            return $this->memo[$key];
+        }
+
+        $row = DB::table('supplier_attribute_map')
+            ->where('supplier_id', $supplier->id)
+            ->where('external_name', $name)
+            ->first();
+
+        if ($row?->attribute_id) {
+            return $this->memo[$key] = Attribute::find($row->attribute_id);
+        }
+
+        $names = SpecNames::translate($name);
+
+        $attribute = Attribute::firstOrCreate(
+            ['code' => $this->attributeCode($names['ka'] ?: $name)],
+            [
+                'type' => Str::contains(Str::lower($name), ['color', 'colour', 'ფერი']) ? 'color' : 'select',
+                'is_filterable' => $filterable,
+                'is_variant' => false,
+                'sort_order' => 100,
+            ],
+        );
+
+        if ($attribute->wasRecentlyCreated) {
+            $attribute->saveTranslations(array_filter([
+                Locales::default() => ['name' => $names['ka'] ?: $name],
+                'en' => $names['en'] ? ['name' => $names['en']] : null,
+            ]));
+        }
+
+        DB::table('supplier_attribute_map')->updateOrInsert(
+            ['supplier_id' => $supplier->id, 'external_name' => $name],
+            ['attribute_id' => $attribute->id, 'updated_at' => now(), 'created_at' => now()],
+        );
+
+        return $this->memo[$key] = $attribute;
+    }
+
+    public function forget(): void
+    {
+        $this->memo = [];
+    }
+
+    protected function countHit(string $table, Supplier $supplier, string $name): void
+    {
+        $this->pendingHits[$table][$supplier->id][$name] =
+            ($this->pendingHits[$table][$supplier->id][$name] ?? 0) + 1;
+
+        $total = 0;
+
+        foreach ($this->pendingHits as $suppliers) {
+            foreach ($suppliers as $names) {
+                $total += array_sum($names);
+            }
+        }
+
+        if ($total >= self::HIT_FLUSH_AT) {
+            $this->flushHits();
+        }
+    }
+
+    public function flushHits(): void
+    {
+        foreach ($this->pendingHits as $table => $suppliers) {
+            foreach ($suppliers as $supplierId => $names) {
+                foreach ($names as $name => $hits) {
+                    DB::table($table)
+                        ->where('supplier_id', $supplierId)
+                        ->where('external_name', $name)
+                        ->update(['hits' => DB::raw('hits + '.(int) $hits), 'updated_at' => now()]);
+                }
+            }
+        }
+
+        $this->pendingHits = [];
+    }
+}

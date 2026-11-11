@@ -1,0 +1,205 @@
+<?php
+
+namespace App\Services\Import\Drivers\Alneo;
+
+use App\Models\ProductOffer;
+use App\Models\Supplier;
+use App\Models\SupplierStock;
+use App\Services\Import\ProductPayload;
+use App\Services\Import\SupplierDriver;
+use App\Support\Figure;
+use Illuminate\Support\Facades\Log;
+
+class AlneoDriver implements SupplierDriver
+{
+    protected AlneoClient $client;
+
+    public function __construct(public Supplier $supplier)
+    {
+        $this->client = new AlneoClient($supplier->config ?? []);
+    }
+
+    public function ids(): iterable
+    {
+
+        $this->client->index(fresh: true);
+
+        return SupplierStock::where('supplier_id', $this->supplier->id)
+
+            ->lazyById(500)
+            ->map(fn (SupplierStock $s) => $s->external_id);
+    }
+
+    public function fetch(string $externalId): ?ProductPayload
+    {
+        $row = SupplierStock::where('supplier_id', $this->supplier->id)
+            ->where('external_id', $externalId)
+            ->first();
+
+        if (! $row) {
+            return null;
+        }
+
+        $url = $this->urlFor($externalId, (bool) ($row->data['key_as_number'] ?? false));
+
+        if (! $url) {
+            return null;
+        }
+
+        $page = $this->client->page($url);
+
+        if (! $page) {
+            return null;
+        }
+
+        if (! $this->same($externalId, (string) ($page['sku'] ?? ''))) {
+            Log::channel('import')->warning('alneo page belongs to another product', [
+                'supplier' => $this->supplier->code,
+                'wanted' => $externalId,
+                'page_says' => $page['sku'] ?? null,
+                'url' => $url,
+            ]);
+
+            return null;
+        }
+
+        $this->adoptSpelling($externalId);
+
+        return $this->toPayload($externalId, $row, $page);
+    }
+
+    protected function urlFor(string $code, bool $bare = false): ?string
+    {
+        $index = $this->client->index();
+
+        $found = array_keys(array_filter(
+            $index,
+            fn ($url, $sku) => $this->same($code, (string) $sku),
+            ARRAY_FILTER_USE_BOTH,
+        ));
+
+        if (isset($index[$code]) && (! $bare || count($found) === 1)) {
+            return $index[$code];
+        }
+
+        if (count($found) === 1) {
+            return $index[$found[0]];
+        }
+
+        if (count($found) > 1) {
+            Log::channel('import')->warning('alneo code answers to several products', [
+                'supplier' => $this->supplier->code,
+                'code' => $code,
+                'candidates' => $found,
+            ]);
+        }
+
+        return null;
+    }
+
+    protected function adoptSpelling(string $code): void
+    {
+        $answering = array_filter(
+            array_keys($this->client->index()),
+            fn ($sku) => $this->same($code, (string) $sku),
+        );
+
+        if (count($answering) !== 1) {
+            return;
+        }
+
+        $offers = ProductOffer::where('supplier_id', $this->supplier->id);
+
+        if ((clone $offers)->where('external_id', $code)->exists()) {
+            return;
+        }
+
+        $held = (clone $offers)
+            ->where('external_id', 'like', '%'.ltrim($code, '0'))
+            ->get()
+            ->filter(fn (ProductOffer $offer) => $this->same($code, (string) $offer->external_id));
+
+        if ($held->count() === 1) {
+            $held->first()->update(['external_id' => $code]);
+        }
+    }
+
+    protected function same(string $ours, string $theirs): bool
+    {
+        $ours = trim($ours);
+        $theirs = trim($theirs);
+
+        if ($ours === '' || $theirs === '') {
+            return false;
+        }
+
+        return $ours === $theirs || ltrim($ours, '0') === ltrim($theirs, '0');
+    }
+
+    protected function toPayload(string $code, SupplierStock $row, array $page): ?ProductPayload
+    {
+        $locale = $this->supplier->config['locale'] ?? 'ka';
+        $name = $page['name'] ?? '';
+
+        if ($name === '') {
+            return null;
+        }
+
+        $data = $row->data ?? [];
+
+        [$price, $old] = $this->prices($row, $data, $page);
+
+        if ($price <= 0) {
+            return null;
+        }
+
+        $specs = array_map(fn ($spec) => [
+            'name' => $spec['name'],
+            'value' => $spec['value'],
+            'locale' => $locale,
+            'key' => false,
+
+            'filterable' => false,
+            'color' => null,
+        ], $page['specs'] ?? []);
+
+        return new ProductPayload(
+            externalId: $code,
+            sku: $this->supplier->code.'-'.$code,
+            costPrice: $price,
+            oldCostPrice: $old > $price ? $old : null,
+            stock: (int) $row->quantity,
+            brandName: $this->supplier->config['brand'] ?? null,
+
+            categoryName: $data['category'] ?? $page['category'] ?? null,
+            translations: [$locale => [
+                'name' => $name,
+                'description' => $page['description'] ?? null,
+            ]],
+            specs: $specs,
+            images: $page['images'] ?? [],
+        );
+    }
+
+    protected function prices(SupplierStock $row, array $data, array $page): array
+    {
+        $cost = (float) $row->cost_price;
+
+        if ($cost > 0) {
+
+            $sale = Figure::money($data['sale'] ?? null, $this->supplier->config['decimal'] ?? null) ?? 0.0;
+
+            return $sale > 0 && $sale < $cost ? [$sale, $cost] : [$cost, 0.0];
+        }
+
+        $uplift = (float) ($this->supplier->config['site_price_uplift'] ?? 0);
+
+        $price = (float) ($page['price'] ?? 0);
+        $old = (float) ($page['old'] ?? 0);
+
+        return [
+            $price > 0 ? $price + $uplift : 0.0,
+            $old > 0 ? $old + $uplift : 0.0,
+        ];
+    }
+}

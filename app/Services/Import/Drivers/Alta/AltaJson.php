@@ -1,0 +1,232 @@
+<?php
+
+namespace App\Services\Import\Drivers\Alta;
+
+use App\Models\Supplier;
+use App\Services\Import\ProductPayload;
+use App\Services\Import\TaxonomyResolver;
+use App\Services\Import\VariantKey;
+use App\Support\Figure;
+
+class AltaJson
+{
+    public function __construct(protected Supplier $supplier) {}
+
+    public function read(string $json): array
+    {
+        $data = json_decode(trim($json), true);
+
+        if (! is_array($data)) {
+            return $this->no(__('admin.import.json_not_json'));
+        }
+
+        $product = $data['product'] ?? $data;
+
+        if (! is_array($product) || ! isset($product['id'])) {
+            return $this->no(__('admin.import.json_no_product'));
+        }
+
+        $errors = [];
+
+        $code = trim((string) ($product['barCode'] ?? ''));
+
+        if ($code === '') {
+
+            $code = 'p'.$product['id'];
+            $errors[] = __('admin.import.json_no_barcode', ['id' => $product['id']]);
+        }
+
+        $name = trim((string) ($product['name'] ?? ''));
+        $price = Figure::amount($product['price'] ?? null, Figure::DOT);
+
+        if ($name === '') {
+            $errors[] = __('admin.import.json_no_name');
+        }
+
+        if ($price <= 0) {
+            $errors[] = __('admin.import.json_no_price');
+        }
+
+        $seen = $this->summarise($data, $product, $code, $price);
+
+        if ($name === '' || $price <= 0) {
+            return ['payload' => null, 'errors' => $errors, 'seen' => $seen];
+        }
+
+        $locale = $this->supplier->config['locale'] ?? 'ka';
+        $previous = Figure::amount($product['previousPrice'] ?? null, Figure::DOT);
+        $specs = $this->specs($product, $locale);
+
+        $payload = new ProductPayload(
+            externalId: $code,
+            sku: $this->supplier->code.'-'.$code,
+            costPrice: $price,
+
+            oldCostPrice: $previous > $price ? $previous : null,
+            stock: $seen['stock'],
+            brandName: trim((string) ($product['brandName'] ?? '')) ?: null,
+            categoryName: TaxonomyResolver::trail(
+                $product['parentCategoryName'] ?? null,
+                $product['categoryName'] ?? null,
+            ),
+            translations: [$locale => array_filter([
+                'name' => $name,
+                'description' => $this->text($product['description'] ?? null),
+            ])],
+            specs: $specs,
+            images: $seen['images'],
+            weight: $seen['weight'],
+
+            variantGroup: VariantKey::fromSpecs(
+                $this->supplier->code,
+                $product['brandName'] ?? null,
+                $name,
+                $specs,
+            ),
+        );
+
+        return ['payload' => $payload, 'errors' => $errors, 'seen' => $seen];
+    }
+
+    protected function summarise(array $data, array $product, string $code, float $price): array
+    {
+        $branches = (array) ($data['availabilityInStores'] ?? []);
+
+        $withStock = count(array_filter(
+            $branches,
+            fn ($branch) => (bool) ($branch['inStock'] ?? false),
+        ));
+
+        return [
+            'id' => (int) $product['id'],
+            'code' => $code,
+            'name' => trim((string) ($product['name'] ?? '')),
+            'price' => $price,
+            'previous' => Figure::amount($product['previousPrice'] ?? null, Figure::DOT),
+            'brand' => trim((string) ($product['brandName'] ?? '')) ?: null,
+            'category' => trim((string) ($product['categoryName'] ?? '')) ?: null,
+            'parent_category' => trim((string) ($product['parentCategoryName'] ?? '')) ?: null,
+            'images' => $this->images($product),
+            'specs_count' => count($this->specs($product, 'ka')),
+            'weight' => $this->weight($product),
+            'warranty' => (int) ($product['warranty'] ?? 0) ?: null,
+            'branches' => count($branches),
+            'branches_in_stock' => $withStock,
+            'stock' => $this->stock($product, $withStock),
+            'url' => ($route = trim((string) ($product['route'] ?? ''))) !== ''
+                ? 'https://alta.ge/'.ltrim($route, '/')
+                : null,
+        ];
+    }
+
+    protected function stock(array $product, int $withStock): int
+    {
+        $held = (int) ($product['storageQuantity'] ?? 0);
+
+        return $held > 0 ? $held : $withStock;
+    }
+
+    protected function images(array $product): array
+    {
+        $urls = [];
+
+        foreach (array_merge(
+            [$product['imageUrl'] ?? null],
+            (array) ($product['images'] ?? []),
+        ) as $url) {
+            $url = trim((string) $url);
+
+            if (str_starts_with($url, 'http') && ! in_array($url, $urls, true)) {
+                $urls[] = $url;
+            }
+        }
+
+        return $urls;
+    }
+
+    protected function specs(array $product, string $locale): array
+    {
+        $specs = [];
+        $seen = [];
+
+        foreach ((array) ($product['specificationGroup'] ?? []) as $group) {
+            foreach ((array) ($group['specifications'] ?? []) as $spec) {
+                $name = trim((string) ($spec['specificationName'] ?? ''));
+                $value = trim((string) ($spec['specificationMeaning'] ?? ''));
+
+                if ($name === '' || $value === '') {
+                    continue;
+                }
+
+                if ($spec['isBrand'] ?? false) {
+                    continue;
+                }
+
+                $key = mb_strtolower($name);
+
+                if (isset($seen[$key])) {
+                    continue;
+                }
+
+                $seen[$key] = true;
+
+                $specs[] = [
+                    'name' => $name,
+                    'value' => $value,
+                    'locale' => $locale,
+                    'key' => (bool) ($spec['isMainSpecification'] ?? false),
+                    'filterable' => true,
+                    'color' => ($spec['isColor'] ?? false) ? ($spec['colorValue'] ?? null) : null,
+                ];
+            }
+        }
+
+        if ($warranty = (int) ($product['warranty'] ?? 0)) {
+            $specs[] = [
+                'name' => __('admin.import.warranty'),
+                'value' => __('admin.import.json_warranty_months', ['count' => (int) round($warranty / 30)]),
+                'locale' => $locale,
+                'key' => false,
+                'filterable' => false,
+                'color' => null,
+            ];
+        }
+
+        return $specs;
+    }
+
+    protected function weight(array $product): ?int
+    {
+        foreach ((array) ($product['specificationGroup'] ?? []) as $group) {
+            foreach ((array) ($group['specifications'] ?? []) as $spec) {
+                if (mb_strtolower(trim((string) ($spec['specificationName'] ?? ''))) !== 'weight') {
+                    continue;
+                }
+
+                $value = mb_strtolower(trim((string) ($spec['specificationMeaning'] ?? '')));
+
+                if (! preg_match('/([\d.,]+)\s*(kg|g)\b/u', $value, $m)) {
+                    continue;
+                }
+
+                $number = (float) str_replace(',', '.', $m[1]);
+
+                return (int) round($m[2] === 'kg' ? $number * 1000 : $number);
+            }
+        }
+
+        return null;
+    }
+
+    protected function text(mixed $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value !== '' ? $value : null;
+    }
+
+    protected function no(string $why): array
+    {
+        return ['payload' => null, 'errors' => [$why], 'seen' => []];
+    }
+}

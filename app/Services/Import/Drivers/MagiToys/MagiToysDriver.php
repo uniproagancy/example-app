@@ -1,0 +1,173 @@
+<?php
+
+namespace App\Services\Import\Drivers\MagiToys;
+
+use App\Models\Supplier;
+use App\Models\SupplierStock;
+use App\Services\Import\Concerns\RecordsSkips;
+use App\Services\Import\ProductPayload;
+use App\Services\Import\SupplierDriver;
+use Illuminate\Support\Facades\Log;
+
+class MagiToysDriver implements SupplierDriver
+{
+    use RecordsSkips;
+
+    protected MagiToysClient $client;
+
+    public function __construct(public Supplier $supplier)
+    {
+        $this->client = new MagiToysClient($supplier->config ?? []);
+    }
+
+    public function ids(): iterable
+    {
+        return SupplierStock::where('supplier_id', $this->supplier->id)
+
+            ->lazyById(500)
+            ->map(fn (SupplierStock $s) => $s->external_id);
+    }
+
+    public function fetch(string $externalId): ?ProductPayload
+    {
+        $row = SupplierStock::where('supplier_id', $this->supplier->id)
+            ->where('external_id', $externalId)
+            ->first();
+
+        if (! $row) {
+            return null;
+        }
+
+        $data = (array) ($row->data ?? []);
+        $url = trim((string) ($data['url'] ?? ''));
+
+        if (! str_starts_with($url, 'http')) {
+            $this->note($row, 'no link');
+
+            Log::channel('import')->info('magitoys row has no link to follow', ['code' => $externalId]);
+
+            return null;
+        }
+
+        $page = $this->client->product($url);
+
+        if (! $page) {
+            $this->note($row, $this->client->reason ?? 'no page');
+
+            return null;
+        }
+
+        $this->remember($row, $page);
+
+        $cost = $this->cost($row, $page);
+
+        if ($cost <= 0) {
+            $this->note($row, 'no price');
+
+            Log::channel('import')->info('magitoys row has no price', ['code' => $externalId]);
+
+            return null;
+        }
+
+        $this->note($row, null);
+
+        return new ProductPayload(
+            externalId: $externalId,
+            sku: $this->sku($externalId, $data, $page),
+            costPrice: $cost,
+            oldCostPrice: null,
+            stock: $this->stockFor($row, $page),
+
+            brandName: $page['brand'] ?: $this->fromSheet($data, 'brand'),
+            categoryName: $this->fromSheet($data, 'category') ?: $page['category'],
+            translations: $this->translations($page),
+            specs: $this->specs($page),
+            images: $page['images'],
+            weight: $page['weight'],
+        );
+    }
+
+    protected function fromSheet(array $data, string $role): ?string
+    {
+        return trim((string) ($data[$role] ?? '')) ?: null;
+    }
+
+    protected function remember(SupplierStock $row, array $page): void
+    {
+        $data = (array) ($row->data ?? []);
+
+        $found = array_filter([
+            'page_category' => $page['category'],
+            'page_brand' => $page['brand'],
+        ]);
+
+        if (! $found || ! array_diff_assoc($found, $data)) {
+            return;
+        }
+
+        $row->forceFill(['data' => array_merge($data, $found)])->saveQuietly();
+    }
+
+    protected function sku(string $externalId, array $data, array $page): string
+    {
+        $id = $this->fromSheet($data, 'code') ?: ($page['id'] ?: $externalId);
+
+        return strtoupper($this->supplier->code).'-'.$id;
+    }
+
+    protected function cost(SupplierStock $row, array $page): float
+    {
+        $cost = (float) $row->cost_price;
+
+        return $cost > 0 ? $cost : (float) ($page['price'] ?? 0);
+    }
+
+    protected function stockFor(SupplierStock $row, array $page): int
+    {
+        if (! $page['in_stock']) {
+            return 0;
+        }
+
+        $quantity = (int) $row->quantity;
+
+        if ($quantity > 0) {
+            return $quantity;
+        }
+
+        return (int) ($this->supplier->config['default_stock'] ?? 0);
+    }
+
+    protected function translations(array $page): array
+    {
+        $locale = (string) ($this->supplier->config['locale'] ?? 'ka');
+
+        return [
+            $locale => array_filter([
+                'name' => $page['name'],
+                'summary' => $page['summary'],
+                'description' => $page['description'],
+            ]),
+        ];
+    }
+
+    protected function specs(array $page): array
+    {
+        $locale = (string) ($this->supplier->config['locale'] ?? 'ka');
+        $keys = (array) ($this->supplier->config['key_specs'] ?? []);
+
+        $specs = [];
+
+        foreach ($page['specs'] as $spec) {
+            $specs[] = [
+                'name' => $spec['name'],
+                'value' => $spec['value'],
+                'locale' => $locale,
+                'key' => in_array($spec['name'], $keys, true),
+                'filterable' => true,
+                'color' => null,
+            ];
+        }
+
+        return $specs;
+    }
+}

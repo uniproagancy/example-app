@@ -1,0 +1,424 @@
+@import '../../../../vendor/filament/filament/resources/css/theme.css';
+
+@source '../../../../app/Filament/**/*';
+@source '../../../../resources/views/filament/**/*';
+
+@theme {
+    --color-elio-navy: #0a1633;
+    --color-elio-navy-soft: #13234a;
+    --color-elio-brand: #0b63f6;
+    --color-elio-sky: #14b4ff;
+    --color-elio-muted: #8fa2c4;
+    --color-elio-line: #e6ebf3;
+    --color-elio-page: #f4f6fa;
+}
+
+:root {
+    --sidebar-width: 17.5rem;
+    --elio-card-shadow: 0 1px 2px rgba(10, 22, 51, 0.04), 0 12px 32px -18px rgba(10, 22, 51, 0.18);
+}
+
+.fi-body {
+    @apply bg-elio-page dark:bg-[#070f24];
+}
+
+.fi-header-heading {
+    font-family: var(--font-family-caps), var(--font-family);
+    @apply text-[26px] font-normal tracking-[0.2px] text-elio-navy sm:text-[30px] dark:text-white;
+}
+
+.fi-header-subheading {
+    @apply text-[15px] text-gray-500 dark:text-gray-400;
+}
+
+.fi-breadcrumbs {
+    @apply text-[13px];
+}
+
+.fi-section-header-heading,
+.fi-ta-header-heading,
+.fi-modal-heading,
+.fi-simple-header-heading {
+    font-family: var(--font-family-caps), var(--font-family);
+    @apply font-normal tracking-[0.2px];
+}
+
+.fi-sidebar.fi-main-sidebar {
+    background:
+        radial-gradient(circle at 100% 0%, rgba(20, 180, 255, 0.16), transparent 45%),
+        linear-gradient(180deg, var(--color-elio-navy) 0%, #0c1b3d 100%);
+    @apply text-white;
+
+    & .fi-sidebar-header {
+        @apply h-[76px] border-b border-white/[0.06] bg-transparent px-5 shadow-none ring-0;
+    }
+
+    & .fi-sidebar-nav {
+        @apply gap-y-6 px-4 py-5;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+    }
+
+    & .fi-sidebar-nav-groups {
+        @apply mx-0 gap-y-6;
+    }
+
+    & .fi-sidebar-group-btn {
+        @apply px-3 pt-0 pb-1;
+    }
+
+    & .fi-sidebar-group-label {
+        @apply text-[11.5px] font-semibold tracking-[0.6px] text-elio-muted/80;
+    }
+
+    & .fi-sidebar-group-btn .fi-icon,
+    & .fi-sidebar-group-collapse-btn .fi-icon {
+        @apply text-elio-muted/60;
+    }
+
+    & .fi-sidebar-item-btn {
+        @apply gap-x-3 rounded-xl px-3 py-2.5 transition-colors duration-150 hover:bg-white/[0.06] focus-visible:bg-white/[0.06];
+
+        & > .fi-icon {
+            @apply text-[#6f84ab];
+        }
+
+        & > .fi-sidebar-item-label {
+            @apply text-[14px] font-medium text-[#c9d6ee];
+        }
+    }
+
+    & .fi-sidebar-item-btn:hover {
+        & > .fi-icon,
+        & > .fi-sidebar-item-label {
+            @apply text-white;
+        }
+    }
+
+    & .fi-sidebar-item.fi-active > .fi-sidebar-item-btn {
+        @apply bg-elio-brand shadow-[0_10px_24px_-10px_rgba(11,99,246,0.9)] dark:bg-elio-brand;
+
+        & > .fi-icon,
+        & > .fi-sidebar-item-label {
+            @apply text-white;
+        }
+    }
+
+    & .fi-sidebar-item-badge-ctn .fi-badge {
+        @apply ring-0;
+    }
+
+    & .fi-sidebar-footer {
+        @apply mx-0 border-t border-white/[0.08] px-4 py-3;
+    }
+
+    & .fi-user-menu-trigger {
+        @apply rounded-xl px-2 py-2 hover:bg-white/[0.06];
+    }
+
+    & .fi-user-menu-trigger-text {
+        @apply text-[#dce6f7];
+    }
+
+    & .fi-sidebar-close-collapse-sidebar-btn,
+    & .fi-sidebar-open-collapse-sidebar-btn,
+    & .fi-sidebar-close-sidebar-btn {
+        @apply text-elio-muted hover:text-white;
+    }
+
+    & .fi-global-search-field .fi-input-wrp {
+        @apply rounded-xl bg-white/[0.07] shadow-none ring-white/[0.08] focus-within:ring-elio-sky/60;
+
+        & input {
+            @apply text-white placeholder:text-elio-muted/80;
+        }
+
+        & .fi-icon {
+            @apply text-elio-muted;
+        }
+    }
+}
+
+.fi-topbar-ctn {
+    --topbar-height: 4.5rem;
+}
+
+.fi-topbar {
+    background:
+        radial-gradient(circle at 92% -40%, rgba(20, 180, 255, 0.28), transparent 38%),
+        linear-gradient(90deg, var(--color-elio-navy) 0%, #0e2150 100%);
+    @apply gap-x-2 px-4 shadow-[0_10px_30px_-18px_rgba(10,22,51,0.8)] ring-0 sm:px-6 lg:px-8 dark:bg-transparent;
+
+    & .fi-topbar-start {
+        @apply me-4;
+
+        & .fi-logo {
+            @apply ms-0;
+        }
+    }
+
+    & .fi-topbar-open-sidebar-btn,
+    & .fi-topbar-close-sidebar-btn {
+        @apply text-white hover:bg-white/10;
+    }
+
+    & .fi-topbar-nav-groups {
+        @apply ms-1 gap-x-0.5 xl:flex-nowrap;
+    }
+
+    & .fi-topbar-item-btn {
+        @apply gap-x-1.5 rounded-full px-3 py-2 whitespace-nowrap transition-colors duration-150 hover:bg-white/[0.08] focus-visible:bg-white/[0.08] 2xl:px-4;
+
+        & > .fi-icon {
+            @apply text-[#6f84ab];
+        }
+    }
+
+    & .fi-topbar-item-label {
+        @apply text-[13.5px] font-medium text-[#c9d6ee];
+    }
+
+    & .fi-topbar-item-btn:hover {
+        & > .fi-icon,
+        & .fi-topbar-item-label {
+            @apply text-white;
+        }
+    }
+
+    & .fi-topbar-item.fi-active .fi-topbar-item-btn {
+        @apply bg-elio-brand shadow-[0_10px_24px_-10px_rgba(11,99,246,0.9)] dark:bg-elio-brand;
+
+        & > .fi-icon,
+        & .fi-topbar-item-label {
+            @apply text-white;
+        }
+    }
+
+    & .fi-topbar-end {
+        @apply gap-x-3;
+    }
+
+    & .fi-global-search-field .fi-input-wrp {
+        @apply w-44 rounded-full bg-white/[0.08] shadow-none ring-white/[0.1] focus-within:ring-elio-sky/60 2xl:w-64;
+
+        & input {
+            @apply text-white placeholder:text-elio-muted/80;
+        }
+
+        & .fi-icon {
+            @apply text-elio-muted;
+        }
+    }
+
+    & .fi-user-menu-trigger {
+        @apply rounded-full ring-2 ring-white/15 hover:ring-white/40;
+    }
+
+    & .elio-brand {
+        & .elio-brand-name {
+            @apply text-white;
+        }
+
+        & .elio-brand-accent {
+            @apply text-elio-sky;
+        }
+
+        & .elio-brand-tag {
+            @apply hidden bg-white/10 text-elio-sky 2xl:inline;
+        }
+    }
+}
+
+.fi-body-has-top-navigation .fi-dropdown-panel .fi-dropdown-list-item {
+    @apply rounded-xl;
+}
+
+.fi-sidebar-close-overlay {
+    @apply bg-elio-navy/50 backdrop-blur-[2px];
+}
+
+.fi-main {
+    @apply lg:px-10;
+}
+
+.fi-page-header-main-ctn {
+    @apply gap-y-7 py-8;
+}
+
+.fi-section:not(.fi-section-not-contained):not(.fi-aside),
+.fi-ta-ctn,
+.fi-wi-stats-overview-stat {
+    @apply rounded-[20px] ring-elio-line dark:ring-white/[0.08];
+    box-shadow: var(--elio-card-shadow);
+}
+
+.dark .fi-section:not(.fi-section-not-contained):not(.fi-aside),
+.dark .fi-ta-ctn,
+.dark .fi-wi-stats-overview-stat {
+    @apply bg-[#0d1733];
+    box-shadow: none;
+}
+
+.fi-section:not(.fi-section-not-contained) > .fi-section-header {
+    @apply px-6 pt-5;
+}
+
+.fi-section-header-heading {
+    @apply text-[16px] text-elio-navy dark:text-white;
+}
+
+.fi-ta-ctn .fi-ta-filters-before-content-ctn {
+    @apply rounded-2xl border-elio-line bg-white shadow-[0_24px_60px_-20px_rgba(10,22,51,0.35)] lg:w-64 lg:rounded-s-[20px] lg:rounded-e-none lg:bg-[#fafbfd] lg:shadow-none xl:w-72 dark:border-white/[0.08] dark:bg-[#0d1733] dark:lg:bg-white/[0.02];
+
+    & .fi-ta-filters {
+        @apply gap-y-5 lg:sticky lg:top-[5.5rem] lg:px-5 lg:py-6;
+    }
+
+    & .fi-ta-filters-header {
+        @apply border-b border-elio-line pb-3 dark:border-white/[0.08];
+    }
+
+    & .fi-ta-filters-heading {
+        font-family: var(--font-family-caps), var(--font-family);
+        @apply text-[15px] font-normal tracking-[0.2px] text-elio-navy dark:text-white;
+    }
+}
+
+.fi-ta-header-cell {
+    @apply bg-[#f8fafd] text-[12.5px] font-semibold tracking-[0.2px] text-[#5b6b86] dark:bg-white/[0.03] dark:text-gray-400;
+}
+
+.fi-ta-row {
+    @apply transition-colors;
+}
+
+.fi-ta-row:hover {
+    @apply bg-[#f7f9fd] dark:bg-white/[0.03];
+}
+
+.fi-wi-stats-overview-stat {
+    @apply p-6;
+
+    &::before {
+        content: '';
+        @apply pointer-events-none absolute inset-x-6 top-0 h-[3px] rounded-b-full bg-linear-to-r from-elio-brand to-elio-sky opacity-0 transition-opacity;
+    }
+
+    &:hover::before {
+        @apply opacity-100;
+    }
+}
+
+.fi-wi-stats-overview-stat-label {
+    @apply text-[13px] font-medium text-[#5b6b86] dark:text-gray-400;
+}
+
+.fi-wi-stats-overview-stat-value {
+    font-family: var(--font-family-montserrat), var(--font-family);
+    @apply mt-1 text-[30px] font-extrabold tracking-[-0.5px] text-elio-navy dark:text-white;
+}
+
+.fi-btn {
+    @apply rounded-xl font-semibold;
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined) {
+    @apply shadow-[0_8px_20px_-10px_rgba(11,99,246,0.8)];
+}
+
+.fi-input-wrp {
+    @apply rounded-xl ring-[#dfe5ef] dark:ring-white/[0.12];
+}
+
+.fi-input-wrp:focus-within {
+    @apply ring-2 ring-elio-brand/70;
+}
+
+.fi-fo-field-label-content {
+    @apply text-[13px] font-semibold text-[#33415c] dark:text-gray-300;
+}
+
+.fi-modal-window {
+    @apply rounded-[24px];
+}
+
+.fi-dropdown-panel {
+    @apply rounded-2xl shadow-[0_24px_60px_-20px_rgba(10,22,51,0.35)];
+}
+
+.fi-badge {
+    @apply rounded-full px-2.5;
+}
+
+.fi-sc-tabs-tablist,
+.fi-tabs {
+    @apply rounded-2xl bg-white ring-elio-line dark:bg-white/[0.04] dark:ring-white/[0.08];
+}
+
+.fi-tabs-item {
+    @apply rounded-xl;
+}
+
+.fi-tabs-item.fi-active {
+    @apply bg-elio-navy text-white dark:bg-elio-brand;
+
+    & .fi-tabs-item-label,
+    & .fi-icon {
+        @apply text-white;
+    }
+}
+
+.fi-pagination-item-btn {
+    @apply rounded-lg;
+}
+
+.fi-simple-layout {
+    background:
+        radial-gradient(circle at 85% 10%, rgba(20, 180, 255, 0.28), transparent 40%),
+        radial-gradient(circle at 10% 90%, rgba(11, 99, 246, 0.35), transparent 45%),
+        linear-gradient(135deg, var(--color-elio-navy) 0%, #0c1d45 100%);
+}
+
+.fi-simple-main {
+    @apply rounded-[28px] px-8 py-10 ring-0 sm:rounded-[28px] sm:px-10 dark:bg-[#0d1733];
+    box-shadow: 0 40px 100px -30px rgba(3, 8, 24, 0.7);
+}
+
+.fi-simple-header-heading {
+    @apply text-[24px] text-elio-navy dark:text-white;
+}
+
+.elio-brand {
+    @apply flex items-center gap-2.5;
+
+    & .elio-brand-mark {
+        @apply size-9 shrink-0;
+    }
+
+    & .elio-brand-name {
+        font-family: var(--font-family-montserrat), var(--font-family);
+        @apply text-[20px] leading-none font-extrabold tracking-[-0.4px] text-elio-navy dark:text-white;
+    }
+
+    & .elio-brand-accent {
+        @apply text-elio-brand;
+    }
+
+    & .elio-brand-tag {
+        @apply rounded-md bg-elio-brand/10 px-1.5 py-0.5 text-[10px] font-bold tracking-[0.8px] text-elio-brand uppercase;
+    }
+}
+
+.fi-sidebar .elio-brand {
+    & .elio-brand-name {
+        @apply text-white;
+    }
+
+    & .elio-brand-accent {
+        @apply text-elio-sky;
+    }
+
+    & .elio-brand-tag {
+        @apply bg-white/10 text-elio-sky;
+    }
+}
