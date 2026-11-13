@@ -72,7 +72,6 @@ return [
     ],
 
     'brands' => [
-        'kicker' => 'Official distribution',
         'title' => 'Brands',
     ],
 

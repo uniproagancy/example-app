@@ -11,9 +11,9 @@ class PaymentMethodSeeder extends Seeder
     public function run(): void
     {
         $methods = [
-            ['bog_card', 'bog-card', null, '/img/payments/bog-1.png', null,
-                ['ka' => 'საქართველოს ბანკის ონლაინ გადახდა', 'en' => 'Bank of Georgia — card payment'],
-                ['ka' => 'Visa, Mastercard, Apple Pay, Google Pay', 'en' => 'Visa, Mastercard, Apple Pay, Google Pay']],
+            ['card', 'flitt', null, null, null,
+                ['ka' => 'ბარათით გადახდა', 'en' => 'Card payment'],
+                ['ka' => 'Visa, Mastercard — უსაფრთხო გადახდა Flitt-ით', 'en' => 'Visa, Mastercard — secure payment with Flitt']],
             ['bog_installment', 'bog-installment', BogInstallment::STANDARD, '/img/payments/bog-1.png', 300,
                 ['ka' => 'საქართველოს ბანკის ონლაინ განვადება', 'en' => 'Bank of Georgia — instalments'],
                 ['ka' => '3-დან 24 თვემდე, ონლაინ განაცხადით', 'en' => '3 to 24 months, apply online']],

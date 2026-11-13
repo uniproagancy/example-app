@@ -47,7 +47,7 @@ class ContactPageTest extends TestCase
         $this->assertSame('EL-123456', $message->order_number);
     }
 
-    public function test_message_validation_and_rate_limit(): void
+    public function test_message_validation_and_no_waiting_between_messages(): void
     {
         Livewire::test('pages::contact')
             ->call('send')
@@ -55,13 +55,11 @@ class ContactPageTest extends TestCase
 
         $component = Livewire::test('pages::contact')->set('name', 'Test')->set('phone', '555123456');
 
-        foreach (range(1, 3) as $attempt) {
+        foreach (range(1, 5) as $attempt) {
             $component->set('message', 'Hello there '.$attempt)->call('send')->assertHasNoErrors();
         }
 
-        $component->set('message', 'One more time')->call('send')->assertHasErrors('message');
-
-        $this->assertSame(3, ContactMessage::query()->count());
+        $this->assertSame(5, ContactMessage::query()->count());
     }
 
     public function test_about_page_and_navigation_links(): void

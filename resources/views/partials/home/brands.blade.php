@@ -1,6 +1,5 @@
         <section id="brands" class="mt-11 scroll-mt-[140px] sm:mt-[72px]">
             <div class="mb-[22px] flex flex-col gap-1.5">
-                <span class="text-xs font-bold tracking-[0.4px] text-brand">{{ $block['kicker'] ?? __('shop.brands.kicker') }}</span>
                 <h2 class="m-0 text-xl font-extrabold tracking-[0.3px] sm:text-[28px]">{{ $block['title'] ?? __('shop.brands.title') }}</h2>
             </div>
             <div class="grid grid-cols-2 gap-px overflow-hidden rounded-[18px] border border-line-mid bg-line-mid sm:grid-cols-4 sm:rounded-3xl">

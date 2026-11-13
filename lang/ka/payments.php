@@ -15,8 +15,10 @@ return [
     'continue' => 'გაგრძელება',
     'online' => 'ონლაინ',
 
+    'flitt_description' => 'ELIO.GE შეკვეთა :number',
+
     'drivers' => [
-        'bog-card' => 'საქართველოს ბანკი — ბარათით',
+        'flitt' => 'Flitt — ბარათით',
         'bog-installment' => 'საქართველოს ბანკი — განვადება',
         'tbc-installment' => 'TBC — განვადება',
         'credo-installment' => 'Credo — განვადება',

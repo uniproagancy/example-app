@@ -184,7 +184,7 @@ class PaymentMethodResource extends Resource
     public static function envKeys(string $driver): string
     {
         return match ($driver) {
-            'bog-card' => 'BOG_PAYMENT_PUBLIC_KEY, BOG_PAYMENT_SECRET_KEY',
+            'flitt' => 'FLITT_MERCHANT_ID, FLITT_SECRET_KEY',
             'bog-installment' => 'BOG_INSTALLMENT_PUBLIC_KEY, BOG_INSTALLMENT_SECRET_KEY, BOG_SDK_CLIENT_ID',
             'tbc-installment' => 'TBC_CLIENT_ID, TBC_CLIENT_SECRET, TBC_MERCHANT_KEY, TBC_CAMPAIGN_ID',
             'credo-installment' => 'CREDO_MERCHANT_ID, CREDO_SECRET',

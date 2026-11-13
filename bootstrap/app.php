@@ -27,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'localeViewPath' => LaravelLocalizationViewPath::class,
         ]);
 
-        $middleware->preventRequestForgery(except: ['payment/callback/*']);
+        $middleware->preventRequestForgery(except: ['payment/callback/*', 'payment/return/*']);
 
         $middleware->encryptCookies(except: ['_fbp', '_fbc', Pixel::VISITOR_COOKIE]);
 

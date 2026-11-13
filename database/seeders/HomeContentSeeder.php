@@ -28,7 +28,6 @@ class HomeContentSeeder extends Seeder
             ['key' => 'promos'],
             [
                 'key' => 'brands',
-                'kicker' => ['ka' => 'ოფიციალური დისტრიბუცია', 'en' => 'Official distribution'],
                 'title' => ['ka' => 'ბრენდები', 'en' => 'Brands'],
             ],
         ])->each(fn (array $block, int $index) => HomeBlock::query()->create([...$block, 'position' => $index + 1]));

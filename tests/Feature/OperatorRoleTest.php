@@ -84,4 +84,23 @@ class OperatorRoleTest extends TestCase
         $this->assertFalse(User::factory()->admin()->operator()->make()->isOperator());
         $this->get('/admin')->assertOk();
     }
+
+    public function test_users_are_found_by_the_text_filter(): void
+    {
+        $this->actingAs(User::factory()->admin()->create());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $nino = User::factory()->create(['name' => 'ნინო ბერიძე', 'email' => 'nino@example.com', 'phone' => '+995555123456']);
+        $giorgi = User::factory()->create(['name' => 'Giorgi', 'email' => 'giorgi@example.com', 'phone' => '+995599000000']);
+
+        foreach (['ნინო', 'nino@', '555123'] as $text) {
+            Livewire::test(ManageUsers::class)
+                ->filterTable('search', ['text' => $text])
+                ->assertCanSeeTableRecords([$nino])
+                ->assertCanNotSeeTableRecords([$giorgi]);
+        }
+
+        Livewire::test(ManageUsers::class)
+            ->assertTableColumnDoesNotExist('orders_count')
+            ->assertTableColumnDoesNotExist('favorites_count');
+    }
 }

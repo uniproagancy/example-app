@@ -17,6 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -96,7 +97,6 @@ class UserResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
-            ->modifyQueryUsing(fn (Builder $query) => $query->withCount(['orders', 'favorites']))
             ->columns([
                 TextColumn::make('name')
                     ->label(__('admin.users.name'))
@@ -105,14 +105,6 @@ class UserResource extends Resource
                 TextColumn::make('phone')
                     ->label(__('admin.users.phone'))
                     ->placeholder(__('admin.common.none'))
-                    ->toggleable(),
-                TextColumn::make('orders_count')
-                    ->label(__('admin.users.orders'))
-                    ->alignCenter()
-                    ->sortable(),
-                TextColumn::make('favorites_count')
-                    ->label(__('admin.users.favorites'))
-                    ->alignCenter()
                     ->toggleable(),
                 IconColumn::make('is_admin')
                     ->label(__('admin.users.is_admin'))
@@ -128,6 +120,20 @@ class UserResource extends Resource
                     ->sortable(),
             ])
             ->filters([
+                Filter::make('search')
+                    ->schema([
+                        TextInput::make('text')
+                            ->label(__('admin.users.search'))
+                            ->placeholder(__('admin.users.search_placeholder')),
+                    ])
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        trim((string) ($data['text'] ?? '')),
+                        fn (Builder $query, string $text) => $query->where(fn (Builder $query) => $query
+                            ->where('name', 'like', "%{$text}%")
+                            ->orWhere('email', 'like', "%{$text}%")
+                            ->orWhere('phone', 'like', "%{$text}%")),
+                    ))
+                    ->indicateUsing(fn (array $data): ?string => filled($data['text'] ?? null) ? __('admin.users.search').': '.$data['text'] : null),
                 TernaryFilter::make('is_admin')
                     ->label(__('admin.users.admins_only')),
                 TernaryFilter::make('is_operator')

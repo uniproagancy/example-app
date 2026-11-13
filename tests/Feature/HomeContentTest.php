@@ -35,7 +35,7 @@ class HomeContentTest extends TestCase
             ->assertSee('1 549 ₾')
             ->assertSee('აუდიო კვირეული')
             ->assertSee(url('/ka/categories/headphones'), false)
-            ->assertSee('ოფიციალური დისტრიბუცია')
+            ->assertDontSee('ოფიციალური დისტრიბუცია')
             ->assertSee('Samsung')
             ->assertDontSee('09 ·');
     }
@@ -50,7 +50,7 @@ class HomeContentTest extends TestCase
         $this->get('/en')
             ->assertOk()
             ->assertDontSee('Delivery across Georgia')
-            ->assertSeeInOrder(['Official distribution', 'Deal of the day', 'Audio week']);
+            ->assertSeeInOrder(['id="brands"', 'Deal of the day', 'Audio week'], false);
     }
 
     public function test_content_changes_in_database_show_on_the_site(): void

@@ -15,8 +15,10 @@ return [
     'continue' => 'Continue',
     'online' => 'Online',
 
+    'flitt_description' => 'ELIO.GE order :number',
+
     'drivers' => [
-        'bog-card' => 'Bank of Georgia — card',
+        'flitt' => 'Flitt — card',
         'bog-installment' => 'Bank of Georgia — instalments',
         'tbc-installment' => 'TBC — instalments',
         'credo-installment' => 'Credo — instalments',

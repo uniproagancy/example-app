@@ -35,6 +35,12 @@ return [
         ],
     ],
 
+    'flitt' => [
+        'merchant_id' => env('FLITT_MERCHANT_ID'),
+        'secret_key' => env('FLITT_SECRET_KEY'),
+        'api_url' => env('FLITT_API_URL', 'https://pay.flitt.com/api'),
+    ],
+
     'zoommer' => [
         'api_url' => env('ZOOMMER_API_URL', 'https://zoommer.ge/api/proxy/'),
         'access_token' => env('ZOOMMER_ACCESS_TOKEN'),

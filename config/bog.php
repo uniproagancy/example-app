@@ -15,12 +15,4 @@ return [
         'months' => [3, 6, 12, 18, 24],
     ],
 
-    'payment' => [
-        'public_key' => env('BOG_PAYMENT_PUBLIC_KEY'),
-        'secret_key' => env('BOG_PAYMENT_SECRET_KEY'),
-        'order_url' => env('BOG_PAYMENT_ORDER_URL', 'https://api.bog.ge/payments/v1/ecommerce/orders'),
-        'receipt_url' => env('BOG_PAYMENT_RECEIPT_URL', 'https://api.bog.ge/payments/v1/receipt'),
-        'callback_url' => env('BOG_CALLBACK_URL'),
-    ],
-
 ];

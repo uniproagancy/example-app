@@ -5,10 +5,10 @@ namespace App\Services\Payments;
 use App\Models\Order;
 use App\Models\PaymentTransaction;
 use App\Services\Facebook\Pixel;
-use App\Services\Payments\Drivers\BogCard;
 use App\Services\Payments\Drivers\BogInstallment;
 use App\Services\Payments\Drivers\CredoInstallment;
 use App\Services\Payments\Drivers\CredoSplit;
+use App\Services\Payments\Drivers\Flitt;
 use App\Services\Payments\Drivers\TbcInstallment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +18,7 @@ use Throwable;
 class PaymentManager
 {
     public const DRIVERS = [
-        'bog-card' => BogCard::class,
+        Flitt::NAME => Flitt::class,
         'bog-installment' => BogInstallment::class,
         'tbc-installment' => TbcInstallment::class,
         'credo-installment' => CredoInstallment::class,

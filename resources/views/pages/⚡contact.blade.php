@@ -3,9 +3,7 @@
 use App\Models\ContactMessage;
 use App\Models\Faq;
 use App\Support\Site;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 new class extends Component
@@ -40,16 +38,6 @@ new class extends Component
     public function send(): void
     {
         $this->validate();
-
-        $throttleKey = 'contact:'.request()->ip();
-
-        if (RateLimiter::tooManyAttempts($throttleKey, 3)) {
-            throw ValidationException::withMessages([
-                'message' => __('auth.throttle', ['seconds' => RateLimiter::availableIn($throttleKey)]),
-            ]);
-        }
-
-        RateLimiter::hit($throttleKey, 600);
 
         ContactMessage::query()->create([
             'user_id' => auth()->user()?->id,

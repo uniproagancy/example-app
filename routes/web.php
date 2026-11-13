@@ -13,7 +13,7 @@ Route::controller(PaymentController::class)->prefix('payment')->name('payment.')
     Route::match(['get', 'post', 'put'], 'callback/{driver}', 'callback')
         ->middleware('throttle:120,1')
         ->name('callback');
-    Route::get('return/{number}', 'return')->name('return');
+    Route::match(['get', 'post'], 'return/{number}', 'return')->name('return');
     Route::get('link/{number}', 'link')->middleware('signed')->name('link');
     Route::post('bog/installment/{number}', 'bogInstallment')->middleware('throttle:20,1')->name('bog.installment');
     Route::get('credo/{number}', 'credo')->name('credo.form');

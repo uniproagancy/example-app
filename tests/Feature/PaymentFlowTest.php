@@ -10,8 +10,10 @@ use App\Models\PaymentMethod;
 use App\Models\PaymentTransaction;
 use App\Models\Product;
 use App\Models\User;
+use App\Services\Payments\Drivers\Flitt;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
 use Livewire\Livewire;
@@ -26,26 +28,28 @@ class PaymentFlowTest extends TestCase
     protected function configureBog(): void
     {
         config([
-            'bog.payment.public_key' => 'pub',
-            'bog.payment.secret_key' => 'sec',
+            'services.flitt.merchant_id' => '1549901',
+            'services.flitt.secret_key' => 'test',
             'bog.installment.public_key' => 'ipub',
             'bog.installment.secret_key' => 'isec',
             'bog.sdk_client_id' => '12345',
         ]);
     }
 
-    protected function fakeBog(string $receiptStatus = 'completed'): void
+    protected function fakeBog(string $receiptStatus = 'approved'): void
     {
         Http::fake([
             'oauth2.bog.ge/*' => Http::response(['access_token' => 'token', 'expires_in' => 300]),
-            'api.bog.ge/payments/v1/ecommerce/orders' => Http::response([
-                'id' => 'bog-order-1',
-                '_links' => ['redirect' => ['href' => 'https://payment.bog.ge/?order_id=bog-order-1']],
-            ]),
-            'api.bog.ge/payments/v1/receipt/*' => Http::response([
-                'order_status' => ['key' => $receiptStatus],
-                'external_order_id' => Order::query()->latest('id')->value('number'),
-            ]),
+            'pay.flitt.com/api/checkout/url' => Http::response(['response' => [
+                'response_status' => 'success',
+                'checkout_url' => 'https://pay.flitt.com/merchants/test/index.html?token=abc',
+                'payment_id' => '805230052',
+            ]]),
+            'pay.flitt.com/api/status/order_id' => fn (Request $request) => Http::response(['response' => $this->flittStatus(
+                $request['request']['order_id'],
+                $receiptStatus,
+                (int) round((float) PaymentTransaction::query()->where('external_id', $request['request']['order_id'])->value('amount') * 100),
+            )]),
             'installment.bog.ge/*' => Http::response([
                 'status' => 'CREATED',
                 'order_id' => 'inst-1',
@@ -54,7 +58,17 @@ class PaymentFlowTest extends TestCase
         ]);
     }
 
-    protected function order(string $method = 'bog_card', array $attributes = []): Order
+    protected function flittStatus(string $orderId, string $status, int $amount): array
+    {
+        $data = [
+            'order_id' => $orderId, 'merchant_id' => 1549901, 'order_status' => $status, 'response_status' => 'success',
+            'amount' => (string) $amount, 'currency' => 'GEL', 'masked_card' => '444455XXXXXX1111', 'tran_type' => 'purchase',
+        ];
+
+        return $data + ['signature' => app(Flitt::class)->signature($data)];
+    }
+
+    protected function order(string $method = 'card', array $attributes = []): Order
     {
         $iphone = Product::query()->where('sku', 'ip16')->sole();
 
@@ -76,8 +90,8 @@ class PaymentFlowTest extends TestCase
 
         $this->configureBog();
 
-        $this->assertSame(['bog_card', 'bog_installment', 'bog_split', 'cash', 'transfer'], PaymentMethod::forCheckout(1000)->pluck('code')->all());
-        $this->assertSame(['bog_card', 'cash', 'transfer'], PaymentMethod::forCheckout(50)->pluck('code')->all());
+        $this->assertSame(['card', 'bog_installment', 'bog_split', 'cash', 'transfer'], PaymentMethod::forCheckout(1000)->pluck('code')->all());
+        $this->assertSame(['card', 'cash', 'transfer'], PaymentMethod::forCheckout(50)->pluck('code')->all());
     }
 
     public function test_checkout_with_a_card_sends_the_buyer_to_the_bank(): void
@@ -94,21 +108,31 @@ class PaymentFlowTest extends TestCase
             ->set('phone', '+995 555 12 34 56')
             ->set('email', 'nino@mail.ge')
             ->set('address', 'ჭავჭავაძის 21')
-            ->call('choose', 'payment', 'bog_card')
+            ->call('choose', 'payment', 'card')
             ->call('placeOrder')
             ->assertHasNoErrors()
-            ->assertRedirect('https://payment.bog.ge/?order_id=bog-order-1');
+            ->assertRedirect('https://pay.flitt.com/merchants/test/index.html?token=abc');
 
         $order = Order::query()->sole();
         $transaction = $order->transactions()->sole();
 
         $this->assertSame('processing', $order->payment_status);
-        $this->assertSame('bog-card', $transaction->driver);
+        $this->assertSame('flitt', $transaction->driver);
         $this->assertSame('pending', $transaction->status);
-        $this->assertSame((string) $order->number, $transaction->request['external_order_id']);
-        $this->assertEquals((float) $order->total, $transaction->request['purchase_units']['total_amount']);
+        $this->assertStringStartsWith($order->number.'-', $transaction->external_id);
+        $this->assertSame((int) round((float) $order->total * 100), $transaction->request['amount']);
+        $this->assertSame('GEL', $transaction->request['currency']);
+        $this->assertArrayNotHasKey('signature', $transaction->request);
         $this->assertContains($order->id, session('placed_orders'));
-        Http::assertSent(fn ($request) => $request->url() === 'https://api.bog.ge/payments/v1/ecommerce/orders' && $request->hasHeader('Authorization', 'Bearer token'));
+        Http::assertSent(function ($request) {
+            $sent = $request['request'] ?? [];
+
+            return $request->url() === 'https://pay.flitt.com/api/checkout/url'
+                && $sent['merchant_id'] === 1549901
+                && $sent['signature'] === app(Flitt::class)->signature($sent)
+                && str_contains($sent['server_callback_url'], '/payment/callback/flitt')
+                && str_contains($sent['response_url'], 'signature=');
+        });
     }
 
     public function test_bank_callback_settles_the_order_only_after_asking_the_bank(): void
@@ -116,11 +140,16 @@ class PaymentFlowTest extends TestCase
         $this->configureBog();
         $order = $this->order();
         $transaction = PaymentTransaction::query()->create([
-            'order_id' => $order->id, 'driver' => 'bog-card', 'external_id' => 'bog-order-1', 'amount' => 1000, 'status' => 'pending',
+            'order_id' => $order->id, 'driver' => 'flitt', 'external_id' => 'EL-flitt-1', 'amount' => 1000, 'status' => 'pending',
         ]);
-        $this->fakeBog('completed');
+        $this->fakeBog('approved');
 
-        $this->postJson('/payment/callback/bog-card', ['body' => ['order_id' => 'bog-order-1', 'order_status' => ['key' => 'completed']]])
+        $forged = ['order_id' => 'EL-flitt-1', 'order_status' => 'approved', 'amount' => '100000', 'signature' => 'nope'];
+        $this->postJson('/payment/callback/flitt', $forged)->assertOk();
+        $this->assertSame('pending', $order->fresh()->payment_status);
+        $this->assertSame('unmatched', PaymentCallback::query()->latest('id')->value('outcome'));
+
+        $this->postJson('/payment/callback/flitt', $this->flittStatus('EL-flitt-1', 'approved', 100000))
             ->assertOk();
 
         $order->refresh();
@@ -129,7 +158,7 @@ class PaymentFlowTest extends TestCase
         $this->assertSame('success', $transaction->fresh()->status);
         $this->assertSame(['type' => 'payment', 'from' => 'pending', 'to' => 'paid'], $order->events()->first()->only(['type', 'from', 'to']));
 
-        $record = PaymentCallback::query()->sole();
+        $record = PaymentCallback::query()->latest('id')->first();
         $this->assertSame('paid', $record->outcome);
         $this->assertTrue($record->confirmed);
 
@@ -143,9 +172,9 @@ class PaymentFlowTest extends TestCase
         $this->configureBog();
         $order = $this->order(attributes: ['payment_status' => 'processing']);
         PaymentTransaction::query()->create([
-            'order_id' => $order->id, 'driver' => 'bog-card', 'external_id' => 'bog-order-1', 'amount' => 1000, 'status' => 'pending',
+            'order_id' => $order->id, 'driver' => 'flitt', 'external_id' => 'EL-flitt-1', 'amount' => 1000, 'status' => 'pending',
         ]);
-        $this->fakeBog('rejected');
+        $this->fakeBog('declined');
 
         $this->get(URL::temporarySignedRoute('payment.return', now()->addHour(), ['number' => $order->number, 'status' => 'fail']))
             ->assertRedirect($order->pageUrl());
@@ -159,9 +188,44 @@ class PaymentFlowTest extends TestCase
 
         Livewire::test('pages::order', ['number' => $order->number])
             ->call('pay')
-            ->assertRedirect('https://payment.bog.ge/?order_id=bog-order-1');
+            ->assertRedirect('https://pay.flitt.com/merchants/test/index.html?token=abc');
 
         $this->assertSame(['pending', 'failed'], $order->transactions()->orderByDesc('id')->pluck('status')->all());
+    }
+
+    public function test_flitt_signs_like_its_documentation_and_rejects_wrong_amounts(): void
+    {
+        $this->configureBog();
+        $flitt = app(Flitt::class);
+
+        $this->assertSame(sha1('test|1000|GEL|1549901|Test payment|TestOrder2|http://myshop/callback/'), $flitt->signature([
+            'server_callback_url' => 'http://myshop/callback/', 'order_id' => 'TestOrder2', 'currency' => 'GEL',
+            'merchant_id' => 1549901, 'order_desc' => 'Test payment', 'amount' => 1000,
+        ]));
+
+        $order = $this->order(attributes: ['payment_status' => 'processing']);
+        $transaction = PaymentTransaction::query()->create([
+            'order_id' => $order->id, 'driver' => 'flitt', 'external_id' => 'EL-flitt-2', 'amount' => 1000, 'status' => 'pending',
+        ]);
+        Http::fake(['pay.flitt.com/api/status/order_id' => Http::response(['response' => $this->flittStatus('EL-flitt-2', 'approved', 100)])]);
+
+        $this->assertFalse($flitt->confirm($transaction));
+        $this->assertFalse($order->fresh()->isPaid());
+    }
+
+    public function test_the_bank_can_post_the_buyer_back_to_the_shop(): void
+    {
+        $this->configureBog();
+        $order = $this->order(attributes: ['payment_status' => 'processing']);
+        PaymentTransaction::query()->create([
+            'order_id' => $order->id, 'driver' => 'flitt', 'external_id' => 'EL-flitt-3', 'amount' => 1000, 'status' => 'pending',
+        ]);
+        $this->fakeBog('approved');
+
+        $this->post(URL::temporarySignedRoute('payment.return', now()->addHour(), ['number' => $order->number]), ['order_status' => 'approved'])
+            ->assertRedirect($order->pageUrl());
+
+        $this->assertTrue($order->fresh()->isPaid());
     }
 
     public function test_order_page_is_private_and_opens_through_a_signed_pay_link(): void
@@ -231,9 +295,9 @@ class PaymentFlowTest extends TestCase
         $this->configureBog();
         $order = $this->order(attributes: ['payment_status' => 'processing']);
         PaymentTransaction::query()->create([
-            'order_id' => $order->id, 'driver' => 'bog-card', 'external_id' => 'bog-order-1', 'amount' => 1000, 'status' => 'pending',
+            'order_id' => $order->id, 'driver' => 'flitt', 'external_id' => 'EL-flitt-1', 'amount' => 1000, 'status' => 'pending',
         ]);
-        $this->fakeBog('completed');
+        $this->fakeBog('approved');
 
         $this->artisan('payments:check')->expectsOutputToContain('1 checked, 1 confirmed.')->assertSuccessful();
 
@@ -249,9 +313,9 @@ class PaymentFlowTest extends TestCase
 
         $order = $this->order(attributes: ['payment_status' => 'processing']);
         PaymentTransaction::query()->create([
-            'order_id' => $order->id, 'driver' => 'bog-card', 'external_id' => 'bog-order-1', 'amount' => 1000, 'status' => 'pending',
+            'order_id' => $order->id, 'driver' => 'flitt', 'external_id' => 'EL-flitt-1', 'amount' => 1000, 'status' => 'pending',
         ]);
-        $this->fakeBog('in_progress');
+        $this->fakeBog('processing');
 
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
             ->assertSee(__('admin.orders.ask_bank'))
@@ -270,7 +334,7 @@ class PaymentFlowTest extends TestCase
 
         Livewire::test(ManagePaymentMethods::class)
             ->assertCanSeeTableRecords([$cash])
-            ->callTableAction('delete', PaymentMethod::query()->where('code', 'bog_card')->sole())
+            ->callTableAction('delete', PaymentMethod::query()->where('code', 'card')->sole())
             ->assertNotified(__('admin.payment_methods.cannot_delete'));
 
         Livewire::test(ManagePaymentMethods::class)
@@ -283,7 +347,7 @@ class PaymentFlowTest extends TestCase
             ])
             ->assertHasNoActionErrors();
 
-        $this->assertModelExists(PaymentMethod::query()->where('code', 'bog_card')->sole());
+        $this->assertModelExists(PaymentMethod::query()->where('code', 'card')->sole());
         $liberty = PaymentMethod::query()->where('code', 'liberty_installment')->sole();
         $this->assertSame('ლიბერთი განვადება', $liberty->name);
         $this->assertFalse($liberty->is_online);
