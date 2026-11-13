@@ -1,8 +1,9 @@
 <?php
 
 use App\Models\Order;
-use App\Services\Facebook\Pixel;
 use App\Models\PaymentMethod;
+use App\Services\Facebook\Pixel;
+use App\Services\Orders\OrderNotifier;
 use App\Services\Payments\BankHandoff;
 use App\Support\Catalog;
 use Illuminate\Support\Collection;
@@ -101,6 +102,8 @@ new class extends Component
 
             return $order;
         });
+
+        app(OrderNotifier::class)->placed($order);
 
         $pixel = app(Pixel::class);
         $pixel->snapshotForOrder($order);

@@ -4,10 +4,13 @@ namespace App\Filament\Pages;
 
 use App\Filament\Support\AdminOnlyPage;
 use App\Models\Setting;
+use App\Services\Orders\OrderNotifier;
+use App\Services\Sms\SmsOffice;
 use App\Support\Locales;
 use App\Support\Site;
 use App\Support\WebpImage;
 use BackedEnum;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
@@ -28,7 +31,7 @@ class ManageSettings extends Page
 {
     use AdminOnlyPage;
 
-    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification'];
+    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms'];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
@@ -58,6 +61,8 @@ class ManageSettings extends Page
         $this->form->fill([
             ...collect(static::keys())->mapWithKeys(fn (string $key) => [$key => Setting::get($key)])->all(),
             'logo_with_name' => (bool) Setting::get('logo_with_name'),
+            'notify_buyer_mail' => OrderNotifier::enabled('notify_buyer_mail'),
+            'notify_buyer_sms' => OrderNotifier::enabled('notify_buyer_sms'),
         ]);
     }
 
@@ -122,6 +127,38 @@ class ManageSettings extends Page
                             ->label(__('admin.settings.hours_sunday'))
                             ->placeholder('11:00–18:00')
                             ->maxLength(40),
+                    ])
+                    ->columnSpanFull(),
+                Section::make(__('admin.settings.order_notifications'))
+                    ->description(fn (): string => __('admin.settings.order_notifications_help').' '.(app(SmsOffice::class)->isConfigured()
+                        ? __('admin.settings.sms_ready')
+                        : __('admin.settings.sms_missing')))
+                    ->columns(2)
+                    ->schema([
+                        Toggle::make('notify_buyer_mail')
+                            ->label(__('admin.settings.notify_buyer_mail')),
+                        Toggle::make('notify_buyer_sms')
+                            ->label(__('admin.settings.notify_buyer_sms')),
+                        TextInput::make('order_alert_emails')
+                            ->label(__('admin.settings.order_alert_emails'))
+                            ->helperText(__('admin.settings.order_alert_emails_help'))
+                            ->placeholder('orders@elivo.ge, manager@elivo.ge')
+                            ->rule(fn () => function (string $attribute, mixed $value, Closure $fail): void {
+                                $invalid = collect(preg_split('/[\s,;]+/', (string) $value))
+                                    ->filter()
+                                    ->reject(fn (string $email) => filter_var($email, FILTER_VALIDATE_EMAIL));
+
+                                if ($invalid->isNotEmpty()) {
+                                    $fail(__('admin.settings.order_alert_emails_invalid', ['emails' => $invalid->implode(', ')]));
+                                }
+                            })
+                            ->maxLength(500),
+                        TextInput::make('order_alert_phone')
+                            ->label(__('admin.settings.order_alert_phone'))
+                            ->helperText(__('admin.settings.order_alert_phone_help'))
+                            ->tel()
+                            ->placeholder('5XX XX XX XX')
+                            ->maxLength(32),
                     ])
                     ->columnSpanFull(),
                 Section::make(__('admin.settings.seo'))
@@ -191,7 +228,9 @@ class ManageSettings extends Page
         }
 
         foreach ($state as $key => $value) {
-            if (in_array($key, static::keys(), true)) {
+            if (in_array($key, ['notify_buyer_mail', 'notify_buyer_sms'], true)) {
+                Setting::put($key, $value ? '1' : '0');
+            } elseif (in_array($key, static::keys(), true)) {
                 Setting::put($key, filled($value) ? (string) $value : null);
             }
         }

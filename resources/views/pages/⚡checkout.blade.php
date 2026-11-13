@@ -1,17 +1,18 @@
 <?php
 
 use App\Models\Order;
-use App\Services\Facebook\Pixel;
 use App\Models\PaymentMethod;
 use App\Models\PromoCode;
+use App\Services\Facebook\Pixel;
+use App\Services\Orders\OrderNotifier;
 use App\Services\Payments\BankHandoff;
 use App\Support\Cart;
 use App\Support\Catalog;
 use App\Support\Site;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -250,6 +251,7 @@ new class extends Component
         Cart::clear();
         $this->dispatch('cart-refresh');
 
+        app(OrderNotifier::class)->placed($order);
         app(Pixel::class)->snapshotForOrder($order);
 
         $order->rememberInSession();

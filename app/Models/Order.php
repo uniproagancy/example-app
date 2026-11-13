@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Orders\OrderNotifier;
 use App\Support\Locales;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -48,6 +49,12 @@ class Order extends Model
         });
 
         static::restored(fn (Order $order) => $order->log('restored'));
+
+        static::updated(function (Order $order): void {
+            if ($order->wasChanged('payment_status') && $order->payment_status === self::PAYMENT_PAID) {
+                app(OrderNotifier::class)->paid($order);
+            }
+        });
     }
 
     public function logFirstOpen(): void

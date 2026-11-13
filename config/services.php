@@ -106,6 +106,12 @@ return [
         'user_agent' => env('METROMART_USER_AGENT'),
     ],
 
+    'smsoffice' => [
+        'key' => env('SMSOFFICE_API_KEY'),
+        'sender' => env('SMSOFFICE_SENDER'),
+        'url' => env('SMSOFFICE_URL', 'https://smsoffice.ge/api/v2/send/'),
+    ],
+
     'facebook' => [
         'pixel_id' => env('FACEBOOK_PIXEL_ID'),
         'access_token' => env('FACEBOOK_ACCESS_TOKEN'),
