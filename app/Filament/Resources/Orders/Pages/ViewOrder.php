@@ -4,11 +4,14 @@ namespace App\Filament\Resources\Orders\Pages;
 
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\Tables\ProductsTable;
+use App\Filament\Support\Operators;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PaymentMethod;
+use App\Models\PaymentTransaction;
 use App\Models\Product;
 use App\Services\Facebook\Pixel;
+use App\Services\Payments\Drivers\Flitt;
 use App\Services\Payments\PaymentCheck;
 use App\Support\Cart;
 use App\Support\Catalog;
@@ -16,6 +19,8 @@ use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
@@ -78,6 +83,30 @@ class ViewOrder extends ViewRecord
                 ->icon(Heroicon::OutlinedPhone)
                 ->color('gray')
                 ->url(fn (): string => 'tel:'.preg_replace('/[^\d+]/', '', $this->order()->phone)),
+            Action::make('refund')
+                ->label(__('payments.refund.button'))
+                ->icon(Heroicon::OutlinedArrowUturnLeft)
+                ->color('danger')
+                ->visible(fn (): bool => ! Operators::active() && $this->refundableAmount() > 0)
+                ->modalHeading(fn (): string => __('payments.refund.heading', ['number' => $this->order()->number]))
+                ->modalDescription(fn (): string => __('payments.refund.help', ['amount' => Catalog::money($this->refundableAmount())]))
+                ->modalIcon(Heroicon::OutlinedArrowUturnLeft)
+                ->modalSubmitActionLabel(__('payments.refund.submit'))
+                ->fillForm(fn (): array => ['amount' => $this->refundableAmount()])
+                ->schema([
+                    TextInput::make('amount')
+                        ->label(__('payments.refund.amount'))
+                        ->numeric()
+                        ->minValue(0.01)
+                        ->maxValue(fn (): float => $this->refundableAmount())
+                        ->suffix('₾')
+                        ->required(),
+                    Textarea::make('comment')
+                        ->label(__('payments.refund.comment'))
+                        ->rows(2)
+                        ->maxLength(1000),
+                ])
+                ->action(fn (array $data) => $this->refund((float) $data['amount'], $data['comment'] ?? null)),
             Action::make('save')
                 ->label(__('admin.orders.save'))
                 ->icon(Heroicon::OutlinedCheck)
@@ -218,6 +247,60 @@ class ViewOrder extends ViewRecord
         Notification::make()->title($answer['message'])->{$answer['paid'] ? 'success' : 'warning'}()->send();
 
         $this->fillFromOrder();
+    }
+
+    public function refundTransaction(): ?PaymentTransaction
+    {
+        return $this->order()->transactions()
+            ->where('driver', Flitt::NAME)
+            ->where('status', PaymentTransaction::SUCCESS)
+            ->latest('id')
+            ->first();
+    }
+
+    public function refundableAmount(): float
+    {
+        $transaction = $this->refundTransaction();
+
+        return $transaction ? app(Flitt::class)->refundable($transaction) : 0.0;
+    }
+
+    protected function refund(float $amount, ?string $comment = null): void
+    {
+        abort_if(Operators::active(), 403);
+
+        $transaction = $this->refundTransaction();
+
+        if (! $transaction) {
+            return;
+        }
+
+        $flitt = app(Flitt::class);
+        $result = $flitt->refund($transaction, $amount, $comment, auth()->user()?->email);
+        $order = $this->order();
+        $money = Catalog::money($amount);
+
+        if ($result['status'] === 'approved') {
+            $order->log('payment', trim(__('payments.refund.logged', ['amount' => $money]).' '.($comment ? '— '.$comment : '')));
+
+            if ($flitt->refundable($transaction->fresh()) <= 0) {
+                $order->setPaymentStatus(Order::PAYMENT_REFUNDED, __('payments.refund.full'));
+            }
+
+            Notification::make()->title(__('payments.refund.done', ['amount' => $money]))->success()->send();
+        } elseif (in_array($result['status'], ['created', 'processing'], true)) {
+            $order->log('payment', __('payments.refund.pending_log', ['amount' => $money]));
+            Notification::make()->title(__('payments.refund.pending'))->warning()->send();
+        } else {
+            Notification::make()
+                ->title(__('payments.refund.failed'))
+                ->body($result['message'])
+                ->danger()
+                ->persistent()
+                ->send();
+        }
+
+        unset($this->transactions, $this->events);
     }
 
     public function payLink(): string

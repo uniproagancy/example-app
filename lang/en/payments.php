@@ -17,6 +17,22 @@ return [
 
     'flitt_description' => 'ELIO.GE order :number',
 
+    'refund' => [
+        'button' => 'Refund',
+        'heading' => 'Refund — :number',
+        'help' => 'The money goes back to the buyer’s card through Flitt. At most :amount can be refunded. A refund cannot be undone.',
+        'submit' => 'Refund',
+        'amount' => 'Amount to refund',
+        'comment' => 'Reason',
+        'done' => ':amount refunded to the buyer.',
+        'logged' => 'Refunded :amount through Flitt',
+        'full' => 'Fully refunded',
+        'pending' => 'Flitt is processing the refund — check its status later in the Flitt portal.',
+        'pending_log' => 'Refund processing at Flitt: :amount',
+        'failed' => 'Flitt could not make the refund.',
+        'too_much' => 'This amount cannot be refunded.',
+    ],
+
     'drivers' => [
         'flitt' => 'Flitt — card',
         'bog-installment' => 'Bank of Georgia — instalments',

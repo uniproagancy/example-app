@@ -140,6 +140,71 @@ class Flitt implements PaymentDriver
         return $transaction;
     }
 
+    public function refunded(PaymentTransaction $transaction): float
+    {
+        return round(collect(data_get($transaction->response, 'refunds', []))
+            ->where('status', 'approved')
+            ->sum('amount'), 2);
+    }
+
+    public function refundable(PaymentTransaction $transaction): float
+    {
+        if ($transaction->driver !== self::NAME || $transaction->status !== PaymentTransaction::SUCCESS) {
+            return 0.0;
+        }
+
+        return max(0.0, round((float) $transaction->amount - $this->refunded($transaction), 2));
+    }
+
+    public function refund(PaymentTransaction $transaction, float $amount, ?string $comment = null, ?string $staffEmail = null): array
+    {
+        $amount = round($amount, 2);
+
+        if ($amount <= 0 || $amount > $this->refundable($transaction)) {
+            return ['status' => 'declined', 'message' => __('payments.refund.too_much')];
+        }
+
+        $reverseId = Str::lower(Str::random(24));
+
+        $response = Http::acceptJson()->timeout(30)->post($this->url('reverse/order_id'), ['request' => $this->sign([
+            'version' => '1.0.1',
+            'merchant_id' => (int) config('services.flitt.merchant_id'),
+            'order_id' => $transaction->external_id,
+            'amount' => $this->minorUnits($amount),
+            'currency' => 'GEL',
+            'comment' => $comment ? Str::limit($comment, 1000, '') : null,
+            'email' => $staffEmail,
+            'reverse_id' => $reverseId,
+        ])]);
+
+        $data = (array) $response->json('response', []);
+        $failed = ! $response->successful() || ($data['response_status'] ?? null) !== 'success';
+
+        if (! $failed && ! $this->hasValidSignature($data)) {
+            Log::channel('payments')->error('flitt refund has a wrong signature', ['transaction' => $transaction->id]);
+            $failed = true;
+        }
+
+        $status = $failed ? 'failed' : (string) ($data['reverse_status'] ?? 'processing');
+        $message = $data['error_message'] ?? ($data['response_description'] ?? null) ?: null;
+
+        $transaction->update([
+            'response' => array_merge((array) $transaction->response, ['refunds' => [
+                ...data_get($transaction->response, 'refunds', []),
+                ['reverse_id' => $reverseId, 'amount' => $amount, 'status' => $status, 'message' => $message, 'at' => now()->toIso8601String()],
+            ]]),
+        ]);
+
+        Log::channel('payments')->log($status === 'approved' ? 'info' : 'warning', 'flitt refund', [
+            'transaction' => $transaction->id,
+            'amount' => $amount,
+            'status' => $status,
+            'message' => $message,
+        ]);
+
+        return ['status' => $status, 'message' => $message];
+    }
+
     public function signature(array $params): string
     {
         $values = collect($params)
