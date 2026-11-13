@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\MenuItems;
 
 use App\Filament\Resources\MenuItems\Pages\ManageMenuItems;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
 use App\Models\MenuItem;
@@ -23,6 +24,7 @@ use Filament\Tables\Table;
 
 class MenuItemResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'menu_items';

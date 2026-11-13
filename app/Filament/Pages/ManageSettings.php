@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Support\AdminOnlyPage;
 use App\Models\Setting;
 use App\Support\Site;
 use App\Support\WebpImage;
@@ -23,6 +24,8 @@ use UnitEnum;
 
 class ManageSettings extends Page
 {
+    use AdminOnlyPage;
+
     public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;

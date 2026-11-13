@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Deals;
 
 use App\Filament\Resources\Deals\Pages\ManageDeals;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
 use App\Filament\Support\Schedule;
@@ -28,6 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class DealResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'deals';

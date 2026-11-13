@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SupplierAttributeMaps;
 
 use App\Filament\Resources\SupplierAttributeMaps\Pages\ManageSupplierAttributeMaps;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\AttributeOptions;
 use App\Filament\Support\OptionSearch;
 use App\Models\SupplierAttributeMap;
@@ -27,6 +28,8 @@ use UnitEnum;
 
 class SupplierAttributeMapResource extends Resource
 {
+    use AdminOnly;
+
     protected static ?string $model = SupplierAttributeMap::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedAdjustmentsHorizontal;

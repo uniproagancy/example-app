@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Brands;
 
 use App\Filament\Resources\Brands\Pages\ManageBrands;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Models\Brand;
 use BackedEnum;
@@ -22,6 +23,7 @@ use Illuminate\Support\Str;
 
 class BrandResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'brands';

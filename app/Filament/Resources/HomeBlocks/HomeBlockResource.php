@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\HomeBlocks;
 
 use App\Filament\Resources\HomeBlocks\Pages\ManageHomeBlocks;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
 use App\Models\HomeBlock;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class HomeBlockResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'home_blocks';

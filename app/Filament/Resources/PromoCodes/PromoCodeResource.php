@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PromoCodes;
 
 use App\Filament\Resources\PromoCodes\Pages\ManagePromoCodes;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Schedule;
 use App\Models\Order;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PromoCodeResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'promo_codes';

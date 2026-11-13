@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Support\AdminOnlyPage;
 use App\Models\ProductOffer;
 use App\Models\Supplier;
 use App\Models\SupplierStock;
@@ -35,6 +36,8 @@ use UnitEnum;
 
 class ImportLinks extends Page
 {
+    use AdminOnlyPage;
+
     public const SHOWN = 60;
 
     public const REASONS = 12;

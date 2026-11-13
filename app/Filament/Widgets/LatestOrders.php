@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Support\Operators;
 use App\Models\Order;
 use App\Support\Catalog;
 use Filament\Support\Enums\FontWeight;
@@ -13,6 +14,11 @@ use Filament\Widgets\TableWidget;
 
 class LatestOrders extends TableWidget
 {
+    public static function canView(): bool
+    {
+        return ! Operators::active();
+    }
+
     protected static ?int $sort = 2;
 
     protected int|string|array $columnSpan = 'full';

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PaymentMethods;
 
 use App\Filament\Resources\PaymentMethods\Pages\ManagePaymentMethods;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
 use App\Models\Order;
@@ -29,6 +30,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PaymentMethodResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'payment_methods';

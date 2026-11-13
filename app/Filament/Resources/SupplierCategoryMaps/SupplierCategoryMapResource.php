@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SupplierCategoryMaps;
 
 use App\Filament\Resources\SupplierCategoryMaps\Pages\ManageSupplierCategoryMaps;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\CategoryOptions;
 use App\Models\Category;
 use App\Models\SupplierCategoryMap;
@@ -29,6 +30,8 @@ use UnitEnum;
 
 class SupplierCategoryMapResource extends Resource
 {
+    use AdminOnly;
+
     protected static ?string $model = SupplierCategoryMap::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;

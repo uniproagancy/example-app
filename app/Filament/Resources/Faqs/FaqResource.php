@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Faqs;
 
 use App\Filament\Resources\Faqs\Pages\ManageFaqs;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
 use App\Models\Faq;
@@ -22,6 +23,7 @@ use Filament\Tables\Table;
 
 class FaqResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'faqs';

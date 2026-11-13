@@ -29,12 +29,18 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'notification_preferences' => 'array',
             'is_admin' => 'boolean',
+            'is_operator' => 'boolean',
         ];
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_admin === true;
+        return $this->is_admin === true || $this->is_operator === true;
+    }
+
+    public function isOperator(): bool
+    {
+        return $this->is_admin !== true && $this->is_operator === true;
     }
 
     public function addresses(): HasMany

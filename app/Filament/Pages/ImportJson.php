@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Support\AdminOnlyPage;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Services\Import\Drivers\Alta\AltaJson;
@@ -44,6 +45,8 @@ use UnitEnum;
 
 class ImportJson extends Page
 {
+    use AdminOnlyPage;
+
     public const MAX_UPLOAD_KB = 10240;
 
     public const BATCH = 5;

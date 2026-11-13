@@ -6,6 +6,7 @@ use App\Filament\Resources\Attributes\Pages\CreateAttribute;
 use App\Filament\Resources\Attributes\Pages\EditAttribute;
 use App\Filament\Resources\Attributes\Pages\ListAttributes;
 use App\Filament\Resources\Attributes\RelationManagers\ValuesRelationManager;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\CategoryOptions;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
@@ -31,6 +32,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class AttributeResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'attributes';

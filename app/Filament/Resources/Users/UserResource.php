@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Users;
 
 use App\Filament\Resources\Users\Pages\ManageUsers;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Models\User;
 use BackedEnum;
@@ -11,6 +12,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -22,6 +24,7 @@ use Illuminate\Validation\Rules\Password;
 
 class UserResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'users';
@@ -79,6 +82,12 @@ class UserResource extends Resource
                     ->label(__('admin.users.is_admin'))
                     ->helperText(fn (?User $record) => static::isCurrentUser($record) ? __('admin.users.cannot_demote_self') : __('admin.users.is_admin_help'))
                     ->disabled(fn (?User $record) => static::isCurrentUser($record))
+                    ->live()
+                    ->columnSpanFull(),
+                Toggle::make('is_operator')
+                    ->label(__('admin.users.is_operator'))
+                    ->helperText(__('admin.users.is_operator_help'))
+                    ->hidden(fn (Get $get): bool => (bool) $get('is_admin'))
                     ->columnSpanFull(),
             ]);
     }
@@ -109,6 +118,10 @@ class UserResource extends Resource
                     ->label(__('admin.users.is_admin'))
                     ->boolean()
                     ->alignCenter(),
+                IconColumn::make('is_operator')
+                    ->label(__('admin.users.is_operator'))
+                    ->boolean()
+                    ->alignCenter(),
                 TextColumn::make('created_at')
                     ->label(__('admin.common.created_at'))
                     ->dateTime('d.m.Y')
@@ -117,6 +130,8 @@ class UserResource extends Resource
             ->filters([
                 TernaryFilter::make('is_admin')
                     ->label(__('admin.users.admins_only')),
+                TernaryFilter::make('is_operator')
+                    ->label(__('admin.users.is_operator')),
             ])
             ->recordActions([
                 EditAction::make()

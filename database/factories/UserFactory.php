@@ -49,4 +49,11 @@ class UserFactory extends Factory
             'is_admin' => true,
         ]);
     }
+
+    public function operator(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_operator' => true,
+        ]);
+    }
 }

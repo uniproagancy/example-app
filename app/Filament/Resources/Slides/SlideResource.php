@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Slides;
 
 use App\Filament\Resources\Slides\Pages\ManageSlides;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\CategoryOptions;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
@@ -29,6 +30,7 @@ use Filament\Tables\Table;
 
 class SlideResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'slides';

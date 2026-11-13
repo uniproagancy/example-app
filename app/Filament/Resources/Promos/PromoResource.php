@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Promos;
 
 use App\Filament\Resources\Promos\Pages\ManagePromos;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\CategoryOptions;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
@@ -26,6 +27,7 @@ use Filament\Tables\Table;
 
 class PromoResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'promos';

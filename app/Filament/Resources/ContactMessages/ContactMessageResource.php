@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ContactMessages;
 
 use App\Filament\Resources\ContactMessages\Pages\ManageContactMessages;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Models\ContactMessage;
 use BackedEnum;
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ContactMessageResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'messages';

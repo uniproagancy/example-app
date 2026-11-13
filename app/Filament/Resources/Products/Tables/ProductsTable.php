@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Tables;
 
 use App\Filament\Support\CategoryOptions;
+use App\Filament\Support\Operators;
 use App\Models\Brand;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -77,11 +78,12 @@ class ProductsTable
                         $state <= 3 => 'warning',
                         default => 'success',
                     })
-                    ->tooltip(__('admin.products.quick_edit'))
-                    ->action(static::pricingAction('editStock', 'stock'))
+                    ->tooltip(fn (): ?string => Operators::active() ? null : __('admin.products.quick_edit'))
+                    ->action(Operators::active() ? null : static::pricingAction('editStock', 'stock'))
                     ->sortable(),
                 ToggleColumn::make('is_active')
-                    ->label(__('admin.common.is_active')),
+                    ->label(__('admin.common.is_active'))
+                    ->disabled(fn (): bool => Operators::active()),
                 TextColumn::make('position')
                     ->label(__('admin.common.position'))
                     ->sortable()
@@ -133,13 +135,16 @@ class ProductsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    static::bulkEditAction(),
+                    static::bulkEditAction()
+                        ->hidden(fn (): bool => Operators::active()),
                     BulkAction::make('activate')
+                        ->hidden(fn (): bool => Operators::active())
                         ->label(__('admin.common.active'))
                         ->icon(Heroicon::OutlinedEye)
                         ->action(fn (Collection $records) => $records->each->update(['is_active' => true]))
                         ->deselectRecordsAfterCompletion(),
                     BulkAction::make('deactivate')
+                        ->hidden(fn (): bool => Operators::active())
                         ->label(__('admin.common.inactive'))
                         ->icon(Heroicon::OutlinedEyeSlash)
                         ->action(fn (Collection $records) => $records->each->update(['is_active' => false]))
@@ -194,6 +199,7 @@ class ProductsTable
                 ]),
                 TextInput::make('stock')
                     ->label(__('admin.products.stock'))
+                    ->hidden(fn (): bool => Operators::active())
                     ->integer()
                     ->minValue(0)
                     ->required()
@@ -208,7 +214,7 @@ class ProductsTable
                 $record->update([
                     'price' => $data['price'],
                     'old_price' => filled($data['old_price'] ?? null) ? $data['old_price'] : null,
-                    'stock' => (int) $data['stock'],
+                    'stock' => Operators::active() ? $record->stock : (int) $data['stock'],
                     'price_lock' => static::isImported($record) ? (bool) ($data['price_lock'] ?? false) : $record->price_lock,
                 ]);
 

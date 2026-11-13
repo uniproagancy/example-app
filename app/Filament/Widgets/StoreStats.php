@@ -5,6 +5,7 @@ namespace App\Filament\Widgets;
 use App\Filament\Resources\ContactMessages\ContactMessageResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\ProductResource;
+use App\Filament\Support\Operators;
 use App\Models\ContactMessage;
 use App\Models\Order;
 use App\Models\Product;
@@ -15,6 +16,11 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StoreStats extends StatsOverviewWidget
 {
+    public static function canView(): bool
+    {
+        return ! Operators::active();
+    }
+
     public const LOW_STOCK = 3;
 
     protected static ?int $sort = 1;

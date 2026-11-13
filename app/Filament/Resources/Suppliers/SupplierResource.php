@@ -7,6 +7,7 @@ use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Filament\Resources\Suppliers\Pages\EditSupplier;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
 use App\Filament\Resources\Suppliers\RelationManagers\OffersRelationManager;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Models\Supplier;
 use App\Services\Import\HasStockFeed;
@@ -37,6 +38,7 @@ use Throwable;
 
 class SupplierResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     public const COMMON_CONFIG = ['require_stock', 'require_image', 'publish_on_import', 'min_cost', 'rate', 'columns'];

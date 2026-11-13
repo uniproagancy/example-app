@@ -5,6 +5,7 @@ namespace App\Filament\Resources\TextPages;
 use App\Filament\Resources\TextPages\Pages\CreateTextPage;
 use App\Filament\Resources\TextPages\Pages\EditTextPage;
 use App\Filament\Resources\TextPages\Pages\ListTextPages;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
 use App\Models\Page;
@@ -29,6 +30,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class TextPageResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'text_pages';

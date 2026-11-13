@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\Suppliers\SupplierResource;
+use App\Filament\Support\AdminOnlyPage;
 use App\Models\Supplier;
 use App\Models\SupplierStock;
 use App\Services\Import\PriceListLoader;
@@ -42,6 +43,8 @@ use UnitEnum;
 
 class ImportSpreadsheet extends Page
 {
+    use AdminOnlyPage;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentArrowUp;
 
     protected static ?int $navigationSort = 2;

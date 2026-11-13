@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Perks;
 
 use App\Filament\Resources\Perks\Pages\ManagePerks;
+use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
 use App\Filament\Support\Localized;
 use App\Models\Perk;
@@ -21,6 +22,7 @@ use Filament\Tables\Table;
 
 class PerkResource extends Resource
 {
+    use AdminOnly;
     use HasAdminLabels;
 
     protected static string $labelKey = 'perks';

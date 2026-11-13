@@ -9,14 +9,17 @@ use App\Filament\Resources\Products\RelationManagers\OffersRelationManager;
 use App\Filament\Resources\Products\Schemas\ProductForm;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\Operators;
 use App\Models\Product;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use UnitEnum;
 
 class ProductResource extends Resource
 {
@@ -33,6 +36,11 @@ class ProductResource extends Resource
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'sku';
+
+    public static function getAuthorizationResponse(string|UnitEnum $action, ?Model $record = null): Response
+    {
+        return Operators::active() && $action !== 'viewAny' ? Response::deny() : parent::getAuthorizationResponse($action, $record);
+    }
 
     public static function form(Schema $schema): Schema
     {
