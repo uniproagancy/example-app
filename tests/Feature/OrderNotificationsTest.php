@@ -69,7 +69,8 @@ class OrderNotificationsTest extends TestCase
                 && str_contains($mail->subject, $order->number)
                 && collect($mail->introLines)->contains(fn (string $line) => str_contains($line, $order->items->first()->name) && str_contains($line, '× 2'))
                 && str_contains($mail->actionUrl, '/payment/link/'.$order->number)
-                && $mail->replyTo === [['info@elivo.test', 'ELIO.GE']];
+                && $mail->replyTo === []
+                && in_array(OrderPlacedNotification::noReplyNote(), $mail->outroLines, true);
         });
 
         Notification::assertSentOnDemand(StaffOrderAlert::class, function (StaffOrderAlert $notification, array $channels, AnonymousNotifiable $notifiable) use ($order) {

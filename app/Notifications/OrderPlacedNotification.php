@@ -26,7 +26,6 @@ class OrderPlacedNotification extends Notification
         $address = $this->addressLine($order);
 
         $mail = (new MailMessage)
-            ->when(filled(Site::email()), fn (MailMessage $mail) => $mail->replyTo((string) Site::email(), Site::name()))
             ->subject(__('notifications.placed.subject', ['number' => $order->number, 'site' => Site::name()]))
             ->greeting(__('notifications.placed.greeting', ['name' => $order->first_name]))
             ->line(__('notifications.placed.intro', ['number' => $order->number]))
@@ -41,6 +40,7 @@ class OrderPlacedNotification extends Notification
         return $mail
             ->action(__('notifications.view_order'), $order->payLink(30))
             ->line(__('notifications.placed.outro'))
+            ->line(static::noReplyNote())
             ->salutation(__('notifications.salutation', ['site' => Site::name()]));
     }
 }

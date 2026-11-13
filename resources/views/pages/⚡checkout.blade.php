@@ -57,6 +57,10 @@ new class extends Component
 
     public function mount(): void
     {
+        if ($this->leaveIfEmpty()) {
+            return;
+        }
+
         if ($user = auth()->user()) {
             [$this->firstName, $this->lastName] = array_pad(explode(' ', trim($user->name), 2), 2, '');
             $this->phone = (string) $user->phone;
@@ -98,6 +102,19 @@ new class extends Component
     public function syncCart(): void
     {
         unset($this->lines, $this->totals, $this->methods);
+        $this->leaveIfEmpty();
+    }
+
+    protected function leaveIfEmpty(): bool
+    {
+        if ($this->placed !== null || $this->lines !== []) {
+            return false;
+        }
+
+        session()->flash('toast', __('checkout.empty'));
+        $this->redirectRoute('home', navigate: true);
+
+        return true;
     }
 
     #[Computed]
@@ -335,6 +352,7 @@ new class extends Component
         Cart::store($items);
         unset($this->lines, $this->totals);
         $this->dispatch('cart-refresh');
+        $this->leaveIfEmpty();
     }
 
     public function render()

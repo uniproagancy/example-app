@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\ManageSettings;
 use App\Models\Page;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
 use Filament\Facades\Filament;
@@ -81,7 +82,8 @@ class SeoTest extends TestCase
             ->assertDontSee('rel="canonical"', false)
             ->assertDontSee('application/ld+json', false);
 
-        $this->get('/ka/checkout')
+        $this->withSession(['cart' => [(string) Product::query()->where('sku', 'jbl')->value('id') => 1]])
+            ->get('/ka/checkout')
             ->assertOk()
             ->assertSee('<meta name="robots" content="noindex, follow">', false);
     }

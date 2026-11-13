@@ -5,6 +5,7 @@ namespace App\Notifications\Concerns;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Support\Catalog;
+use App\Support\Site;
 
 trait DescribesOrder
 {
@@ -28,6 +29,13 @@ trait DescribesOrder
             $order->address,
             $order->apartment,
         ])->filter()->implode(', ');
+    }
+
+    public static function noReplyNote(): string
+    {
+        return filled(Site::phone())
+            ? __('notifications.no_reply_phone', ['phone' => Site::phone()])
+            : __('notifications.no_reply');
     }
 
     protected function customerName(Order $order): string

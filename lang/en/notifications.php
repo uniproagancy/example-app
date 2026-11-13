@@ -27,6 +27,8 @@ return [
     'payment' => 'Payment: :method',
     'address' => 'Address: :address',
     'view_order' => 'View order',
+    'no_reply' => 'This email was sent automatically, please do not reply.',
+    'no_reply_phone' => 'This email was sent automatically, please do not reply. For questions, call us: :phone',
     'salutation' => 'Regards, :site',
     'sms' => [
         'placed' => 'Order :number received. Total :amount. We will contact you soon. :site',

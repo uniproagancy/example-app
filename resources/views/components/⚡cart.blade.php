@@ -178,7 +178,9 @@ new class extends Component
                         <span class="font-bold">{{ __('shop.cart_drawer.total') }}</span>
                         <span class="font-display text-2xl font-extrabold">{{ Catalog::money($this->total) }}</span>
                     </div>
-                    <a href="{{ route('checkout') }}" wire:navigate x-on:click="$store.ui.cart = false" class="grid h-[52px] place-items-center rounded-full bg-brand text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(11,99,246,.6)] hover:bg-brand-dark hover:text-white">{{ __('shop.cart_drawer.checkout') }}</a>
+                    @if ($this->total > 0)
+                        <a href="{{ route('checkout') }}" wire:navigate x-on:click="$store.ui.cart = false" class="grid h-[52px] place-items-center rounded-full bg-brand text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(11,99,246,.6)] hover:bg-brand-dark hover:text-white">{{ __('shop.cart_drawer.checkout') }}</a>
+                    @endif
                     <span class="flex items-center justify-center gap-1.5 text-xs text-subtle">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
                         {{ __('shop.cart_drawer.secure') }}

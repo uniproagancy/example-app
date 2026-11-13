@@ -150,15 +150,39 @@ class CheckoutTest extends TestCase
 
     public function test_checkout_validates_fields_and_requires_items(): void
     {
+        $this->fillCart();
+
         Livewire::test('pages::checkout')
             ->set('agree', false)
             ->set('city', 'paris')
             ->call('placeOrder')
             ->assertHasErrors(['firstName', 'lastName', 'phone', 'email', 'address', 'city', 'agree']);
 
-        $this->filled()->call('placeOrder')->assertHasErrors('cart');
+        $component = $this->filled();
+        session()->forget('cart');
+        $component->call('placeOrder')->assertHasErrors('cart');
 
         $this->assertSame(0, Order::query()->count());
+    }
+
+    public function test_an_empty_cart_cannot_open_checkout(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        $this->get('/ka/checkout')->assertRedirect(route('home'));
+        $this->assertSame(__('checkout.empty'), session('toast'));
+
+        Livewire::test('pages::checkout')->assertRedirect(route('home'));
+
+        [, , $iphoneKey] = $this->fillCart();
+        $speakerKey = collect(array_keys(session('cart')))->first(fn ($key) => $key !== $iphoneKey);
+
+        Livewire::test('pages::checkout')
+            ->assertNoRedirect()
+            ->call('remove', $iphoneKey)
+            ->assertNoRedirect()
+            ->call('remove', (string) $speakerKey)
+            ->assertRedirect(route('home'));
     }
 
     public function test_quantity_changes_update_the_session_cart(): void
