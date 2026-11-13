@@ -1,4 +1,4 @@
-<nav aria-label="{{ __('shop.nav.home') }}" class="fixed inset-x-0 bottom-0 z-[46] flex items-stretch border-t border-line bg-white px-2 font-caps pt-1 pb-[calc(4px+env(safe-area-inset-bottom))] transform-gpu sm:hidden">
+<nav x-data aria-label="{{ __('shop.nav.home') }}" class="fixed inset-x-0 bottom-0 z-[46] flex items-stretch border-t border-line bg-white px-2 font-caps pt-1 pb-[calc(4px+env(safe-area-inset-bottom))] transform-gpu sm:hidden">
     <a href="{{ route('home') }}" wire:navigate class="flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] py-1 text-[11px] font-bold {{ request()->routeIs('home') ? 'text-brand' : 'text-muted' }}">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>
         {{ __('shop.mobile.home') }}
@@ -46,7 +46,7 @@
     </button>
 </div>
 
-<div
+<div x-data
     x-show="$store.toast.message"
     x-cloak
     class="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-1/2 z-[60] flex -translate-x-1/2 animate-toast items-center gap-3.5 rounded-[14px] bg-navy px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_32px_rgba(10,22,51,.3)] sm:bottom-7"
