@@ -5,6 +5,8 @@ use App\Support\Catalog;
 use App\Services\Facebook\Pixel;
 use App\Support\CategoryTree;
 use App\Support\Locales;
+use App\Support\Seo;
+use App\Support\Site;
 use Livewire\Component;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
@@ -49,9 +51,34 @@ new class extends Component
             ->filter()
             ->all());
 
+        $trail = $category ? CategoryTree::ancestors($category['id'])->push($category) : collect();
+
+        if ($product) {
+            $fullName = Catalog::productTitle($product['brand'], $product['name']);
+            $details = Seo::text($product['subtitle'], $product['description']);
+
+            Seo::set([
+                'title' => __('seo.product_title', ['name' => $fullName, 'site' => Site::name()]),
+                'description' => Seo::text($details
+                    ? __('seo.product_description', ['name' => $fullName, 'price' => $product['priceLabel'], 'details' => $details])
+                    : __('seo.product_fallback', ['name' => $fullName, 'price' => $product['priceLabel'], 'site' => Site::name()])),
+                'image' => $product['image'],
+                'type' => 'product',
+                'price' => number_format((float) $product['price'], 2, '.', ''),
+                'canonical' => $product['url'],
+                'schema' => [
+                    Seo::product($product),
+                    Seo::breadcrumbs([
+                        ...$trail->map(fn (array $node) => ['name' => $node['title'], 'url' => CategoryTree::url($node)])->all(),
+                        ['name' => $product['name']],
+                    ]),
+                ],
+            ]);
+        }
+
         return $this->view([
             'product' => $product,
-            'breadcrumbs' => $category ? CategoryTree::ancestors($category['id'])->push($category) : collect(),
+            'breadcrumbs' => $trail,
             'specs' => $product
                 ? ProductSpec::query()->where('product_id', $product['id'])->with(['translations', 'attribute.translations'])->orderBy('position')->get()
                     ->map(fn (ProductSpec $spec) => ['name' => (string) $spec->attribute?->name, 'value' => (string) $spec->value])

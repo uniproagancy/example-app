@@ -3,13 +3,15 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#0A1633">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ isset($title) ? $title.' — '.App\Support\Site::name() : App\Support\Site::name() }}</title>
+        @php($pageTitle = (App\Support\Seo::data()['title'] ?? null) ?? (filled($title ?? null) ? $title.' — '.App\Support\Site::name() : App\Support\Site::name()))
+        <title>{{ $pageTitle }}</title>
 
         <link rel="icon" type="image/png" href="{{ App\Support\Site::faviconUrl() }}">
 
-        @include('partials.hreflang')
+        @include('partials.seo')
 
         <script>
             window.elioFavorites = @js(auth()->user()?->favoriteIds());

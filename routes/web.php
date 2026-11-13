@@ -2,9 +2,13 @@
 
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\SeoController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
+
+Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
+Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 
 Route::get('/feed/facebook.xml', [FeedController::class, 'facebook'])->name('feed.facebook');
 Route::get('/feed/google.xml', [FeedController::class, 'google'])->name('feed.google');

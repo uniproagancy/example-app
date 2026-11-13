@@ -2,6 +2,7 @@
 
 use App\Support\Catalog;
 use App\Support\CategoryTree;
+use App\Support\Seo;
 use App\Support\Site;
 use Livewire\Component;
 
@@ -10,6 +11,8 @@ new class extends Component
     public function render()
     {
         $products = Catalog::products();
+
+        Seo::set(['description' => Seo::text(__('seo.about_description', ['site' => Site::name()]))]);
 
         return $this->view([
             'siteName' => Site::name(),

@@ -4,11 +4,13 @@ namespace App\Filament\Pages;
 
 use App\Filament\Support\AdminOnlyPage;
 use App\Models\Setting;
+use App\Support\Locales;
 use App\Support\Site;
 use App\Support\WebpImage;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -26,7 +28,7 @@ class ManageSettings extends Page
 {
     use AdminOnlyPage;
 
-    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS];
+    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification'];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
@@ -54,9 +56,14 @@ class ManageSettings extends Page
     public function mount(): void
     {
         $this->form->fill([
-            ...collect(self::KEYS)->mapWithKeys(fn (string $key) => [$key => Setting::get($key)])->all(),
+            ...collect(static::keys())->mapWithKeys(fn (string $key) => [$key => Setting::get($key)])->all(),
             'logo_with_name' => (bool) Setting::get('logo_with_name'),
         ]);
+    }
+
+    public static function keys(): array
+    {
+        return [...self::KEYS, ...array_map(fn (string $locale) => 'seo_description_'.$locale, Locales::codes())];
     }
 
     public function form(Schema $schema): Schema
@@ -117,6 +124,31 @@ class ManageSettings extends Page
                             ->maxLength(40),
                     ])
                     ->columnSpanFull(),
+                Section::make(__('admin.settings.seo'))
+                    ->description(__('admin.settings.seo_help'))
+                    ->columns(2)
+                    ->schema([
+                        ...collect(Locales::codes())->map(fn (string $locale) => Textarea::make('seo_description_'.$locale)
+                            ->label(__('admin.settings.seo_description', ['locale' => strtoupper($locale)]))
+                            ->helperText(__('admin.settings.seo_description_help'))
+                            ->rows(3)
+                            ->maxLength(300))->all(),
+                        FileUpload::make('seo_image')
+                            ->label(__('admin.settings.seo_image'))
+                            ->helperText(__('admin.settings.seo_image_help'))
+                            ->image()
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->disk('public')
+                            ->directory('branding')
+                            ->visibility('public')
+                            ->maxSize(4096)
+                            ->imagePreviewHeight('96'),
+                        TextInput::make('google_site_verification')
+                            ->label(__('admin.settings.google_site_verification'))
+                            ->helperText(__('admin.settings.google_site_verification_help'))
+                            ->maxLength(120),
+                    ])
+                    ->columnSpanFull(),
                 Section::make(__('admin.settings.socials'))
                     ->description(__('admin.settings.socials_help'))
                     ->columns(2)
@@ -149,15 +181,17 @@ class ManageSettings extends Page
 
     public function save(): void
     {
-        $previousLogo = Setting::get('logo');
+        $previous = ['logo' => Setting::get('logo'), 'seo_image' => Setting::get('seo_image')];
         $state = $this->form->getState();
 
-        if (filled($previousLogo) && $previousLogo !== ($state['logo'] ?? null)) {
-            Storage::disk('public')->delete($previousLogo);
+        foreach ($previous as $key => $path) {
+            if (filled($path) && $path !== ($state[$key] ?? null)) {
+                Storage::disk('public')->delete($path);
+            }
         }
 
         foreach ($state as $key => $value) {
-            if (in_array($key, self::KEYS, true)) {
+            if (in_array($key, static::keys(), true)) {
                 Setting::put($key, filled($value) ? (string) $value : null);
             }
         }

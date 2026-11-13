@@ -3,6 +3,8 @@
 use App\Support\Catalog;
 use App\Support\CategoryTree;
 use App\Support\Locales;
+use App\Support\Seo;
+use App\Support\Site;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -335,6 +337,17 @@ new class extends Component
 
         $landing = $this->isLanding();
         $term = $this->searchTerm();
+
+        Seo::set([
+            'canonical' => $node ? CategoryTree::url($node) : route('catalog'),
+            'description' => $node
+                ? Seo::text($node['description'] ?? null, __('seo.category_description', ['name' => $node['title'], 'count' => Catalog::productsIn($node)->count(), 'site' => Site::name()]))
+                : Seo::text(__('seo.catalog_description', ['count' => Catalog::products()->count(), 'site' => Site::name()])),
+            'schema' => $node ? [Seo::breadcrumbs([
+                ['name' => __('catalog.title'), 'url' => route('catalog')],
+                ...CategoryTree::ancestors($node['id'])->push($node)->map(fn (array $item) => ['name' => $item['title'], 'url' => CategoryTree::url($item)])->all(),
+            ])] : [],
+        ]);
 
         return $this->view([
             'landing' => $landing,

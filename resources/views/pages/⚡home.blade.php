@@ -3,12 +3,19 @@
 use App\Models\Slide;
 use App\Support\Catalog;
 use App\Support\HomeContent;
+use App\Support\Seo;
+use App\Support\Site;
 use Livewire\Component;
 
 new class extends Component
 {
     public function render()
     {
+        Seo::set([
+            'title' => __('seo.home_title', ['site' => Site::name()]),
+            'schema' => [Seo::website()],
+        ]);
+
         return $this->view([
             'slides' => Slide::forHero(),
             'blocks' => HomeContent::blocks(),
@@ -24,6 +31,8 @@ new class extends Component
 ?>
 
 <div>
+    <h1 class="sr-only">{{ __('seo.home_title', ['site' => App\Support\Site::name()]) }}</h1>
+
     @include('partials.home.hero')
 
     <main class="mx-auto max-w-[1480px] px-4 sm:px-6 lg:px-8">

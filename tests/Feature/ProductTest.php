@@ -34,7 +34,7 @@ class ProductTest extends TestCase
 
         $this->get('/ka/product/apple-iphone-16-pro')
             ->assertOk()
-            ->assertSee('<title>iPhone 16 Pro — ELIO.GE</title>', false)
+            ->assertSee('<title>Apple iPhone 16 Pro — ფასი, მახასიათებლები | ELIO.GE</title>', false)
             ->assertSee('Desert')
             ->assertSee('512 GB')
             ->assertSee(__('product.id', ['id' => Product::query()->where('sku', 'ip16')->value('id')], 'ka'))

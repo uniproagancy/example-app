@@ -48,7 +48,7 @@ class StorefrontTest extends TestCase
 
         $this->get('/ka')
             ->assertOk()
-            ->assertSee('<title>მთავარი გვერდი — TECHNO.COM</title>', false)
+            ->assertSee('<title>TECHNO.COM — ტექნიკის ონლაინ მაღაზია საქართველოში</title>', false)
             ->assertDontSee('ELIO.GE');
     }
 

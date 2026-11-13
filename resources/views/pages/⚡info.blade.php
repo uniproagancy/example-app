@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Page;
+use App\Support\Seo;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -19,6 +20,11 @@ new class extends Component
     public function render()
     {
         $page = Page::query()->active()->with('translations')->where('slug', $this->slug)->firstOrFail();
+
+        Seo::set([
+            'description' => Seo::text($page->meta_description, $page->intro, $page->body),
+            'schema' => [Seo::breadcrumbs([['name' => (string) $page->title]])],
+        ]);
 
         return $this->view([
             'page' => $page,

@@ -2,6 +2,7 @@
 
 use App\Models\ContactMessage;
 use App\Models\Faq;
+use App\Support\Seo;
 use App\Support\Site;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -86,6 +87,8 @@ new class extends Component
 
     public function render()
     {
+        Seo::set(['description' => Seo::text(__('seo.contact_description', ['site' => Site::name()]))]);
+
         return $this->view([
             'faqs' => Faq::query()->visible()->get(),
             'hours' => Site::hours(),
