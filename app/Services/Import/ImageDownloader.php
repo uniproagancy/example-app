@@ -7,6 +7,7 @@ use App\Models\ProductImage;
 use App\Services\Import\Drivers\Alta\AltaDriver;
 use App\Services\Import\Drivers\Alta\AltaImageCache;
 use App\Support\Redact;
+use App\Support\WebpImage;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -118,6 +119,12 @@ class ImageDownloader
         }
 
         $hash = sha1($bytes);
+
+        if (($webp = WebpImage::fromBytes($bytes)) !== null) {
+            $bytes = $webp;
+            $extension = 'webp';
+        }
+
         $path = sprintf(
             'products/%d/%s-%02d-%s.%s',
             $product->id,

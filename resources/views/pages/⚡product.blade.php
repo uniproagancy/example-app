@@ -4,6 +4,7 @@ use App\Models\ProductSpec;
 use App\Support\Catalog;
 use App\Services\Facebook\Pixel;
 use App\Support\CategoryTree;
+use App\Support\Locales;
 use Livewire\Component;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
@@ -41,6 +42,7 @@ new class extends Component
         $category = $product ? CategoryTree::find($product['categoryId']) : null;
 
         view()->share('alternateUrls', collect($product['slugs'] ?? [])
+                ->only(Locales::codes())
             ->mapWithKeys(fn (string $slug, string $locale) => [
                 $locale => LaravelLocalization::getLocalizedURL($locale, '/product/'.$slug),
             ])

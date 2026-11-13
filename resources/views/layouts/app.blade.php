@@ -7,7 +7,7 @@
 
         <title>{{ isset($title) ? $title.' — '.App\Support\Site::name() : App\Support\Site::name() }}</title>
 
-        <link rel="icon" type="image/png" href="{{ Vite::asset('resources/images/elio-mark.png') }}">
+        <link rel="icon" type="image/png" href="{{ App\Support\Site::faviconUrl() }}">
 
         @include('partials.hreflang')
 

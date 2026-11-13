@@ -216,17 +216,15 @@ class Catalog
 
     public static function variantSwitchers(array $product): array
     {
-        if (blank($product['variantGroup'] ?? null)) {
-            return [];
-        }
+        $siblings = blank($product['variantGroup'] ?? null)
+            ? collect([$product])
+            : static::products()
+                ->where('variantGroup', $product['variantGroup'])
+                ->sortBy('price')
+                ->values();
 
-        $siblings = static::products()
-            ->where('variantGroup', $product['variantGroup'])
-            ->sortBy('price')
-            ->values();
-
-        if ($siblings->count() < 2) {
-            return [];
+        if ($siblings->doesntContain('id', $product['id'])) {
+            $siblings->push($product);
         }
 
         $lineage = [$product['categoryId'], ...CategoryTree::ancestors((int) $product['categoryId'])->pluck('id')->all()];
@@ -279,7 +277,7 @@ class Catalog
                     $options = array_filter($options, fn (array $option) => $option['current'] || $option['kept'] >= $besides);
                 }
 
-                if (count($options) < 2) {
+                if (count($options) < ($isColour ? 1 : 2)) {
                     return null;
                 }
 
@@ -369,7 +367,7 @@ class Catalog
             $nodes = CategoryTree::nodes($locale);
 
             return collect($raw['products'])
-                ->map(function (array $row) use ($translations, $images, $filters, $options, $deals, $nodes, $locale, $fallback) {
+                ->map(function (array $row) use ($raw, $translations, $images, $filters, $options, $deals, $nodes, $locale, $fallback) {
                     $node = $nodes->get($row['category_id']);
 
                     if (! $node) {
@@ -398,6 +396,7 @@ class Catalog
                     return [
                         ...static::present($row, $translation, $rows->pluck('slug', 'locale')->all(), $node, $root, $images->get($row['id'], collect())),
                         'supplierSku' => $row['supplier_sku'],
+                        'sold' => (int) ($raw['sold'][$row['id']] ?? 0),
                         'variantGroup' => $row['variant_group'] ?? null,
                         'variants' => $filters->get($row['id'], collect())
                             ->filter(fn (array $value) => (bool) ($value['variant'] ?? false))
@@ -614,6 +613,16 @@ class Catalog
                 ->orderBy('id')
                 ->get(['id', 'product_id', 'type', 'label', 'hex', 'price', 'old_price', 'is_default'])
                 ->map(fn ($row) => (array) $row)
+                ->all(),
+            'sold' => DB::table('order_items')
+                ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                ->whereNotNull('order_items.product_id')
+                ->whereNull('orders.deleted_at')
+                ->where('orders.status', '!=', 'cancelled')
+                ->groupBy('order_items.product_id')
+                ->selectRaw('order_items.product_id, sum(order_items.quantity) as quantity')
+                ->pluck('quantity', 'order_items.product_id')
+                ->map(fn ($quantity) => (int) $quantity)
                 ->all(),
         ]);
     }

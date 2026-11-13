@@ -81,6 +81,27 @@ class ProductVariantsTest extends TestCase
             ->assertSee('512 GB');
     }
 
+    public function test_a_product_whose_other_colours_are_not_on_the_site_still_shows_its_colour(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+        [$black256, $white256, $black512] = $this->makeVariants();
+        Product::query()->whereKey([$white256->id, $black512->id])->update(['variant_group' => null]);
+        $black256->update(['variant_group' => 'zoommer-1']);
+        Catalog::flush();
+
+        $switchers = collect(Catalog::variantSwitchers(Catalog::find($black256->id)))->keyBy('code');
+
+        $this->assertSame(['peri'], $switchers->keys()->all());
+        $this->assertSame(['shavi'], array_column($switchers['peri']['options'], 'code'));
+        $this->assertTrue($switchers['peri']['options'][0]['current']);
+
+        $this->get(Catalog::find($black256->id)['url'])
+            ->assertOk()
+            ->assertSee('ფერი')
+            ->assertSee('შავი')
+            ->assertSee('#111111', false);
+    }
+
     public function test_admin_links_and_unlinks_variants_from_the_product_form(): void
     {
         $this->actingAs(User::factory()->admin()->create());

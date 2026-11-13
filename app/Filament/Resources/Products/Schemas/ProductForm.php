@@ -13,6 +13,7 @@ use App\Models\ProductTranslation;
 use App\Services\Import\TaxonomyResolver;
 use App\Support\Slug;
 use App\Support\VariantGroups;
+use App\Support\WebpImage;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
@@ -80,6 +81,7 @@ class ProductForm
                                         ->disk('public')
                                         ->directory('products')
                                         ->visibility('public')
+                                        ->saveUploadedFileUsing(WebpImage::uploader())
                                         ->maxSize(5120)
                                         ->imageEditor()
                                         ->required(),

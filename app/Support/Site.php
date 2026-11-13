@@ -3,6 +3,8 @@
 namespace App\Support;
 
 use App\Models\Setting;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Vite;
 
 class Site
 {
@@ -11,6 +13,32 @@ class Site
     public static function name(): string
     {
         return Setting::get('site_name') ?: config('app.name');
+    }
+
+    public static function logoUrl(): string
+    {
+        $path = Setting::get('logo');
+
+        if (filled($path) && Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->url($path);
+        }
+
+        return Vite::asset('resources/images/elio-mark.png');
+    }
+
+    public static function hasCustomLogo(): bool
+    {
+        return filled(Setting::get('logo')) && Storage::disk('public')->exists((string) Setting::get('logo'));
+    }
+
+    public static function logoIncludesName(): bool
+    {
+        return static::hasCustomLogo() && (bool) Setting::get('logo_with_name');
+    }
+
+    public static function faviconUrl(): string
+    {
+        return static::logoIncludesName() ? Vite::asset('resources/images/elio-mark.png') : static::logoUrl();
     }
 
     public static function nameParts(): array

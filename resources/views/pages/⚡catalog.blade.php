@@ -2,6 +2,7 @@
 
 use App\Support\Catalog;
 use App\Support\CategoryTree;
+use App\Support\Locales;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -179,12 +180,20 @@ new class extends Component
             $products = $products->filter(fn (array $product) => $this->matchesFlag($product, $flag));
         }
 
-        return (match ($this->sort) {
-            'price_asc' => $products->sortBy('price'),
-            'price_desc' => $products->sortByDesc('price'),
-            'newest' => $products->sortBy([['isNew', 'desc'], ['id', 'desc']]),
-            default => $products,
-        })->values();
+        $sorted = match ($this->sort) {
+            'price_asc' => $products->sortBy([['inStock', 'desc'], ['price', 'asc']]),
+            'price_desc' => $products->sortBy([['inStock', 'desc'], ['price', 'desc']]),
+            'newest' => $products->sortBy([['inStock', 'desc'], ['isNew', 'desc'], ['id', 'desc']]),
+            default => $products->sortBy([
+                ['inStock', 'desc'],
+                ['sold', 'desc'],
+                fn (array $a, array $b) => filled($b['image']) <=> filled($a['image']),
+                fn (array $a, array $b) => ($b['old'] !== null) <=> ($a['old'] !== null),
+                ['id', 'desc'],
+            ]),
+        };
+
+        return $this->search !== '' && $this->sort === 'popular' ? $products->values() : $sorted->values();
     }
 
     #[Computed]
@@ -316,6 +325,7 @@ new class extends Component
         $node = $this->category;
         if ($node) {
             view()->share('alternateUrls', collect($node['slugs'])
+                ->only(Locales::codes())
                 ->mapWithKeys(fn (string $slug, string $locale) => [
                     $locale => LaravelLocalization::getLocalizedURL($locale, '/categories/'.$slug),
                 ])

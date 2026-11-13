@@ -9,6 +9,7 @@ use App\Filament\Support\Localized;
 use App\Filament\Support\Schedule;
 use App\Models\Category;
 use App\Models\Slide;
+use App\Support\WebpImage;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -64,6 +65,7 @@ class SlideResource extends Resource
                     ->disk('public')
                     ->directory('slides')
                     ->visibility('public')
+                    ->saveUploadedFileUsing(WebpImage::uploader())
                     ->maxSize(5120)
                     ->imageEditor()
                     ->columnSpanFull(),

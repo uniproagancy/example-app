@@ -395,7 +395,11 @@ thead .fi-ta-selection-cell {
     @apply flex items-center gap-2.5;
 
     & .elio-brand-mark {
-        @apply size-9 shrink-0;
+        @apply size-9 shrink-0 object-contain;
+    }
+
+    & .elio-brand-logo {
+        @apply h-9 w-auto max-w-[180px] shrink-0 object-contain;
     }
 
     & .elio-brand-name {

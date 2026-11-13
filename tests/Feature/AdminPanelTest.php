@@ -36,6 +36,8 @@ use App\Support\Catalog;
 use App\Support\Site;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -323,6 +325,45 @@ class AdminPanelTest extends TestCase
             ->assertSee('href="https://www.facebook.com/elio.ge"', false)
             ->assertSee('aria-label="Instagram"', false)
             ->assertDontSee('aria-label="TikTok"', false);
+    }
+
+    public function test_logo_is_uploaded_in_settings_and_replaces_the_default_everywhere(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+        Storage::fake('public');
+        $this->actingAs($this->admin);
+
+        Livewire::test(ManageSettings::class)
+            ->fillForm(['logo' => UploadedFile::fake()->image('logo.png', 400, 120), 'logo_with_name' => true])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $path = Setting::get('logo');
+        Storage::disk('public')->assertExists($path);
+        $this->assertStringEndsWith('.webp', $path);
+        $this->assertTrue(Site::logoIncludesName());
+
+        $this->get('/ka')
+            ->assertOk()
+            ->assertSee(Storage::disk('public')->url($path), false)
+            ->assertSee('alt="ELIO.GE"', false);
+
+        Livewire::test(ManageSettings::class)
+            ->assertSchemaStateSet(['logo_with_name' => true], 'form')
+            ->fillForm(['logo' => null])
+            ->fillForm(['logo' => [UploadedFile::fake()->image('mark.png', 200, 200)], 'logo_with_name' => false])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        Storage::disk('public')->assertMissing($path);
+        $this->assertFalse(Site::logoIncludesName());
+        $this->assertSame(Storage::disk('public')->url(Setting::get('logo')), Site::faviconUrl());
+
+        Livewire::test(ManageSettings::class)
+            ->fillForm(['logo' => null])
+            ->fillForm(['logo' => [UploadedFile::fake()->create('logo.pdf', 10, 'application/pdf')]])
+            ->call('save')
+            ->assertHasFormErrors(['logo']);
     }
 
     public function test_admin_can_grant_access_but_not_remove_their_own(): void

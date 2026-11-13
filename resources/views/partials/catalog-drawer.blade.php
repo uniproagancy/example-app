@@ -34,10 +34,7 @@
                                 :class="i === index ? 'bg-white text-navy' : 'bg-transparent text-white hover:bg-white/6'"
                             >
                                 <span class="grid size-9 place-items-center rounded-[11px] transition-colors" :class="i === index ? 'bg-brand text-white' : 'bg-white/8 text-[#8FA2C4]'" x-html="category.iconSvg"></span>
-                                <span class="flex min-w-0 flex-col gap-[3px]">
-                                    <span class="text-[13px] leading-[1.35] font-bold tracking-[0.3px] uppercase" x-text="category.short"></span>
-                                    <span class="text-[11px]" :class="i === index ? 'text-brand' : 'text-[#8FA2C4]'" x-text="category.countLabel"></span>
-                                </span>
+                                <span class="min-w-0 text-[13px] leading-[1.35] font-bold tracking-[0.3px] uppercase" x-text="category.short"></span>
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                             </button>
                         </template>

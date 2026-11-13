@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Http\Middleware\SetAdminLocale;
+use App\Support\Site;
 use Filament\Enums\ThemeMode;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
@@ -22,7 +23,6 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Vite;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -37,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('ELIO.GE')
             ->brandLogo(fn () => view('filament.brand'))
             ->brandLogoHeight('2.25rem')
-            ->favicon(fn () => Vite::asset('resources/images/elio-mark.png'))
+            ->favicon(fn () => Site::faviconUrl())
             ->colors([
                 'primary' => '#0B63F6',
                 'gray' => Color::Slate,

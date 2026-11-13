@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\Order;
 use App\Models\Product;
 use App\Support\Catalog;
 use App\Support\CategoryTree;
@@ -132,6 +133,27 @@ class CatalogTest extends TestCase
 
         $component->call('setSort', 'bogus');
         $this->assertSame('popular', $component->get('sort'));
+    }
+
+    public function test_popular_sort_puts_stock_then_best_sellers_first_and_price_sort_keeps_out_of_stock_last(): void
+    {
+        $cheapest = Product::query()->where('is_active', true)->orderBy('price')->firstOrFail();
+        $cheapest->update(['stock' => 0]);
+        $bestSeller = Product::query()->where('is_active', true)->whereKeyNot($cheapest->id)->orderByDesc('price')->firstOrFail();
+        $order = Order::query()->create(['number' => 'EL-100001', 'status' => 'new', 'payment_method' => 'cash', 'first_name' => 'ა', 'phone' => '555', 'subtotal' => 1, 'discount' => 0, 'shipping' => 0, 'total' => 1, 'locale' => 'ka']);
+        $order->items()->create(['product_id' => $bestSeller->id, 'name' => 'x', 'unit_price' => 1, 'quantity' => 3, 'total' => 3]);
+        Catalog::flush();
+
+        $popular = Livewire::test('pages::catalog')->get('results');
+        $this->assertSame($bestSeller->id, $popular->first()['id']);
+        $this->assertSame($cheapest->id, $popular->last()['id']);
+
+        $byPrice = Livewire::test('pages::catalog')->call('setSort', 'price_asc')->get('results');
+        $this->assertSame($cheapest->id, $byPrice->last()['id']);
+        $inStock = $byPrice->where('inStock', true)->pluck('price')->all();
+        $sorted = $inStock;
+        sort($sorted);
+        $this->assertSame($sorted, $inStock);
     }
 
     public function test_filters_are_read_from_the_query_string(): void

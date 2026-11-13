@@ -4,14 +4,35 @@
     {
       "name": "laravel",
       "runtimeExecutable": "php",
-      "runtimeArgs": ["artisan", "serve", "--port=8000"],
+      "runtimeArgs": [
+        "artisan",
+        "serve",
+        "--port=8000"
+      ],
       "port": 8000
     },
     {
       "name": "design",
       "runtimeExecutable": "php",
-      "runtimeArgs": ["-S", "127.0.0.1:8090", "-t", "C:/Users/chikh/OneDrive/Desktop/ონლაინ მაღაზიის დიზაინი"],
+      "runtimeArgs": [
+        "-S",
+        "127.0.0.1:8090",
+        "-t",
+        "C:/Users/chikh/OneDrive/Desktop/ონლაინ მაღაზიის დიზაინი"
+      ],
       "port": 8090
+    },
+    {
+      "name": "laravel-local",
+      "runtimeExecutable": "php",
+      "runtimeArgs": [
+        "-S",
+        "127.0.0.1:8001",
+        "-t",
+        "public",
+        "C:/Users/chikh/AppData/Local/Temp/claude/1da05263105eab4b/115e7b6f-a636-4d63-b6b5-b7d70ac98e46/scratchpad/router.php"
+      ],
+      "port": 8001
     }
   ]
 }
