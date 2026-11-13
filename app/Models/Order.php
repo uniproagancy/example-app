@@ -19,7 +19,7 @@ class Order extends Model
 {
     use SoftDeletes;
 
-    public const STATUSES = ['new', 'received', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+    public const STATUSES = ['new', 'received', 'no_answer', 'call_later', 'completed', 'cancelled'];
 
     public const SOURCES = ['checkout', 'quick'];
 
@@ -167,7 +167,7 @@ class Order extends Model
 
     public function isEditable(): bool
     {
-        return ! in_array($this->status, ['delivered', 'cancelled'], true);
+        return ! in_array($this->status, ['completed', 'cancelled'], true);
     }
 
     public function log(string $type, ?string $note = null, ?string $from = null, ?string $to = null): OrderEvent

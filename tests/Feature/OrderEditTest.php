@@ -162,7 +162,7 @@ class OrderEditTest extends TestCase
 
     public function test_closed_orders_only_take_status_changes_and_notes(): void
     {
-        $order = $this->order(['status' => 'delivered']);
+        $order = $this->order(['status' => 'completed']);
         $item = $order->items()->sole();
 
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
@@ -176,10 +176,10 @@ class OrderEditTest extends TestCase
             ->set('comment', 'კლიენტმა დაგვირეკა')
             ->call('addNote')
             ->assertSet('comment', '')
-            ->set('status', 'confirmed')
+            ->set('status', 'no_answer')
             ->call('changeStatus');
 
-        $this->assertSame('confirmed', $order->fresh()->status);
+        $this->assertSame('no_answer', $order->fresh()->status);
         $this->assertSame(['status', 'note', 'opened'], $order->events()->pluck('type')->all());
         $this->assertSame('კლიენტმა დაგვირეკა', $order->events()->where('type', 'note')->value('note'));
     }

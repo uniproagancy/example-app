@@ -135,7 +135,7 @@ class PixelTest extends TestCase
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
             ->set('paymentStatus', Order::PAYMENT_PAID)
             ->call('changePaymentStatus')
-            ->set('status', 'delivered')
+            ->set('status', 'completed')
             ->call('changeStatus');
 
         $purchases = $this->events('Purchase');

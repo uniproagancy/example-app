@@ -18,7 +18,7 @@ class Pixel
 {
     public const VISITOR_COOKIE = 'elio_vid';
 
-    public const COMPLETED = 'delivered';
+    public const COMPLETED = 'completed';
 
     public const CANCELLED = 'cancelled';
 

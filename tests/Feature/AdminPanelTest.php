@@ -216,21 +216,21 @@ class AdminPanelTest extends TestCase
 
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
             ->assertSee('EL-000001')
-            ->set('status', 'shipped')
+            ->set('status', 'call_later')
             ->call('changeStatus')
             ->assertHasNoErrors()
             ->assertNotified(__('admin.orders.status_changed'));
 
-        $this->assertSame('shipped', $order->fresh()->status);
+        $this->assertSame('call_later', $order->fresh()->status);
         $this->assertSame(
-            ['type' => 'status', 'from' => 'new', 'to' => 'shipped', 'user_id' => $this->admin->id],
+            ['type' => 'status', 'from' => 'new', 'to' => 'call_later', 'user_id' => $this->admin->id],
             $order->events()->first()->only(['type', 'from', 'to', 'user_id']),
         );
 
         Livewire::test(ListOrders::class)
-            ->callTableAction('changeStatus', $order, ['status' => 'delivered']);
+            ->callTableAction('changeStatus', $order, ['status' => 'completed']);
 
-        $this->assertSame(['shipped', 'delivered'], [$order->events()->first()->from, $order->events()->first()->to]);
+        $this->assertSame(['call_later', 'completed'], [$order->events()->first()->from, $order->events()->first()->to]);
     }
 
     public function test_orders_are_filtered_by_status_and_can_be_deleted(): void
@@ -243,21 +243,21 @@ class AdminPanelTest extends TestCase
             'subtotal' => 100, 'discount' => 0, 'shipping' => 5, 'total' => 105, 'locale' => 'ka',
         ];
         $new = Order::query()->create([...$base, 'number' => 'EL-000011', 'status' => 'new']);
-        $shipped = Order::query()->create([...$base, 'number' => 'EL-000012', 'status' => 'shipped']);
+        $callLater = Order::query()->create([...$base, 'number' => 'EL-000012', 'status' => 'call_later']);
         $cancelled = Order::query()->create([...$base, 'number' => 'EL-000013', 'status' => 'cancelled']);
         $new->items()->create(['name' => 'Kettle', 'unit_price' => 100, 'quantity' => 1, 'total' => 100]);
         $new->log('note', 'test');
 
         Livewire::test(ListOrders::class)
-            ->filterTable('status', 'shipped')
-            ->assertCanSeeTableRecords([$shipped])
+            ->filterTable('status', 'call_later')
+            ->assertCanSeeTableRecords([$callLater])
             ->assertCanNotSeeTableRecords([$new, $cancelled])
             ->resetTableFilters()
             ->callTableAction('delete', $new)
             ->callTableBulkAction('delete', [$cancelled])
             ->assertCanNotSeeTableRecords([$new, $cancelled])
             ->filterTable('with_deleted')
-            ->assertCanSeeTableRecords([$new, $cancelled, $shipped])
+            ->assertCanSeeTableRecords([$new, $cancelled, $callLater])
             ->callTableAction('restore', $cancelled)
             ->callTableAction('forceDelete', $new);
 
@@ -265,33 +265,40 @@ class AdminPanelTest extends TestCase
         $this->assertDatabaseMissing('order_items', ['order_id' => $new->id]);
         $this->assertDatabaseMissing('order_events', ['order_id' => $new->id]);
         $this->assertNotSoftDeleted($cancelled);
-        $this->assertNotSoftDeleted($shipped);
+        $this->assertNotSoftDeleted($callLater);
 
-        Livewire::test(ViewOrder::class, ['record' => $shipped->getRouteKey()])
+        Livewire::test(ViewOrder::class, ['record' => $callLater->getRouteKey()])
             ->callAction('delete')
             ->assertRedirect(OrderResource::getUrl());
 
-        $this->assertSoftDeleted($shipped);
+        $this->assertSoftDeleted($callLater);
 
-        Livewire::test(ViewOrder::class, ['record' => $shipped->getRouteKey()])
+        Livewire::test(ViewOrder::class, ['record' => $callLater->getRouteKey()])
             ->assertActionVisible('restore')
             ->callAction('restore');
 
-        $this->assertNotSoftDeleted($shipped);
+        $this->assertNotSoftDeleted($callLater);
         $this->assertSame(
             ['opened', 'deleted', 'restored'],
-            $shipped->events()->reorder('id')->pluck('type')->all(),
+            $callLater->events()->reorder('id')->pluck('type')->all(),
         );
-        $this->assertSame($this->admin->id, $shipped->events()->where('type', 'opened')->value('user_id'));
+        $this->assertSame($this->admin->id, $callLater->events()->where('type', 'opened')->value('user_id'));
 
-        Livewire::test(ViewOrder::class, ['record' => $shipped->getRouteKey()])
+        Livewire::test(ViewOrder::class, ['record' => $callLater->getRouteKey()])
             ->assertSee(__('admin.orders.event_opened'))
             ->assertSee(__('admin.orders.event_deleted'))
             ->assertSee(__('admin.orders.event_restored'));
 
-        $this->assertSame(1, $shipped->events()->where('type', 'opened')->count());
+        $this->assertSame(1, $callLater->events()->where('type', 'opened')->count());
         $this->assertSame('ახალი შეკვეთა', OrderResource::statusOptions()['new']);
-        $this->assertSame('მიღებულია', OrderResource::statusOptions()['received']);
+        $this->assertSame(
+            ['new', 'received', 'no_answer', 'call_later', 'completed', 'cancelled'],
+            array_keys(OrderResource::statusOptions()),
+        );
+        $this->assertSame(
+            ['ნანახი შეკვეთა', 'არ პასუხობს', 'მოგვიანებით დარეკვა', 'დასრულებულია'],
+            array_values(array_slice(OrderResource::statusOptions(), 1, 4)),
+        );
     }
 
     public function test_settings_are_saved_and_shown_on_the_site(): void

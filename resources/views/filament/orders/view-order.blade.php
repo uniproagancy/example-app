@@ -244,87 +244,6 @@
                 </div>
             </x-filament::section>
 
-            <x-filament::section icon="heroicon-o-user" :heading="__('admin.orders.customer')">
-                <div class="mb-4 flex items-center gap-3">
-                    <span class="grid size-11 shrink-0 place-items-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 dark:bg-primary-500/15 dark:text-primary-400">{{ $initials }}</span>
-                    <div class="min-w-0">
-                        <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ trim($order->first_name.' '.$order->last_name) }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $order->user ? __('admin.orders.registered', ['email' => $order->user->email]) : __('admin.orders.guest') }}</p>
-                    </div>
-                </div>
-
-                <div class="flex flex-col gap-3">
-                    @foreach (['first_name' => 'text', 'last_name' => 'text', 'phone' => 'tel', 'email' => 'email'] as $field => $type)
-                        <label class="flex flex-col gap-1">
-                            <span class="{{ $label }}">{{ __("admin.orders.$field") }}</span>
-                            <x-filament::input.wrapper :valid="! $errors->has('customer.'.$field)" :disabled="! $editable">
-                                <x-filament::input :type="$type" wire:model="customer.{{ $field }}" :disabled="! $editable" />
-                            </x-filament::input.wrapper>
-                            @error('customer.'.$field) <span class="{{ $error }}">{{ $message }}</span> @enderror
-                        </label>
-                    @endforeach
-                </div>
-            </x-filament::section>
-
-            <x-filament::section icon="heroicon-o-truck" :heading="__('admin.orders.delivery')">
-                <div class="flex flex-col gap-3">
-                    <label class="flex flex-col gap-1">
-                        <span class="{{ $label }}">{{ __('admin.orders.shipping_method') }}</span>
-                        <x-filament::input.wrapper :disabled="! $editable">
-                            <x-filament::input.select wire:model.live="delivery.shipping_method" :disabled="! $editable">
-                                <option value="">{{ __('admin.orders.not_set') }}</option>
-                                @foreach (Order::SHIPPING_METHODS as $method)
-                                    <option value="{{ $method }}">{{ __("checkout.methods.$method.title") }}</option>
-                                @endforeach
-                            </x-filament::input.select>
-                        </x-filament::input.wrapper>
-                    </label>
-
-                    <label class="flex flex-col gap-1">
-                        <span class="{{ $label }}">{{ __('admin.orders.city') }}</span>
-                        <x-filament::input.wrapper :disabled="! $editable">
-                            <x-filament::input.select wire:model="delivery.city" :disabled="! $editable">
-                                <option value="">{{ __('admin.orders.not_set') }}</option>
-                                @foreach (Order::CITIES as $city)
-                                    <option value="{{ $city }}">{{ __("checkout.cities.$city") }}</option>
-                                @endforeach
-                            </x-filament::input.select>
-                        </x-filament::input.wrapper>
-                    </label>
-
-                    @foreach (['address', 'apartment'] as $field)
-                        <label class="flex flex-col gap-1">
-                            <span class="{{ $label }}">{{ __("admin.orders.$field") }}</span>
-                            <x-filament::input.wrapper :valid="! $errors->has('delivery.'.$field)" :disabled="! $editable">
-                                <x-filament::input type="text" wire:model="delivery.{{ $field }}" :disabled="! $editable" />
-                            </x-filament::input.wrapper>
-                        </label>
-                    @endforeach
-
-                    <label class="flex flex-col gap-1">
-                        <span class="flex items-center justify-between {{ $label }}">
-                            {{ __('admin.orders.shipping_fee') }}
-                            @if ($editable)
-                                <button type="button" wire:click="recalculateShipping" class="flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline dark:text-primary-400">
-                                    <x-filament::icon icon="heroicon-m-arrow-path" class="size-3.5" />{{ __('admin.orders.recalculate_shipping') }}
-                                </button>
-                            @endif
-                        </span>
-                        <x-filament::input.wrapper suffix="₾" :valid="! $errors->has('shippingFee')" :disabled="! $editable">
-                            <x-filament::input type="number" step="0.01" min="0" wire:model.live.debounce.500ms="shippingFee" :disabled="! $editable" />
-                        </x-filament::input.wrapper>
-                        @error('shippingFee') <span class="{{ $error }}">{{ $message }}</span> @enderror
-                    </label>
-
-                    <label class="flex flex-col gap-1">
-                        <span class="{{ $label }}">{{ __('admin.orders.note') }}</span>
-                        <x-filament::input.wrapper :disabled="! $editable">
-                            <textarea wire:model="delivery.note" rows="2" @disabled(! $editable) class="block w-full resize-y border-none bg-transparent px-3 py-1.5 text-sm text-gray-950 outline-none focus:ring-0 dark:text-white"></textarea>
-                        </x-filament::input.wrapper>
-                    </label>
-                </div>
-            </x-filament::section>
-
             <x-filament::section icon="heroicon-o-credit-card" :heading="__('admin.orders.payment')">
                 <x-slot name="afterHeader">
                     <x-filament::badge :color="OrderResource::paymentStatusColor($order->payment_status)">
@@ -407,6 +326,87 @@
                             @endunless
                         </div>
                     @endif
+                </div>
+            </x-filament::section>
+
+            <x-filament::section icon="heroicon-o-user" :heading="__('admin.orders.customer')">
+                <div class="mb-4 flex items-center gap-3">
+                    <span class="grid size-11 shrink-0 place-items-center rounded-full bg-primary-50 text-sm font-bold text-primary-600 dark:bg-primary-500/15 dark:text-primary-400">{{ $initials }}</span>
+                    <div class="min-w-0">
+                        <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ trim($order->first_name.' '.$order->last_name) }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $order->user ? __('admin.orders.registered', ['email' => $order->user->email]) : __('admin.orders.guest') }}</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    @foreach (['first_name' => 'text', 'last_name' => 'text', 'phone' => 'tel', 'email' => 'email'] as $field => $type)
+                        <label class="flex flex-col gap-1">
+                            <span class="{{ $label }}">{{ __("admin.orders.$field") }}</span>
+                            <x-filament::input.wrapper :valid="! $errors->has('customer.'.$field)" :disabled="! $editable">
+                                <x-filament::input :type="$type" wire:model="customer.{{ $field }}" :disabled="! $editable" />
+                            </x-filament::input.wrapper>
+                            @error('customer.'.$field) <span class="{{ $error }}">{{ $message }}</span> @enderror
+                        </label>
+                    @endforeach
+                </div>
+            </x-filament::section>
+
+            <x-filament::section icon="heroicon-o-truck" :heading="__('admin.orders.delivery')">
+                <div class="flex flex-col gap-3">
+                    <label class="flex flex-col gap-1">
+                        <span class="{{ $label }}">{{ __('admin.orders.shipping_method') }}</span>
+                        <x-filament::input.wrapper :disabled="! $editable">
+                            <x-filament::input.select wire:model.live="delivery.shipping_method" :disabled="! $editable">
+                                <option value="">{{ __('admin.orders.not_set') }}</option>
+                                @foreach (Order::SHIPPING_METHODS as $method)
+                                    <option value="{{ $method }}">{{ __("checkout.methods.$method.title") }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    </label>
+
+                    <label class="flex flex-col gap-1">
+                        <span class="{{ $label }}">{{ __('admin.orders.city') }}</span>
+                        <x-filament::input.wrapper :disabled="! $editable">
+                            <x-filament::input.select wire:model="delivery.city" :disabled="! $editable">
+                                <option value="">{{ __('admin.orders.not_set') }}</option>
+                                @foreach (Order::CITIES as $city)
+                                    <option value="{{ $city }}">{{ __("checkout.cities.$city") }}</option>
+                                @endforeach
+                            </x-filament::input.select>
+                        </x-filament::input.wrapper>
+                    </label>
+
+                    @foreach (['address', 'apartment'] as $field)
+                        <label class="flex flex-col gap-1">
+                            <span class="{{ $label }}">{{ __("admin.orders.$field") }}</span>
+                            <x-filament::input.wrapper :valid="! $errors->has('delivery.'.$field)" :disabled="! $editable">
+                                <x-filament::input type="text" wire:model="delivery.{{ $field }}" :disabled="! $editable" />
+                            </x-filament::input.wrapper>
+                        </label>
+                    @endforeach
+
+                    <label class="flex flex-col gap-1">
+                        <span class="flex items-center justify-between {{ $label }}">
+                            {{ __('admin.orders.shipping_fee') }}
+                            @if ($editable)
+                                <button type="button" wire:click="recalculateShipping" class="flex items-center gap-1 text-xs font-medium text-primary-600 hover:underline dark:text-primary-400">
+                                    <x-filament::icon icon="heroicon-m-arrow-path" class="size-3.5" />{{ __('admin.orders.recalculate_shipping') }}
+                                </button>
+                            @endif
+                        </span>
+                        <x-filament::input.wrapper suffix="₾" :valid="! $errors->has('shippingFee')" :disabled="! $editable">
+                            <x-filament::input type="number" step="0.01" min="0" wire:model.live.debounce.500ms="shippingFee" :disabled="! $editable" />
+                        </x-filament::input.wrapper>
+                        @error('shippingFee') <span class="{{ $error }}">{{ $message }}</span> @enderror
+                    </label>
+
+                    <label class="flex flex-col gap-1">
+                        <span class="{{ $label }}">{{ __('admin.orders.note') }}</span>
+                        <x-filament::input.wrapper :disabled="! $editable">
+                            <textarea wire:model="delivery.note" rows="2" @disabled(! $editable) class="block w-full resize-y border-none bg-transparent px-3 py-1.5 text-sm text-gray-950 outline-none focus:ring-0 dark:text-white"></textarea>
+                        </x-filament::input.wrapper>
+                    </label>
                 </div>
             </x-filament::section>
 

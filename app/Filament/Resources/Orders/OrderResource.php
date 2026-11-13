@@ -108,9 +108,9 @@ class OrderResource extends Resource
         return match ($status) {
             'new' => 'warning',
             'received' => 'gray',
-            'confirmed' => 'info',
-            'shipped' => 'primary',
-            'delivered' => 'success',
+            'no_answer' => 'primary',
+            'call_later' => 'info',
+            'completed' => 'success',
             'cancelled' => 'danger',
             default => 'gray',
         };
