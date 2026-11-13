@@ -5,7 +5,10 @@ namespace App\Filament\Resources\Orders\Tables;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use App\Models\PaymentMethod;
+use App\Services\Orders\OrdersExport;
 use App\Support\Catalog;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,12 +19,15 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Collection;
 
 class OrdersTable
 {
@@ -112,8 +118,20 @@ class OrdersTable
                     ->modalHeading(fn (Order $record): string => __('admin.orders.force_delete_heading', ['number' => $record->number]))
                     ->modalDescription(__('admin.orders.force_delete_help')),
             ])
+            ->headerActions([
+                Action::make('export')
+                    ->label(__('admin.orders.export.label'))
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->color('gray')
+                    ->action(fn (HasTable $livewire) => app(OrdersExport::class)->download($livewire->getFilteredTableQuery())),
+            ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('export')
+                        ->label(__('admin.orders.export.selected'))
+                        ->icon(Heroicon::OutlinedArrowDownTray)
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records) => app(OrdersExport::class)->download(Order::withTrashed()->whereKey($records->modelKeys()))),
                     DeleteBulkAction::make()
                         ->modalDescription(__('admin.orders.delete_help')),
                     RestoreBulkAction::make(),
