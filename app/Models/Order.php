@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\URL;
 
 #[Fillable([
@@ -16,7 +17,9 @@ use Illuminate\Support\Facades\URL;
 ])]
 class Order extends Model
 {
-    public const STATUSES = ['new', 'confirmed', 'shipped', 'delivered', 'cancelled'];
+    use SoftDeletes;
+
+    public const STATUSES = ['new', 'received', 'confirmed', 'shipped', 'delivered', 'cancelled'];
 
     public const SOURCES = ['checkout', 'quick'];
 
@@ -36,6 +39,24 @@ class Order extends Model
 
     public const PAYMENT_STATUSES = [self::PAYMENT_PENDING, self::PAYMENT_PROCESSING, self::PAYMENT_PAID, self::PAYMENT_FAILED, self::PAYMENT_REFUNDED];
 
+    protected static function booted(): void
+    {
+        static::deleted(function (Order $order): void {
+            if (! $order->isForceDeleting()) {
+                $order->log('deleted');
+            }
+        });
+
+        static::restored(fn (Order $order) => $order->log('restored'));
+    }
+
+    public function logFirstOpen(): void
+    {
+        if (auth()->check() && ! $this->events()->where('type', 'opened')->exists()) {
+            $this->log('opened');
+        }
+    }
+
     protected function casts(): array
     {
         return [
@@ -53,7 +74,7 @@ class Order extends Model
     {
         do {
             $number = 'EL-'.random_int(100000, 999999);
-        } while (static::query()->where('number', $number)->exists());
+        } while (static::withTrashed()->where('number', $number)->exists());
 
         return $number;
     }

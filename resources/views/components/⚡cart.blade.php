@@ -130,21 +130,6 @@ new class extends Component
                     <button type="button" x-on:click="$store.ui.cart = false" aria-label="{{ __('shop.close') }}" class="size-10 rounded-[10px] bg-[#F1F5FC] text-xl text-navy">×</button>
                 </div>
 
-                @if ($this->count > 0)
-                    <div class="flex flex-col gap-2 bg-field px-6 py-3.5 text-[13px]">
-                        <span class="font-semibold text-navy">
-                            @if ($this->total >= Catalog::FREE_SHIPPING_FROM)
-                                {{ __('shop.cart_drawer.free_active') }}
-                            @else
-                                {{ __('shop.cart_drawer.left_for_free', ['amount' => Catalog::money(Catalog::FREE_SHIPPING_FROM - $this->total)]) }}
-                            @endif
-                        </span>
-                        <div class="h-1.5 overflow-hidden rounded-[3px] bg-line">
-                            <div class="h-full rounded-[3px] bg-linear-to-r from-brand to-sky transition-[width] duration-400" style="width: {{ min(100, round($this->total / Catalog::FREE_SHIPPING_FROM * 100)) }}%"></div>
-                        </div>
-                    </div>
-                @endif
-
                 <div class="flex flex-1 flex-col overflow-auto px-6 py-3">
                     @forelse ($this->lines as $line)
                         <div wire:key="cart-line-{{ $line['key'] }}" class="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3.5 border-b border-line-soft py-3.5">
@@ -183,18 +168,12 @@ new class extends Component
                 </div>
 
                 <div class="flex flex-col gap-3.5 border-t border-line px-6 pt-5 pb-6">
-                    <div class="flex justify-between text-sm text-muted">
-                        <span>{{ __('shop.cart_drawer.shipping') }}</span>
-                        <span>
-                            @if ($this->total === 0)
-                                —
-                            @elseif ($this->total >= Catalog::FREE_SHIPPING_FROM)
-                                {{ __('shop.cart_drawer.free') }}
-                            @else
-                                {{ Catalog::money(Catalog::SHIPPING_PRICE) }}
-                            @endif
-                        </span>
-                    </div>
+                    @if ($this->total > 0 && Cart::shippingFor($this->total) > 0)
+                        <div class="flex justify-between text-sm text-muted">
+                            <span>{{ __('shop.cart_drawer.shipping') }}</span>
+                            <span>{{ Catalog::money(Cart::shippingFor($this->total)) }}</span>
+                        </div>
+                    @endif
                     <div class="flex items-baseline justify-between">
                         <span class="font-bold">{{ __('shop.cart_drawer.total') }}</span>
                         <span class="font-display text-2xl font-extrabold">{{ Catalog::money($this->total) }}</span>

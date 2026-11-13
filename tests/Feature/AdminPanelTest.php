@@ -231,6 +231,67 @@ class AdminPanelTest extends TestCase
         $this->assertSame(['shipped', 'delivered'], [$order->events()->first()->from, $order->events()->first()->to]);
     }
 
+    public function test_orders_are_filtered_by_status_and_can_be_deleted(): void
+    {
+        $this->actingAs($this->admin);
+
+        $base = [
+            'first_name' => 'Nino', 'last_name' => 'Beridze', 'phone' => '555000000', 'email' => 'nino@example.com',
+            'shipping_method' => 'courier', 'city' => 'tbilisi', 'address' => 'Chavchavadze 1', 'payment_method' => 'cash',
+            'subtotal' => 100, 'discount' => 0, 'shipping' => 5, 'total' => 105, 'locale' => 'ka',
+        ];
+        $new = Order::query()->create([...$base, 'number' => 'EL-000011', 'status' => 'new']);
+        $shipped = Order::query()->create([...$base, 'number' => 'EL-000012', 'status' => 'shipped']);
+        $cancelled = Order::query()->create([...$base, 'number' => 'EL-000013', 'status' => 'cancelled']);
+        $new->items()->create(['name' => 'Kettle', 'unit_price' => 100, 'quantity' => 1, 'total' => 100]);
+        $new->log('note', 'test');
+
+        Livewire::test(ListOrders::class)
+            ->filterTable('status', 'shipped')
+            ->assertCanSeeTableRecords([$shipped])
+            ->assertCanNotSeeTableRecords([$new, $cancelled])
+            ->resetTableFilters()
+            ->callTableAction('delete', $new)
+            ->callTableBulkAction('delete', [$cancelled])
+            ->assertCanNotSeeTableRecords([$new, $cancelled])
+            ->filterTable('with_deleted')
+            ->assertCanSeeTableRecords([$new, $cancelled, $shipped])
+            ->callTableAction('restore', $cancelled)
+            ->callTableAction('forceDelete', $new);
+
+        $this->assertModelMissing($new);
+        $this->assertDatabaseMissing('order_items', ['order_id' => $new->id]);
+        $this->assertDatabaseMissing('order_events', ['order_id' => $new->id]);
+        $this->assertNotSoftDeleted($cancelled);
+        $this->assertNotSoftDeleted($shipped);
+
+        Livewire::test(ViewOrder::class, ['record' => $shipped->getRouteKey()])
+            ->callAction('delete')
+            ->assertRedirect(OrderResource::getUrl());
+
+        $this->assertSoftDeleted($shipped);
+
+        Livewire::test(ViewOrder::class, ['record' => $shipped->getRouteKey()])
+            ->assertActionVisible('restore')
+            ->callAction('restore');
+
+        $this->assertNotSoftDeleted($shipped);
+        $this->assertSame(
+            ['opened', 'deleted', 'restored'],
+            $shipped->events()->reorder('id')->pluck('type')->all(),
+        );
+        $this->assertSame($this->admin->id, $shipped->events()->where('type', 'opened')->value('user_id'));
+
+        Livewire::test(ViewOrder::class, ['record' => $shipped->getRouteKey()])
+            ->assertSee(__('admin.orders.event_opened'))
+            ->assertSee(__('admin.orders.event_deleted'))
+            ->assertSee(__('admin.orders.event_restored'));
+
+        $this->assertSame(1, $shipped->events()->where('type', 'opened')->count());
+        $this->assertSame('ახალი შეკვეთა', OrderResource::statusOptions()['new']);
+        $this->assertSame('მიღებულია', OrderResource::statusOptions()['received']);
+    }
+
     public function test_settings_are_saved_and_shown_on_the_site(): void
     {
         $this->refreshApplicationWithLocale('ka');

@@ -30,7 +30,8 @@ return [
         'start' => 'Start shopping',
         'items' => '{1} :count item|[2,*] :count items',
         'statuses' => [
-            'new' => 'Received',
+            'new' => 'New order',
+            'received' => 'Received',
             'confirmed' => 'Confirmed',
             'shipped' => 'On the way',
             'delivered' => 'Delivered',

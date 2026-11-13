@@ -6,6 +6,13 @@ use App\Filament\Resources\Orders\OrderResource;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Support\Catalog;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Support\Enums\FontWeight;
@@ -14,6 +21,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class OrdersTable
 {
@@ -21,10 +29,12 @@ class OrdersTable
     {
         return $table
             ->defaultSort('created_at', 'desc')
+            ->recordClasses(fn (Order $record): ?string => $record->trashed() ? 'opacity-60' : null)
             ->columns([
                 TextColumn::make('number')
                     ->label(__('admin.orders.number'))
                     ->weight(FontWeight::Bold)
+                    ->description(fn (Order $record): ?string => $record->trashed() ? __('admin.orders.deleted_at', ['date' => $record->deleted_at->format('d.m.Y H:i')]) : null)
                     ->searchable(),
                 TextColumn::make('first_name')
                     ->label(__('admin.orders.customer'))
@@ -53,6 +63,11 @@ class OrdersTable
                     ->sortable(),
             ])
             ->filters([
+                SelectFilter::make('status')
+                    ->label(__('admin.common.status'))
+                    ->options(fn (): array => collect(OrderResource::statusOptions())
+                        ->map(fn (string $label, string $status): string => ($count = Order::query()->where('status', $status)->count()) ? "$label ($count)" : $label)
+                        ->all()),
                 SelectFilter::make('source')
                     ->label(__('admin.orders.source'))
                     ->options(OrderResource::sourceOptions()),
@@ -73,12 +88,38 @@ class OrdersTable
                     ->query(fn (Builder $query, array $data) => $query
                         ->when($data['from'] ?? null, fn (Builder $query, string $date) => $query->whereDate('created_at', '>=', $date))
                         ->when($data['until'] ?? null, fn (Builder $query, string $date) => $query->whereDate('created_at', '<=', $date))),
+                Filter::make('with_deleted')
+                    ->label(__('admin.orders.with_deleted'))
+                    ->checkbox()
+                    ->query(fn (Builder $query): Builder => $query->withoutGlobalScopes([SoftDeletingScope::class])),
             ])
             ->recordActions([
                 ViewAction::make(),
                 OrderResource::changeStatusAction()
                     ->hiddenLabel()
                     ->tooltip(__('admin.orders.change_status')),
+                DeleteAction::make()
+                    ->hiddenLabel()
+                    ->tooltip(__('admin.orders.delete'))
+                    ->modalHeading(fn (Order $record): string => __('admin.orders.delete_heading', ['number' => $record->number]))
+                    ->modalDescription(__('admin.orders.delete_help')),
+                RestoreAction::make()
+                    ->hiddenLabel()
+                    ->tooltip(__('admin.orders.restore')),
+                ForceDeleteAction::make()
+                    ->hiddenLabel()
+                    ->tooltip(__('admin.orders.force_delete'))
+                    ->modalHeading(fn (Order $record): string => __('admin.orders.force_delete_heading', ['number' => $record->number]))
+                    ->modalDescription(__('admin.orders.force_delete_help')),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->modalDescription(__('admin.orders.delete_help')),
+                    RestoreBulkAction::make(),
+                    ForceDeleteBulkAction::make()
+                        ->modalDescription(__('admin.orders.force_delete_help')),
+                ]),
             ]);
     }
 }

@@ -28,7 +28,7 @@
                     <a href="#" class="flex h-10 items-center rounded-full bg-white px-[18px] text-[13px] font-bold text-navy hover:bg-brand hover:text-white">{{ __('shop.sale.all') }}</a>
                 </div>
             </div>
-            <div x-ref="track" class="carousel auto-cols-[calc((100%-10px)/2)] gap-2.5 sm:auto-cols-[calc((100%-32px)/3)] sm:gap-4 lg:auto-cols-[calc((100%-48px)/4)] xl:auto-cols-[calc((100%-64px)/5)]">
+            <div x-ref="track" class="carousel auto-cols-[calc((100%-10px)/2)] gap-2.5 sm:auto-cols-[calc((100%-24px)/3)] sm:gap-3 md:auto-cols-[calc((100%-36px)/4)] lg:auto-cols-[calc((100%-48px)/5)] xl:auto-cols-[calc((100%-60px)/6)]">
                 @foreach ($saleProducts as $product)
                     @include('partials.product-card', ['product' => $product])
                 @endforeach

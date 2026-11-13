@@ -25,7 +25,7 @@ class SlideSeeder extends Seeder
             ],
             [
                 'title' => ['ka' => 'ითამაშე მეტი, დაელოდე ნაკლები', 'en' => 'Play more, wait less'],
-                'text' => ['ka' => 'კონსოლები, ჯოისტიკები და ყურსასმენები — უფასო მიწოდებით მეორე დღესვე.', 'en' => 'Consoles, controllers and headsets — free next-day delivery.'],
+                'text' => ['ka' => 'კონსოლები, ჯოისტიკები და ყურსასმენები — მიწოდებით მთელ საქართველოში.', 'en' => 'Consoles, controllers and headsets — free next-day delivery.'],
                 'button_label' => ['ka' => 'გეიმინგ სეზონი 2026', 'en' => 'Gaming season 2026'],
                 'category_id' => $categoryIds['gaming'] ?? null,
                 'theme' => 'red',

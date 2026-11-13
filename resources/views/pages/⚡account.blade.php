@@ -227,10 +227,10 @@ new class extends Component
 
     <div class="grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-7">
         <aside class="flex min-w-0 flex-col gap-3 lg:sticky lg:top-[150px]">
-            <div class="relative flex flex-col gap-[18px] overflow-hidden rounded-3xl bg-navy px-[22px] py-6 text-white">
+            <div class="relative flex flex-col gap-[18px] overflow-hidden rounded-3xl bg-navy px-4 py-4 text-white sm:px-[22px] sm:py-6">
                 <div class="pointer-events-none absolute -top-[90px] -right-[70px] size-[230px] rounded-full bg-[radial-gradient(circle,rgba(20,180,255,.3),transparent_65%)]"></div>
                 <div class="relative flex items-center gap-3.5">
-                    <span class="grid size-14 shrink-0 place-items-center rounded-full bg-brand font-display text-[19px] font-extrabold shadow-[0_0_0_4px_rgba(255,255,255,.08)]">{{ $this->user->initials() }}</span>
+                    <span class="grid size-12 shrink-0 place-items-center rounded-full bg-brand font-display text-[17px] font-extrabold shadow-[0_0_0_4px_rgba(255,255,255,.08)] sm:size-14 sm:text-[19px]">{{ $this->user->initials() }}</span>
                     <span class="flex min-w-0 flex-col gap-[3px]">
                         <span class="text-[17px] font-extrabold">{{ $this->user->name }}</span>
                         <span class="truncate text-xs text-faint">{{ $this->user->email }}</span>
@@ -238,32 +238,32 @@ new class extends Component
                 </div>
             </div>
 
-            <nav class="no-scrollbar flex gap-0.5 overflow-x-auto rounded-3xl border border-line-mid bg-white p-2 font-caps lg:flex-col lg:overflow-visible">
+            <nav class="grid grid-cols-3 gap-1.5 font-caps lg:flex lg:flex-col lg:gap-0.5 lg:rounded-3xl lg:border lg:border-line-mid lg:bg-white lg:p-2">
                 @foreach (array_keys($icons) as $key)
                     <button
                         type="button"
                         wire:click="show('{{ $key }}')"
-                        @if ($tab === $key) aria-current="page" x-init="$el.parentElement.scrollTo({ left: $el.offsetLeft - 8 })" @endif
+                        @if ($tab === $key) aria-current="page" @endif
                         @class([
-                            'flex h-12 shrink-0 items-center gap-3 rounded-[14px] px-3.5 text-left text-sm font-bold whitespace-nowrap',
+                            'relative flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-1.5 py-2.5 text-center text-[11px] leading-tight font-bold lg:h-12 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-[14px] lg:px-3.5 lg:py-0 lg:text-left lg:text-sm lg:whitespace-nowrap',
                             'bg-navy text-white' => $tab === $key,
-                            'text-navy hover:bg-soft' => $tab !== $key,
+                            'bg-soft text-navy hover:bg-tint lg:bg-transparent lg:hover:bg-soft' => $tab !== $key,
                         ])
                     >
-                        <span @class(['grid size-8 shrink-0 place-items-center rounded-[10px]', 'bg-brand text-white' => $tab === $key, 'bg-soft text-navy' => $tab !== $key])>
+                        <span @class(['grid size-5 shrink-0 place-items-center lg:size-8 lg:rounded-[10px]', 'text-sky lg:bg-brand lg:text-white' => $tab === $key, 'text-muted lg:bg-soft lg:text-navy' => $tab !== $key])>
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $icons[$key] }}"/></svg>
                         </span>
-                        <span class="flex-1">{{ __("account.tabs.$key") }}</span>
+                        <span class="lg:flex-1">{{ __("account.tabs.$key") }}</span>
                         @if ($key === 'wishlist')
-                            <span x-show="$store.favorites.count" x-cloak x-text="$store.favorites.count" class="h-[22px] min-w-[22px] rounded-[11px] bg-tint px-[7px] text-center font-display text-[11px] leading-[22px] font-extrabold text-brand"></span>
+                            <span x-show="$store.favorites.count" x-cloak x-text="$store.favorites.count" class="absolute top-1.5 right-1.5 h-[18px] min-w-[18px] rounded-[9px] bg-tint px-[5px] text-center font-display text-[10px] leading-[18px] font-extrabold text-brand lg:static lg:h-[22px] lg:min-w-[22px] lg:rounded-[11px] lg:px-[7px] lg:text-[11px] lg:leading-[22px]"></span>
                         @elseif ($key === 'addresses' && $this->addresses->count())
-                            <span class="h-[22px] min-w-[22px] rounded-[11px] bg-tint px-[7px] text-center font-display text-[11px] leading-[22px] font-extrabold text-brand">{{ $this->addresses->count() }}</span>
+                            <span class="absolute top-1.5 right-1.5 h-[18px] min-w-[18px] rounded-[9px] bg-tint px-[5px] text-center font-display text-[10px] leading-[18px] font-extrabold text-brand lg:static lg:h-[22px] lg:min-w-[22px] lg:rounded-[11px] lg:px-[7px] lg:text-[11px] lg:leading-[22px]">{{ $this->addresses->count() }}</span>
                         @endif
                     </button>
                 @endforeach
                 <div class="mx-2.5 my-1.5 hidden h-px bg-[#F0F3F8] lg:block"></div>
-                <button type="button" wire:click="logout" class="flex h-12 shrink-0 items-center gap-3 rounded-[14px] px-3.5 text-sm font-bold whitespace-nowrap text-sale hover:bg-[#FFF1F1]">
-                    <span class="grid size-8 place-items-center rounded-[10px] bg-[#FFF1F1]">
+                <button type="button" wire:click="logout" class="flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl bg-[#FFF1F1] px-1.5 py-2.5 text-center text-[11px] leading-tight font-bold text-sale lg:h-12 lg:flex-row lg:justify-start lg:gap-3 lg:rounded-[14px] lg:bg-transparent lg:px-3.5 lg:py-0 lg:text-left lg:text-sm lg:whitespace-nowrap lg:hover:bg-[#FFF1F1]">
+                    <span class="grid size-5 place-items-center lg:size-8 lg:rounded-[10px] lg:bg-[#FFF1F1]">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/></svg>
                     </span>
                     {{ __('account.logout') }}
@@ -332,14 +332,30 @@ new class extends Component
                         </div>
                         <div class="flex flex-col border-t border-[#F0F3F8]">
                             @foreach ($order->items as $item)
-                                <div class="flex items-center justify-between gap-3 border-b border-[#F0F3F8] py-2.5 text-sm last:border-b-0">
-                                    <span class="min-w-0">
-                                        <span class="font-semibold">{{ $item->name }}</span>
-                                        @if ($item->options)
-                                            <span class="block text-xs text-subtle">{{ implode(' · ', $item->options) }}</span>
+                                @php($orderedProduct = $item->product_id ? Catalog::find($item->product_id) : null)
+                                <div class="flex items-center gap-3.5 border-b border-[#F0F3F8] py-3 text-sm last:border-b-0">
+                                    <span class="grid size-16 shrink-0 place-items-center overflow-hidden rounded-2xl bg-[radial-gradient(120%_90%_at_50%_35%,#FFFFFF_0%,#F1F5FB_60%,#E6EDF8_100%)]">
+                                        @if ($orderedProduct && $orderedProduct['images'])
+                                            <img src="{{ $orderedProduct['images'][0] }}" alt="{{ $item->name }}" loading="lazy" class="size-full object-contain p-1.5">
+                                        @else
+                                            <span class="font-display text-xl font-extrabold text-brand/30">{{ mb_strtoupper(mb_substr($item->name, 0, 1)) }}</span>
                                         @endif
                                     </span>
-                                    <span class="shrink-0 text-muted">{{ $item->quantity }} × {{ Catalog::money($item->unit_price) }}</span>
+                                    <span class="flex min-w-0 flex-1 flex-col gap-1">
+                                        @if ($orderedProduct)
+                                            <a href="{{ $orderedProduct['url'] }}" wire:navigate class="line-clamp-2 font-semibold text-navy hover:text-brand">{{ $item->name }}</a>
+                                        @else
+                                            <span class="line-clamp-2 font-semibold">{{ $item->name }}</span>
+                                        @endif
+                                        @if ($item->options)
+                                            <span class="text-xs text-subtle">{{ implode(' · ', $item->options) }}</span>
+                                        @endif
+                                        <span class="text-xs text-muted sm:hidden">{{ $item->quantity }} × {{ Catalog::money($item->unit_price) }}</span>
+                                    </span>
+                                    <span class="hidden shrink-0 text-right sm:flex sm:flex-col sm:gap-0.5">
+                                        <span class="font-bold text-navy">{{ Catalog::money($item->total) }}</span>
+                                        <span class="text-xs text-muted">{{ $item->quantity }} × {{ Catalog::money($item->unit_price) }}</span>
+                                    </span>
                                 </div>
                             @endforeach
                         </div>

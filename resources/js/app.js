@@ -112,7 +112,6 @@ window.addEventListener('keydown', (event) => {
 
 Alpine.data('stickyHeader', () => ({
     scrolled: false,
-    showTop: false,
     init() {
         let queued = false;
         const update = () => {
@@ -125,7 +124,58 @@ Alpine.data('stickyHeader', () => ({
                 this.scrolled = false;
             }
 
-            this.showTop = y > 1200;
+        };
+        update();
+        let settle = null;
+        const heights = {};
+        const root = document.documentElement.style;
+        this.$watch('scrolled', (value) => {
+            if (heights[value]) {
+                root.setProperty('--header-h', `${heights[value]}px`);
+            }
+        });
+        const publishHeight = () => {
+            const height = Math.round(this.$el.getBoundingClientRect().height);
+            if (height <= 0) {
+                return;
+            }
+            if (!heights[this.scrolled]) {
+                heights[this.scrolled] = height;
+                root.setProperty('--header-h', `${height}px`);
+            }
+            clearTimeout(settle);
+            settle = setTimeout(() => {
+                const settled = Math.round(this.$el.getBoundingClientRect().height);
+                heights[this.scrolled] = settled;
+                root.setProperty('--header-h', `${settled}px`);
+                if (!this.scrolled) {
+                    root.setProperty('--header-full', `${settled}px`);
+                }
+            }, 320);
+        };
+        publishHeight();
+        if (window.ResizeObserver) {
+            new ResizeObserver(publishHeight).observe(this.$el);
+        }
+        window.addEventListener('scroll', () => {
+            if (!queued) {
+                queued = true;
+                requestAnimationFrame(update);
+            }
+        }, { passive: true });
+    },
+}));
+
+Alpine.data('backToTop', () => ({
+    showTop: false,
+    init() {
+        let queued = false;
+        const update = () => {
+            queued = false;
+            const visible = window.scrollY > 1200;
+            if (visible !== this.showTop) {
+                this.showTop = visible;
+            }
         };
         update();
         window.addEventListener('scroll', () => {
@@ -218,12 +268,22 @@ Alpine.data('productPage', (config) => ({
     showBar: false,
     money,
     init() {
+        let queued = false;
         const update = () => {
+            queued = false;
             const button = this.$refs.mainBuy;
-            this.showBar = !!button && button.getBoundingClientRect().bottom < 70;
+            const visible = !!button && button.getBoundingClientRect().bottom < 70;
+            if (visible !== this.showBar) {
+                this.showBar = visible;
+            }
         };
         update();
-        window.addEventListener('scroll', update, { passive: true });
+        window.addEventListener('scroll', () => {
+            if (!queued) {
+                queued = true;
+                requestAnimationFrame(update);
+            }
+        }, { passive: true });
     },
     get colorOption() {
         return this.colors[this.color] ?? null;

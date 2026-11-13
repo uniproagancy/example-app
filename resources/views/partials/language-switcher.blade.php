@@ -3,6 +3,7 @@
     $currentLocale = LaravelLocalization::getCurrentLocale();
 @endphp
 
+@if (count(LaravelLocalization::getSupportedLocales()) > 1)
 <nav aria-label="{{ __('messages.language') }}" class="flex shrink-0 items-center gap-1 rounded-full bg-soft p-1 {{ $class ?? '' }}">
     @foreach (LaravelLocalization::getLocalesOrder() as $localeCode => $properties)
         <a
@@ -19,3 +20,4 @@
         >{{ $localeLabels[$localeCode] ?? strtoupper($localeCode) }}</a>
     @endforeach
 </nav>
+@endif

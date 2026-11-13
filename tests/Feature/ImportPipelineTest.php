@@ -234,4 +234,15 @@ class ImportPipelineTest extends TestCase
         $this->artisan('import:report', ['supplier' => 'fake'])->assertSuccessful();
         $this->artisan('attributes:doctor')->assertSuccessful();
     }
+
+    public function test_an_id_range_is_used_for_one_run_without_changing_the_supplier(): void
+    {
+        $supplier = $this->supplier();
+        $saved = $supplier->fresh()->config;
+
+        $this->artisan('import:run', ['supplier' => 'fake', '--from' => 54900, '--to' => 54800])->assertFailed();
+        $this->artisan('import:run', ['supplier' => 'fake', '--from' => 54800, '--to' => 54900])->assertSuccessful();
+
+        $this->assertSame($saved, $supplier->fresh()->config);
+    }
 }

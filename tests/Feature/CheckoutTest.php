@@ -192,11 +192,12 @@ class CheckoutTest extends TestCase
 
         $order = Order::query()->sole();
         $this->assertSame($user->id, $order->user_id);
+        $this->assertSame('new', $order->status);
 
         $this->actingAs($user)
             ->get('/en/account?tab=orders')
             ->assertOk()
             ->assertSee('#'.$order->number)
-            ->assertSee('Received');
+            ->assertSee('New order');
     }
 }

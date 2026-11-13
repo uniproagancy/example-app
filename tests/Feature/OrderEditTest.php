@@ -100,7 +100,7 @@ class OrderEditTest extends TestCase
         $this->assertEquals(12.5, (float) $order->shipping);
         $this->assertEquals(2000 + $galaxyPrice + 12.5, (float) $order->total);
 
-        $event = $order->events()->sole();
+        $event = $order->events()->where('type', '!=', 'opened')->sole();
         $this->assertSame('edit', $event->type);
         $this->assertSame($this->admin->id, $event->user_id);
         $this->assertStringContainsString(__('admin.orders.changed.items'), $event->note);
@@ -156,7 +156,7 @@ class OrderEditTest extends TestCase
             ->call('save')
             ->assertHasErrors(['customer.email', 'customer.first_name']);
 
-        $this->assertSame(0, $order->events()->count());
+        $this->assertSame(['opened'], $order->events()->pluck('type')->all());
         $this->assertSame('nino@example.com', $order->fresh()->email);
     }
 
@@ -180,7 +180,7 @@ class OrderEditTest extends TestCase
             ->call('changeStatus');
 
         $this->assertSame('confirmed', $order->fresh()->status);
-        $this->assertSame(['status', 'note'], $order->events()->pluck('type')->all());
+        $this->assertSame(['status', 'note', 'opened'], $order->events()->pluck('type')->all());
         $this->assertSame('კლიენტმა დაგვირეკა', $order->events()->where('type', 'note')->value('note'));
     }
 }

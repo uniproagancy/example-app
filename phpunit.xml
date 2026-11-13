@@ -23,6 +23,7 @@
         <env name="APP_ROUTES_CACHE" value="bootstrap/cache/testing-routes.php" force="true"/>
         <env name="APP_EVENTS_CACHE" value="bootstrap/cache/testing-events.php" force="true"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <env name="APP_LOCALES" value="ka,en" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

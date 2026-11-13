@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
+use App\Support\Catalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
@@ -34,6 +37,31 @@ class AccountTest extends TestCase
                 ->assertSee(__('account.hello', ['name' => 'ნინო'], $locale))
                 ->assertSee($user->email);
         }
+    }
+
+    public function test_orders_tab_shows_each_ordered_product_with_its_photo_and_link(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+        $user = User::factory()->create();
+        $product = Product::query()->where('sku', 'ip16')->sole();
+        $product->images()->create(['path' => 'products/ip16/front.jpg', 'position' => 0]);
+        Catalog::flush();
+        $iphone = Catalog::find($product->id);
+
+        $order = Order::query()->create([
+            'number' => 'EL-111222', 'user_id' => $user->id, 'status' => 'new', 'source' => 'checkout', 'first_name' => 'Nino', 'last_name' => 'Beridze',
+            'phone' => '555123456', 'email' => 'nino@example.com', 'shipping_method' => 'courier', 'city' => 'tbilisi', 'address' => 'Chavchavadze 1',
+            'payment_method' => 'cash', 'payment_status' => Order::PAYMENT_PENDING, 'subtotal' => 1900, 'discount' => 0, 'shipping' => 0, 'total' => 1900, 'locale' => 'ka',
+        ]);
+        $order->items()->create(['product_id' => $iphone['id'], 'name' => 'iPhone 16 Pro', 'unit_price' => 950, 'quantity' => 2, 'total' => 1900]);
+        $order->items()->create(['product_id' => null, 'name' => 'Removed item', 'unit_price' => 10, 'quantity' => 1, 'total' => 10]);
+
+        $html = $this->actingAs($user)->get('/ka/account?tab=orders')->assertOk()->getContent();
+
+        $this->assertStringContainsString('href="'.$iphone['url'].'"', $html);
+        $this->assertStringContainsString('src="'.$iphone['images'][0].'"', $html);
+        $this->assertStringContainsString('iPhone 16 Pro', $html);
+        $this->assertStringContainsString('Removed item', $html);
     }
 
     public function test_profile_can_be_updated(): void

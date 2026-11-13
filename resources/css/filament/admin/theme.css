@@ -284,7 +284,10 @@
     }
 }
 
-.fi-ta-header-cell {
+.fi-ta-header-cell,
+.fi-ta-actions-header-cell,
+.fi-ta-empty-header-cell,
+thead .fi-ta-selection-cell {
     @apply bg-[#f8fafd] text-[12.5px] font-semibold tracking-[0.2px] text-[#5b6b86] dark:bg-white/[0.03] dark:text-gray-400;
 }
 

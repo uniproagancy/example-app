@@ -312,41 +312,43 @@ new class extends Component
     @php($hasSpecs = $specs->isNotEmpty() || $product['colors'] || $product['storages'])
     @php($hasDescription = filled($product['description']))
     @php($firstTab = $hasSpecs ? 'specs' : 'desc')
-    @php($tabClass = 'flex h-[42px] items-center rounded-full px-[22px] text-sm font-bold transition')
+    @php($tabClass = 'flex h-10 items-center gap-2 rounded-full px-5 text-sm font-bold transition')
+    @php($specRowClass = 'flex items-baseline justify-between gap-6 border-b border-line-soft py-3.5 text-[13.5px] sm:text-sm')
 
     @if ($hasSpecs || $hasDescription)
-        <div x-data="{ tab: '{{ $firstTab }}', show(name) { this.tab = name; if (this.$refs.panels.getBoundingClientRect().top < 0) { this.$refs.panels.scrollIntoView({ behavior: 'smooth', block: 'start' }) } } }" class="mt-14">
-            @if ($hasSpecs && $hasDescription)
-                <div class="pointer-events-none sticky top-[84px] z-[14] flex justify-center">
-                    <div role="tablist" class="pointer-events-auto flex gap-1 rounded-full bg-soft/90 p-[5px] shadow-[0_10px_30px_-18px_rgba(10,22,51,.35)] backdrop-blur-md">
+        <div x-data="{ tab: '{{ $firstTab }}', show(name) { this.tab = name; if (this.$refs.panels.getBoundingClientRect().top < 0) { this.$refs.panels.scrollIntoView({ behavior: 'smooth', block: 'start' }) } } }" class="mt-14 rounded-[28px] border border-line-mid bg-white">
+            <div class="sticky top-[calc(var(--header-h)+12px)] z-[14] flex items-center justify-between gap-4 rounded-t-[28px] border-b border-line-soft bg-white/95 px-4 py-3 backdrop-blur-md sm:px-7 sm:py-4">
+                @if ($hasSpecs && $hasDescription)
+                    <div role="tablist" class="flex gap-1 rounded-full bg-soft p-1">
                         <button type="button" role="tab" id="tab-specs" aria-controls="specs" x-on:click="show('specs')" :aria-selected="tab === 'specs'" class="{{ $tabClass }}" :class="tab === 'specs' ? 'bg-navy text-white shadow-[0_4px_12px_-4px_rgba(10,22,51,.4)]' : 'text-muted hover:text-navy'">{{ __('product.tabs.specs') }}</button>
                         <button type="button" role="tab" id="tab-desc" aria-controls="desc" x-on:click="show('desc')" :aria-selected="tab === 'desc'" class="{{ $tabClass }}" :class="tab === 'desc' ? 'bg-navy text-white shadow-[0_4px_12px_-4px_rgba(10,22,51,.4)]' : 'text-muted hover:text-navy'">{{ __('product.tabs.description') }}</button>
                     </div>
-                </div>
-            @endif
-
-            <div x-ref="panels" class="scroll-mt-[150px]">
+                @else
+                    <h2 class="m-0 text-xl font-extrabold tracking-[0.3px]">{{ $hasSpecs ? __('product.tabs.specs') : __('product.tabs.description') }}</h2>
+                @endif
                 @if ($hasSpecs)
-                    <section id="specs" role="tabpanel" aria-labelledby="tab-specs" x-show="tab === 'specs'" @if ($firstTab !== 'specs') x-cloak @endif class="mt-9 grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
-                        <div class="flex flex-col gap-2.5">
-                            <h2 class="m-0 text-2xl leading-[1.25] font-extrabold tracking-[0.3px]">{{ __('product.tabs.specs') }}</h2>
-                            <span class="text-[13px] leading-[1.55] text-muted">{{ __('product.specs_text') }}</span>
-                        </div>
-                        <dl class="m-0 grid border-t-2 border-navy md:grid-cols-[repeat(auto-fit,minmax(min(100%,340px),1fr))] md:gap-x-10">
+                    <span x-show="tab === 'specs'" class="hidden text-[13px] text-muted md:block">{{ __('product.specs_text') }}</span>
+                @endif
+            </div>
+
+            <div x-ref="panels" class="scroll-mt-[150px] px-4 pt-3 pb-6 sm:px-7 sm:pt-4 sm:pb-8">
+                @if ($hasSpecs)
+                    <section id="specs" role="tabpanel" aria-labelledby="tab-specs" x-show="tab === 'specs'" @if ($firstTab !== 'specs') x-cloak @endif>
+                        <dl class="m-0 grid md:grid-cols-2 md:gap-x-12">
                             @if ($product['storages'])
-                                <div class="flex items-center justify-between gap-6 border-b border-line-soft py-[15px] text-[13px]">
+                                <div class="{{ $specRowClass }}">
                                     <dt class="text-subtle">{{ __('product.storage') }}</dt>
                                     <dd class="m-0 text-right font-bold text-navy" x-text="storageOption?.label"></dd>
                                 </div>
                             @endif
                             @foreach ($specs as $spec)
-                                <div class="flex items-center justify-between gap-6 border-b border-line-soft py-[15px] text-[13px]">
+                                <div class="{{ $specRowClass }}">
                                     <dt class="text-subtle">{{ $spec['name'] }}</dt>
                                     <dd class="m-0 text-right font-bold text-navy">{{ $spec['value'] }}</dd>
                                 </div>
                             @endforeach
                             @if ($product['colors'])
-                                <div class="flex items-center justify-between gap-6 border-b border-line-soft py-[15px] text-[13px]">
+                                <div class="{{ $specRowClass }}">
                                     <dt class="text-subtle">{{ __('product.color') }}</dt>
                                     <dd class="m-0 text-right font-bold text-navy" x-text="colorOption?.label"></dd>
                                 </div>
@@ -356,9 +358,8 @@ new class extends Component
                 @endif
 
                 @if ($hasDescription)
-                    <section id="desc" role="tabpanel" aria-labelledby="tab-desc" x-show="tab === 'desc'" @if ($firstTab !== 'desc') x-cloak @endif class="mt-9 grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
-                        <h2 class="m-0 text-2xl font-extrabold tracking-[0.3px]">{{ __('product.tabs.description') }}</h2>
-                        <div class="max-w-[900px] border-t-2 border-navy pt-[18px] text-base leading-[1.7] font-medium text-pretty text-navy sm:text-lg [&_h2]:mt-5 [&_h2]:mb-2 [&_h2]:text-xl [&_h2]:font-extrabold [&_h3]:mt-5 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-extrabold [&_h4]:mt-4 [&_h4]:mb-1.5 [&_h4]:font-extrabold [&_li]:mb-1 [&_ol]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-3 [&_strong]:font-extrabold [&_table]:mb-3 [&_table]:w-full [&_table]:text-sm [&_td]:border-b [&_td]:border-line [&_td]:py-2 [&_td]:pr-3 [&_th]:border-b [&_th]:border-line [&_th]:py-2 [&_th]:pr-3 [&_th]:text-left [&_ul]:mb-3 [&_ul]:list-disc [&_ul]:pl-5">{!! App\Support\Html::clean($product['description']) !!}</div>
+                    <section id="desc" role="tabpanel" aria-labelledby="tab-desc" x-show="tab === 'desc'" @if ($firstTab !== 'desc') x-cloak @endif class="pt-3 sm:pt-4">
+                        <div class="max-w-[820px] text-[15px] leading-[1.8] text-pretty text-navy/85 sm:text-base [&_a]:font-bold [&_a]:text-brand [&_a]:underline-offset-2 hover:[&_a]:underline [&_h2]:mt-7 [&_h2]:mb-2.5 [&_h2]:text-xl [&_h2]:font-extrabold [&_h2]:text-navy [&_h3]:mt-6 [&_h3]:mb-2 [&_h3]:text-lg [&_h3]:font-extrabold [&_h3]:text-navy [&_h4]:mt-5 [&_h4]:mb-1.5 [&_h4]:font-extrabold [&_h4]:text-navy [&_li]:relative [&_li]:mb-1.5 [&_li]:pl-5 [&_ol]:mb-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol_li]:pl-1 [&_p]:mb-4 [&_strong]:font-extrabold [&_strong]:text-navy [&_table]:mb-5 [&_table]:w-full [&_table]:text-sm [&_td]:border-b [&_td]:border-line-soft [&_td]:py-2.5 [&_td]:pr-3 [&_th]:border-b [&_th]:border-line [&_th]:py-2.5 [&_th]:pr-3 [&_th]:text-left [&_ul]:mb-5 [&_ul]:rounded-2xl [&_ul]:bg-soft [&_ul]:px-5 [&_ul]:py-4 [&_ul>li]:before:absolute [&_ul>li]:before:top-[0.72em] [&_ul>li]:before:left-0 [&_ul>li]:before:size-1.5 [&_ul>li]:before:rounded-full [&_ul>li]:before:bg-brand [&_ul>li]:before:content-[''] [&>*:first-child]:mt-0 [&>*:last-child]:mb-0">{!! App\Support\Html::clean($product['description']) !!}</div>
                     </section>
                 @endif
             </div>
@@ -389,10 +390,14 @@ new class extends Component
             x-show="showBar"
             x-cloak
             x-transition.opacity
-            class="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-1/2 z-[44] flex w-[min(880px,calc(100vw-32px))] -translate-x-1/2 items-center gap-3.5 rounded-[20px] bg-navy/96 py-2.5 pr-2.5 pl-3.5 text-white shadow-[0_24px_50px_-16px_rgba(10,22,51,.6)] backdrop-blur-md sm:bottom-5"
+            class="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-1/2 z-[44] flex w-[min(880px,calc(100vw-32px))] -translate-x-1/2 items-center gap-3.5 rounded-[20px] bg-navy py-2.5 pr-2.5 pl-3.5 text-white shadow-[0_24px_50px_-16px_rgba(10,22,51,.6)] transform-gpu sm:bottom-5"
         >
-            <span class="hidden size-[46px] shrink-0 place-items-center rounded-xl bg-white/8 text-sky sm:grid">
-                @include('partials.category-icon', ['icon' => $breadcrumbs->first()['icon'] ?? null, 'class' => 'size-5', 'stroke' => 1.9])
+            <span class="hidden size-[46px] shrink-0 place-items-center overflow-hidden rounded-xl bg-white sm:grid">
+                @if ($product['images'])
+                    <img src="{{ $product['images'][0] }}" alt="{{ $product['name'] }}" loading="lazy" class="size-full object-contain p-1">
+                @else
+                    <span class="font-display text-lg font-extrabold text-brand/40">{{ mb_substr($product['brand'], 0, 1) }}</span>
+                @endif
             </span>
             <span class="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span class="truncate text-sm font-bold">{{ $product['name'] }}</span>

@@ -28,7 +28,7 @@
                     </div>
                 </div>
 
-                <div class="no-scrollbar mb-4 flex max-w-full flex-nowrap gap-0.5 overflow-x-auto rounded-full bg-soft p-1 sm:mb-[22px] sm:inline-flex sm:flex-wrap">
+                <div class="mb-[22px] hidden max-w-full flex-wrap gap-0.5 rounded-full bg-soft p-1 sm:inline-flex">
                     @foreach (array_merge([''], $section['chips']) as $chip)
                         <button
                             type="button"
@@ -39,7 +39,7 @@
                     @endforeach
                 </div>
 
-                <div x-ref="track" class="carousel auto-cols-[calc((100%-10px)/2)] gap-2.5 sm:auto-cols-[calc((100%-40px)/3)] sm:gap-5 lg:auto-cols-[calc((100%-60px)/4)] xl:auto-cols-[calc((100%-80px)/5)]">
+                <div x-ref="track" class="carousel auto-cols-[calc((100%-10px)/2)] gap-2.5 sm:auto-cols-[calc((100%-24px)/3)] sm:gap-3 md:auto-cols-[calc((100%-36px)/4)] lg:auto-cols-[calc((100%-48px)/5)] xl:auto-cols-[calc((100%-60px)/6)]">
                     @foreach ($section['products'] as $product)
                         @include('partials.product-card', ['product' => $product, 'filter' => true])
                     @endforeach

@@ -13,6 +13,9 @@ use App\Services\Payments\PaymentCheck;
 use App\Support\Cart;
 use App\Support\Catalog;
 use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
@@ -53,6 +56,7 @@ class ViewOrder extends ViewRecord
     {
         parent::mount($record);
 
+        $this->order()->logFirstOpen();
         $this->fillFromOrder();
     }
 
@@ -79,6 +83,18 @@ class ViewOrder extends ViewRecord
                 ->icon(Heroicon::OutlinedCheck)
                 ->visible(fn (): bool => $this->order()->isEditable())
                 ->action(fn () => $this->save()),
+            DeleteAction::make()
+                ->label(__('admin.orders.delete'))
+                ->modalHeading(fn (): string => __('admin.orders.delete_heading', ['number' => $this->order()->number]))
+                ->modalDescription(__('admin.orders.delete_help'))
+                ->successRedirectUrl(OrderResource::getUrl()),
+            RestoreAction::make()
+                ->label(__('admin.orders.restore')),
+            ForceDeleteAction::make()
+                ->label(__('admin.orders.force_delete'))
+                ->modalHeading(fn (): string => __('admin.orders.force_delete_heading', ['number' => $this->order()->number]))
+                ->modalDescription(__('admin.orders.force_delete_help'))
+                ->successRedirectUrl(OrderResource::getUrl()),
         ];
     }
 

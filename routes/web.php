@@ -20,6 +20,11 @@ Route::controller(PaymentController::class)->prefix('payment')->name('payment.')
     Route::get('credo-split/{number}', 'credoSplit')->name('credo_split.form');
 });
 
+if (! array_key_exists('en', LaravelLocalization::getSupportedLocales())) {
+    Route::get('en/{path?}', fn (?string $path = null) => redirect('/'.LaravelLocalization::getDefaultLocale().($path ? '/'.$path : '')
+        .(request()->getQueryString() ? '?'.request()->getQueryString() : ''), 301))->where('path', '.*');
+}
+
 Route::prefix(LaravelLocalization::setLocale())
     ->middleware(['localize', 'localeSessionRedirect', 'localizationRedirect', 'localeViewPath'])
     ->group(function () {

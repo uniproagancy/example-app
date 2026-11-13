@@ -60,7 +60,7 @@ class ImportManager
 
         $this->push($supplier, $pending);
 
-        $supplier->update(['last_run_at' => now()]);
+        $supplier->newQuery()->whereKey($supplier->getKey())->update(['last_run_at' => now()]);
 
         return $queued;
     }

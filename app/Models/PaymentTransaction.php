@@ -33,7 +33,7 @@ class PaymentTransaction extends Model
 
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Order::class)->withTrashed();
     }
 
     public function isPending(): bool

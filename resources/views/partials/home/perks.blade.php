@@ -9,7 +9,7 @@
     ];
 @endphp
 
-        <section class="mt-6 grid grid-cols-2 overflow-hidden rounded-[18px] border border-line-mid sm:mt-10 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] sm:rounded-3xl">
+        <section class="mt-6 hidden grid-cols-2 overflow-hidden rounded-[18px] border border-line-mid sm:mt-10 sm:grid sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] sm:rounded-3xl">
             @foreach ($perks as $perk)
                 <div class="flex flex-col items-start gap-2.5 p-3.5 shadow-[1px_0_0_#E9EDF4,0_1px_0_#E9EDF4] sm:flex-row sm:items-center sm:gap-3.5 sm:px-6 sm:py-5 sm:shadow-[1px_0_0_#E9EDF4]">
                     <span class="grid size-11 shrink-0 place-items-center rounded-full border-[1.5px] border-[#D5E2F7] text-brand">

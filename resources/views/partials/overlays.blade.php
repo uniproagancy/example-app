@@ -1,4 +1,4 @@
-<nav aria-label="{{ __('shop.nav.home') }}" class="fixed inset-x-0 bottom-0 z-[46] flex items-stretch border-t border-line bg-white/97 px-2 font-caps pt-1 pb-[calc(4px+env(safe-area-inset-bottom))] backdrop-blur-md sm:hidden">
+<nav aria-label="{{ __('shop.nav.home') }}" class="fixed inset-x-0 bottom-0 z-[46] flex items-stretch border-t border-line bg-white px-2 font-caps pt-1 pb-[calc(4px+env(safe-area-inset-bottom))] transform-gpu sm:hidden">
     <a href="{{ route('home') }}" wire:navigate class="flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] py-1 text-[11px] font-bold {{ request()->routeIs('home') ? 'text-brand' : 'text-muted' }}">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>
         {{ __('shop.mobile.home') }}
@@ -32,7 +32,7 @@
     @endauth
 </nav>
 
-<div x-data="stickyHeader">
+<div x-data="backToTop">
     <button
         type="button"
         x-show="showTop"

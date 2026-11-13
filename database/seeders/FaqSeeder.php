@@ -15,7 +15,7 @@ class FaqSeeder extends Seeder
             [
                 'icon' => 'delivery',
                 'question' => ['ka' => 'მიწოდება — ვადები და ფასი', 'en' => 'Delivery — times and prices'],
-                'answer' => ['ka' => 'მიწოდება ხორციელდება მთელ საქართველოში: თბილისში — 2 სამუშაო დღეში, რეგიონებში — 3–7 სამუშაო დღეში. 100 ₾-ზე მეტ შეკვეთაზე მიწოდება უფასოა.', 'en' => 'We deliver across Georgia: Tbilisi within 2 business days, the regions within 3–7 business days. Delivery is free on orders over 100 ₾.'],
+                'answer' => ['ka' => 'მიწოდება ხორციელდება მთელ საქართველოში: თბილისში — 2 სამუშაო დღეში, რეგიონებში — 3–7 სამუშაო დღეში.', 'en' => 'We deliver across Georgia: Tbilisi within 2 business days, the regions within 3–7 business days.'],
             ],
             [
                 'icon' => 'warranty',

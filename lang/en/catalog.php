@@ -27,7 +27,6 @@ return [
         'sale' => 'On sale',
         'new' => 'New arrivals',
         'stock' => 'In stock',
-        'free' => 'Free delivery',
     ],
     'sort' => [
         'popular' => 'Most popular',

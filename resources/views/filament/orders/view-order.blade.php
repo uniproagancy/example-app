@@ -175,6 +175,9 @@
                                 'bg-warning-500' => $event->type === 'edit',
                                 'bg-success-500' => $event->type === 'payment',
                                 'bg-gray-400' => $event->type === 'note',
+                                'bg-info-500' => $event->type === 'opened',
+                                'bg-danger-500' => $event->type === 'deleted',
+                                'bg-success-600' => $event->type === 'restored',
                             ])></span>
                             <div class="flex flex-wrap items-baseline justify-between gap-2">
                                 <p class="text-sm font-semibold text-gray-950 dark:text-white">
@@ -186,6 +189,8 @@
                                         {{ __('admin.orders.event_payment') }}
                                     @elseif ($event->type === 'edit')
                                         {{ __('admin.orders.event_edit') }}
+                                    @elseif (in_array($event->type, ['opened', 'deleted', 'restored'], true))
+                                        {{ __("admin.orders.event_{$event->type}") }}
                                     @else
                                         {{ __('admin.orders.event_note') }}
                                     @endif

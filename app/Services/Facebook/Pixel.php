@@ -222,8 +222,12 @@ class Pixel
         });
     }
 
-    public function snapshotForOrder(Order $order): OrderPixelData
+    public function snapshotForOrder(Order $order): ?OrderPixelData
     {
+        if (! $this->pixelId()) {
+            return null;
+        }
+
         $browser = $this->browserData();
 
         return OrderPixelData::query()->firstOrCreate(['order_id' => $order->id], [
@@ -378,14 +382,18 @@ class Pixel
 
     public function dispatchEvent(string $event, array $payload): void
     {
-        if (config('services.facebook.queue_events', true)) {
-            SendPixelEventJob::dispatch($event, $payload)->afterCommit();
+        try {
+            if (config('services.facebook.queue_events', true)) {
+                SendPixelEventJob::dispatch($event, $payload)->afterCommit();
 
-            return;
-        }
+                return;
+            }
 
-        if (! $this->post($event, $payload)) {
-            SendPixelEventJob::dispatch($event, $payload)->afterCommit();
+            if (! $this->post($event, $payload)) {
+                SendPixelEventJob::dispatch($event, $payload)->afterCommit();
+            }
+        } catch (Throwable $e) {
+            Log::channel('pixel')->error('not delivered', ['event' => $event, 'error' => $e->getMessage()]);
         }
     }
 

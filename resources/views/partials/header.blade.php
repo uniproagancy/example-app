@@ -8,14 +8,15 @@
     $highlightItems = App\Models\MenuItem::for('header_highlight');
 @endphp
 
+<div aria-hidden="true" class="h-(--header-full)"></div>
+
 <header
     x-data="stickyHeader"
-    class="sticky top-0 z-20 bg-white/95 backdrop-blur-md transition-shadow duration-300"
-    :class="scrolled ? 'shadow-[0_8px_24px_-12px_rgba(10,22,51,.18)]' : 'shadow-[0_1px_0_#EEF2F8]'"
+    class="group fixed inset-x-0 top-0 z-20 bg-white shadow-[0_1px_0_#EEF2F8] transition-shadow duration-300 data-scrolled:shadow-[0_8px_24px_-12px_rgba(10,22,51,.18)]"
+    x-bind:data-scrolled="scrolled"
 >
     <div
-        class="mx-auto flex max-w-[1480px] flex-wrap items-center gap-2.5 px-4 transition-[padding] duration-300 sm:flex-nowrap sm:gap-3 sm:px-6 lg:gap-5 lg:px-8"
-        :class="scrolled ? 'py-3' : 'pt-2.5 pb-2.5 sm:pt-[18px] sm:pb-3.5'"
+        class="mx-auto flex max-w-[1480px] flex-wrap items-center gap-2.5 px-4 pt-2.5 pb-2.5 transition-[padding] duration-300 group-data-scrolled:py-3 sm:flex-nowrap sm:gap-3 sm:px-6 sm:pt-[18px] sm:pb-3.5 sm:group-data-scrolled:py-3 lg:gap-5 lg:px-8"
     >
         <a href="{{ route('home') }}" wire:navigate class="shrink-0 hover:text-navy">
             @include('partials.logo')
@@ -171,8 +172,7 @@
     </div>
 
     <div
-        class="mx-auto hidden max-w-[1480px] items-center gap-4 overflow-hidden px-6 transition-all duration-300 sm:flex lg:px-8"
-        :class="scrolled ? 'max-h-0 pb-0 opacity-0' : 'max-h-[60px] pb-3.5 opacity-100'"
+        class="mx-auto hidden max-w-[1480px] items-center gap-4 max-h-[60px] overflow-hidden px-6 pb-3.5 opacity-100 transition-[max-height,padding,opacity] duration-300 group-data-scrolled:max-h-0 group-data-scrolled:pb-0 group-data-scrolled:opacity-0 sm:flex lg:px-8"
     >
         <nav class="no-scrollbar font-caps flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-x-auto text-[13px] font-bold tracking-[0.4px] whitespace-nowrap uppercase">
             @foreach ($navItems as $item)

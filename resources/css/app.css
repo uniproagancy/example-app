@@ -245,3 +245,14 @@
         opacity: 1;
     }
 }
+
+:root {
+    --header-h: 72px;
+    --header-full: 120px;
+}
+
+@media (width >= 40rem) {
+    :root {
+        --header-full: 136px;
+    }
+}

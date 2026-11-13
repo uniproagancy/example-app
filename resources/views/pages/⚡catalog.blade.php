@@ -15,7 +15,7 @@ new class extends Component
 
     public const SORTS = ['popular', 'price_asc', 'price_desc', 'newest'];
 
-    public const FLAGS = ['sale', 'new', 'stock', 'free'];
+    public const FLAGS = ['sale', 'new', 'stock'];
 
     public const PRICE_STEP = 50;
 
@@ -259,7 +259,6 @@ new class extends Component
             'sale' => $product['old'] !== null,
             'new' => $product['isNew'],
             'stock' => $product['inStock'],
-            'free' => $product['price'] >= Catalog::FREE_SHIPPING_FROM,
             default => true,
         };
     }
@@ -422,7 +421,7 @@ new class extends Component
             </a>
         </div>
     @else
-    <div class="sticky top-[72px] z-[15] -mx-4 mt-[22px] flex flex-wrap items-center justify-between gap-3 border-b border-[#EEF2F8] bg-white/92 px-4 py-3 backdrop-blur-md sm:-mx-6 sm:px-6 lg:top-[76px] lg:-mx-8 lg:px-8">
+    <div class="sticky top-(--header-h) z-[15] -mx-4 mt-[22px] flex flex-wrap items-center justify-between gap-3 border-b border-[#EEF2F8] bg-white px-4 py-3 transition-[top] duration-300 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div class="flex min-w-0 flex-wrap items-center gap-2.5">
             <span class="text-[13px] whitespace-nowrap text-muted">
                 <span class="font-display text-[15px] font-extrabold text-navy">{{ $total }}</span>
@@ -494,10 +493,10 @@ new class extends Component
     </div>
 
     <div class="mt-[26px] grid grid-cols-1 items-start gap-9 lg:grid-cols-[268px_minmax(0,1fr)]">
-        <div x-show="filtersOpen" x-cloak x-on:click="filtersOpen = false" class="fixed inset-0 z-[60] animate-fade bg-navy/40 lg:hidden"></div>
+        <div x-show="filtersOpen" x-cloak x-transition.opacity.duration.300ms x-on:click="filtersOpen = false" class="fixed inset-0 z-[60] bg-navy/40 lg:hidden"></div>
         <aside
-            class="fixed inset-y-0 left-0 z-[61] w-[min(340px,92vw)] flex-col gap-2 overflow-y-auto bg-white px-5 pt-5 pb-24 shadow-[20px_0_60px_rgba(10,22,51,.25)] lg:static lg:z-auto lg:flex lg:w-auto lg:overflow-visible lg:bg-transparent lg:p-0 lg:shadow-none"
-            x-bind:class="filtersOpen ? 'flex' : 'hidden'"
+            class="fixed inset-y-0 left-0 z-[61] flex w-[min(340px,92vw)] flex-col gap-2 overflow-y-auto overscroll-contain bg-white px-5 pt-5 pb-24 shadow-[20px_0_60px_rgba(10,22,51,.25)] transition-[translate,visibility] duration-300 ease-[cubic-bezier(.22,1,.36,1)] max-lg:not-data-open:invisible max-lg:not-data-open:-translate-x-full lg:static lg:z-auto lg:w-auto lg:overflow-visible lg:bg-transparent lg:p-0 lg:shadow-none lg:transition-none"
+            x-bind:data-open="filtersOpen"
         >
             <div class="mb-2 flex items-center justify-between lg:hidden">
                 <span class="text-lg font-extrabold">{{ __('catalog.filters') }}</span>
