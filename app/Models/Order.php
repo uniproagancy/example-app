@@ -132,9 +132,12 @@ class Order extends Model
         return url($locale.'/order/'.$this->number.'/invoice');
     }
 
-    public function payLink(int $days = 7): string
+    public function payLink(int $days = 7, ?string $method = null): string
     {
-        return URL::temporarySignedRoute('payment.link', now()->addDays($days), ['number' => $this->number]);
+        return URL::temporarySignedRoute('payment.link', now()->addDays($days), array_filter([
+            'number' => $this->number,
+            'method' => $method,
+        ]));
     }
 
     public function rememberInSession(): void

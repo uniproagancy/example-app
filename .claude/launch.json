@@ -33,18 +33,6 @@
         "C:/Users/chikh/AppData/Local/Temp/claude/1da05263105eab4b/115e7b6f-a636-4d63-b6b5-b7d70ac98e46/scratchpad/router.php"
       ],
       "port": 8001
-    },
-    {
-      "name": "admin-preview",
-      "runtimeExecutable": "php",
-      "runtimeArgs": [
-        "-S",
-        "127.0.0.1:8002",
-        "-t",
-        "public",
-        "C:/Users/chikh/AppData/Local/Temp/claude/1da05263105eab4b/115e7b6f-a636-4d63-b6b5-b7d70ac98e46/scratchpad/router-preview.php"
-      ],
-      "port": 8002
     }
   ]
 }

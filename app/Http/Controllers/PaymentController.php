@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\PaymentCallback;
+use App\Models\PaymentMethod;
 use App\Services\Payments\Drivers\BogInstallment;
 use App\Services\Payments\Drivers\CredoInstallment;
 use App\Services\Payments\Drivers\CredoSplit;
@@ -91,12 +92,35 @@ class PaymentController extends Controller
         return redirect()->to($order->pageUrl());
     }
 
-    public function link(string $number): RedirectResponse
+    public function link(Request $request, string $number): RedirectResponse
     {
         $order = Order::query()->where('number', $number)->firstOrFail();
         $order->rememberInSession();
 
-        return redirect()->to($order->pageUrl());
+        $method = $this->linkMethod($order, (string) $request->query('method'));
+
+        if ($method === null) {
+            return redirect()->to($order->pageUrl());
+        }
+
+        if ($order->payment_method !== $method->code) {
+            $previous = $order->paymentLabel();
+            $order->update(['payment_method' => $method->code, 'bank' => null, 'term_months' => null]);
+            $order->log('payment', __('admin.orders.pay_link_switched', ['from' => $previous, 'to' => $method->name ?? $method->code], 'ka'));
+        }
+
+        return redirect()->to($order->pageUrl().'?pay=1');
+    }
+
+    protected function linkMethod(Order $order, string $code): ?PaymentMethod
+    {
+        if ($code === '' || $order->isPaid() || $order->status === 'cancelled') {
+            return null;
+        }
+
+        $method = PaymentMethod::query()->active()->withTranslation()->where('code', $code)->first();
+
+        return $method?->isPayableOnline() && $method->fitsTotal((float) $order->total) ? $method : null;
     }
 
     public function bogInstallment(Request $request, string $number): JsonResponse

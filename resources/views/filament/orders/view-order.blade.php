@@ -290,19 +290,57 @@
                         </p>
                     @endif
 
-                    @if (! $order->isPaid() && $order->paymentMethod?->isPayableOnline() && $order->status !== 'cancelled')
-                        <div class="flex flex-col gap-1" x-data="{ copied: false }">
+                    @if (! $order->isPaid() && $order->status !== 'cancelled')
+                        <div class="flex flex-col gap-2 rounded-xl border border-gray-200 p-3 dark:border-white/10" x-data="{ copied: false }">
                             <span class="{{ $label }}">{{ __('admin.orders.pay_link') }}</span>
-                            <x-filament::input.wrapper>
-                                <x-filament::input type="text" readonly :value="$this->payLink()" x-ref="link" x-on:focus="$el.select()" />
-                                <x-slot name="suffix">
-                                    <button type="button" class="text-sm font-medium text-primary-600 dark:text-primary-400" x-on:click="navigator.clipboard?.writeText($refs.link.value); copied = true; setTimeout(() => copied = false, 1500)">
-                                        <span x-show="! copied">{{ __('admin.orders.copy') }}</span>
-                                        <span x-show="copied" x-cloak>{{ __('admin.orders.copied') }}</span>
-                                    </button>
-                                </x-slot>
-                            </x-filament::input.wrapper>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('admin.orders.pay_link_help') }}</span>
+
+                            @if ($this->linkMethods->isEmpty())
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('admin.orders.pay_link_no_methods') }}</span>
+                            @else
+                                <div class="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto]">
+                                    <x-filament::input.wrapper :valid="! $errors->has('linkMethod')">
+                                        <x-filament::input.select wire:model.live="linkMethod" aria-label="{{ __('admin.orders.pay_link_method') }}">
+                                            @foreach ($this->linkMethods as $method)
+                                                <option value="{{ $method->code }}">{{ $method->name ?? $method->code }}</option>
+                                            @endforeach
+                                        </x-filament::input.select>
+                                    </x-filament::input.wrapper>
+                                    <x-filament::input.wrapper>
+                                        <x-filament::input.select wire:model.live="linkDays" aria-label="{{ __('admin.orders.pay_link_days') }}">
+                                            @foreach (\App\Filament\Resources\Orders\Pages\ViewOrder::LINK_DAYS as $days)
+                                                <option value="{{ $days }}">{{ trans_choice('admin.orders.pay_link_valid', $days, ['count' => $days]) }}</option>
+                                            @endforeach
+                                        </x-filament::input.select>
+                                    </x-filament::input.wrapper>
+                                </div>
+                                @error('linkMethod') <span class="{{ $error }}">{{ $message }}</span> @enderror
+
+                                <x-filament::button icon="heroicon-o-link" wire:click="generateLink" wire:target="generateLink" class="w-full">
+                                    {{ __('admin.orders.pay_link_generate') }}
+                                </x-filament::button>
+
+                                @if ($generatedLink)
+                                    <x-filament::input.wrapper>
+                                        <x-filament::input type="text" readonly :value="$generatedLink" x-ref="link" x-on:focus="$el.select()" />
+                                        <x-slot name="suffix">
+                                            <button type="button" class="text-sm font-medium text-primary-600 dark:text-primary-400" x-on:click="navigator.clipboard?.writeText($refs.link.value); copied = true; setTimeout(() => copied = false, 1500)">
+                                                <span x-show="! copied">{{ __('admin.orders.copy') }}</span>
+                                                <span x-show="copied" x-cloak>{{ __('admin.orders.copied') }}</span>
+                                            </button>
+                                        </x-slot>
+                                    </x-filament::input.wrapper>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <x-filament::button color="gray" icon="heroicon-o-chat-bubble-left-ellipsis" wire:click="sendLinkSms" wire:target="sendLinkSms" :disabled="! $this->canSendLinkSms()">
+                                            {{ __('admin.orders.pay_link_sms') }}
+                                        </x-filament::button>
+                                        <x-filament::button color="gray" icon="heroicon-o-paper-airplane" tag="a" :href="'https://wa.me/?text='.rawurlencode($this->linkMessage())" target="_blank">
+                                            WhatsApp
+                                        </x-filament::button>
+                                    </div>
+                                @endif
+
+                                <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('admin.orders.pay_link_help') }}</span>
+                            @endif
                         </div>
                     @endif
 

@@ -15,8 +15,10 @@ use App\Models\Product;
 use App\Services\Facebook\Pixel;
 use App\Services\Payments\Drivers\Flitt;
 use App\Services\Payments\PaymentCheck;
+use App\Services\Sms\SmsOffice;
 use App\Support\Cart;
 use App\Support\Catalog;
+use App\Support\Site;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
@@ -59,12 +61,23 @@ class ViewOrder extends ViewRecord
 
     public bool $linesChanged = false;
 
+    public const LINK_DAYS = [1, 3, 7, 14, 30];
+
+    public string $linkMethod = '';
+
+    public int $linkDays = 7;
+
+    public ?string $generatedLink = null;
+
     public function mount(int|string $record): void
     {
         parent::mount($record);
 
         $this->order()->logFirstOpen();
         $this->fillFromOrder();
+
+        $current = $this->order()->payment_method;
+        $this->linkMethod = $this->linkMethods->contains('code', $current) ? $current : (string) $this->linkMethods->first()?->code;
     }
 
     public function getTitle(): string
@@ -315,9 +328,73 @@ class ViewOrder extends ViewRecord
         unset($this->transactions, $this->events);
     }
 
-    public function payLink(): string
+    #[Computed]
+    public function linkMethods(): Collection
     {
-        return $this->order()->payLink();
+        $total = (float) $this->order()->total;
+
+        return PaymentMethod::query()
+            ->active()
+            ->withTranslation()
+            ->get()
+            ->filter(fn (PaymentMethod $method) => $method->isPayableOnline() && $method->fitsTotal($total))
+            ->values();
+    }
+
+    public function canSendLinkSms(): bool
+    {
+        return app(SmsOffice::class)->isConfigured() && SmsOffice::normalize($this->order()->phone) !== null;
+    }
+
+    public function generateLink(): void
+    {
+        $this->validate([
+            'linkMethod' => ['required', Rule::in($this->linkMethods->pluck('code')->all())],
+            'linkDays' => ['required', 'integer', Rule::in(self::LINK_DAYS)],
+        ]);
+
+        $order = $this->order();
+        $this->generatedLink = $order->payLink($this->linkDays, $this->linkMethod);
+
+        $order->log('payment', __('admin.orders.pay_link_created', [
+            'method' => PaymentMethod::labelFor($this->linkMethod),
+            'days' => $this->linkDays,
+        ]));
+
+        unset($this->events);
+    }
+
+    public function linkMessage(): string
+    {
+        $order = $this->order();
+
+        return __('admin.orders.pay_link_message', [
+            'site' => Site::name(),
+            'number' => $order->number,
+            'amount' => Catalog::money($order->total),
+            'method' => PaymentMethod::labelFor($this->linkMethod),
+            'url' => (string) $this->generatedLink,
+        ]);
+    }
+
+    public function sendLinkSms(): void
+    {
+        if ($this->generatedLink === null) {
+            return;
+        }
+
+        $order = $this->order();
+
+        if (! app(SmsOffice::class)->send($order->phone, $this->linkMessage(), $order->number)) {
+            Notification::make()->title(__('admin.orders.pay_link_sms_failed'))->danger()->send();
+
+            return;
+        }
+
+        $order->log('payment', __('admin.orders.pay_link_sms_sent', ['phone' => $order->phone]));
+        Notification::make()->title(__('admin.orders.pay_link_sms_sent', ['phone' => $order->phone]))->success()->send();
+
+        unset($this->events);
     }
 
     public function priceOf(Product $product): float
