@@ -6,7 +6,9 @@ use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Support\Operators;
 use App\Http\Middleware\SetAdminLocale;
 use App\Support\Site;
+use Filament\Enums\GlobalSearchPosition;
 use Filament\Enums\ThemeMode;
+use Filament\Enums\UserMenuPosition;
 use Filament\FontProviders\LocalFontProvider;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -51,8 +53,15 @@ class AdminPanelProvider extends PanelProvider
             ->font('HelveticaRegular', provider: LocalFontProvider::class)
             ->viteTheme('resources/css/filament/admin/theme.css')
             ->defaultThemeMode(ThemeMode::Light)
-            ->topNavigation()
-            ->maxContentWidth(Width::ScreenTwoExtraLarge)
+            ->topbar(false)
+            ->sidebarCollapsibleOnDesktop()
+            ->sidebarWidth('16.5rem')
+            ->collapsedSidebarWidth('4.5rem')
+            ->collapsibleNavigationGroups()
+            ->globalSearch(position: GlobalSearchPosition::Sidebar)
+            ->globalSearchKeyBindings(['mod+k'])
+            ->userMenu(position: UserMenuPosition::Sidebar)
+            ->maxContentWidth(Width::Full)
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => Blade::render('@fonts'))
             ->spa()
             ->navigationGroups([
