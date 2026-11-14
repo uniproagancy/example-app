@@ -32,7 +32,7 @@ class PromoResource extends Resource
 
     protected static string $labelKey = 'promos';
 
-    protected static string $groupKey = 'home';
+    protected static string $groupKey = 'content';
 
     protected static ?string $model = Promo::class;
 

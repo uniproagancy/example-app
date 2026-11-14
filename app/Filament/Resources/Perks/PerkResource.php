@@ -27,7 +27,7 @@ class PerkResource extends Resource
 
     protected static string $labelKey = 'perks';
 
-    protected static string $groupKey = 'home';
+    protected static string $groupKey = 'content';
 
     protected static ?string $model = Perk::class;
 

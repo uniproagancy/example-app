@@ -34,7 +34,7 @@ class DealResource extends Resource
 
     protected static string $labelKey = 'deals';
 
-    protected static string $groupKey = 'home';
+    protected static string $groupKey = 'content';
 
     protected static ?string $model = Deal::class;
 

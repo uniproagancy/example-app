@@ -26,7 +26,7 @@ class HomeBlockResource extends Resource
 
     protected static string $labelKey = 'home_blocks';
 
-    protected static string $groupKey = 'home';
+    protected static string $groupKey = 'content';
 
     protected static ?string $model = HomeBlock::class;
 
