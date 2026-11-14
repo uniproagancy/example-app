@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Campaign;
 use App\Support\Catalog;
 use App\Support\HomeContent;
 use App\Support\Seo;
@@ -20,6 +21,7 @@ new class extends Component
         ]);
 
         return $this->view([
+            'campaigns' => Campaign::listing(),
             'promos' => HomeContent::promos(),
             'deals' => Catalog::deals(),
             'saleProducts' => $saleProducts->sortByDesc(fn (array $product) => $product['old'] - ($product['price'] ?? $product['old']))->take(15)->values(),
@@ -72,7 +74,8 @@ new class extends Component
             </div>
             <div class="flex flex-wrap gap-2.5">
                 @foreach (array_filter([
-                    'campaigns' => $promos->count(),
+                    'campaigns' => $campaigns->count(),
+                    'offers' => $promos->count(),
                     'deals' => $deals->count(),
                     'sale' => $saleCount,
                 ]) as $key => $count)
@@ -85,7 +88,7 @@ new class extends Component
         </div>
     </section>
 
-    @if ($promos->isEmpty() && $deals->isEmpty() && $saleCount === 0)
+    @if ($campaigns->isEmpty() && $promos->isEmpty() && $deals->isEmpty() && $saleCount === 0)
         <section class="flex flex-col items-center gap-3 rounded-[28px] border border-line-soft bg-white px-6 py-16 text-center">
             <span class="grid size-16 place-items-center rounded-2xl bg-soft font-display text-3xl font-extrabold text-brand">%</span>
             <h2 class="m-0 text-xl font-extrabold">{{ __('pages.promotions.empty') }}</h2>
@@ -94,9 +97,22 @@ new class extends Component
         </section>
     @endif
 
-    @if ($promos->isNotEmpty())
+    @if ($campaigns->isNotEmpty())
         <section id="promotions-campaigns" class="mt-4 flex scroll-mt-28 flex-col gap-5">
             <h2 class="m-0 text-2xl font-extrabold tracking-[0.3px]">{{ __('pages.promotions.campaigns') }}</h2>
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                @foreach ($campaigns as $campaign)
+                    <div wire:key="campaign-{{ $campaign['id'] }}">
+                        @include('partials.campaign-card', ['campaign' => $campaign])
+                    </div>
+                @endforeach
+            </div>
+        </section>
+    @endif
+
+    @if ($promos->isNotEmpty())
+        <section id="promotions-offers" class="mt-4 flex scroll-mt-28 flex-col gap-5">
+            <h2 class="m-0 text-2xl font-extrabold tracking-[0.3px]">{{ __('pages.promotions.offers') }}</h2>
             <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                 @foreach ($promos as $promo)
                     @php($theme = $promoThemes[$promo['theme']])

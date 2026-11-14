@@ -50,6 +50,8 @@ Route::prefix(LaravelLocalization::setLocale())
 
         Route::livewire('promotions', 'pages::promotions')->name('promotions');
 
+        Route::livewire('promotions/{slug}', 'pages::promotion')->name('promotions.show');
+
         Route::livewire('info/{slug}', 'pages::info')->name('page');
 
         Route::livewire('checkout', 'pages::checkout')->name('checkout');

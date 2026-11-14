@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Campaign;
 use App\Models\Page;
 use App\Support\Catalog;
 use App\Support\CategoryTree;
@@ -79,7 +80,10 @@ class SeoController extends Controller
                 'images' => array_slice(array_map(Seo::absolute(...), $product['images']), 0, 5),
             ]);
 
-        return $static->concat($pages)->concat($categories)->concat($products)
+        $campaigns = Campaign::listing()
+            ->map(fn (array $campaign) => ['alternates' => $this->localized(fn () => '/promotions/'.$campaign['slug']), 'images' => []]);
+
+        return $static->concat($pages)->concat($campaigns)->concat($categories)->concat($products)
             ->filter(fn (array $entry) => $entry['alternates'] !== []);
     }
 

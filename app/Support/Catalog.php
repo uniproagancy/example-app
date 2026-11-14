@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Brand;
+use App\Models\Campaign;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -372,10 +373,14 @@ class Catalog
                 ->filter(fn (array $deal) => HomeContent::isLive($deal['starts_at'], $deal['ends_at']))
                 ->groupBy('product_id')
                 ->map(fn (Collection $rows) => $rows->first());
+            $campaignDiscounts = collect($raw['campaign_discounts'] ?? [])
+                ->filter(fn (array $discount) => HomeContent::isLive($discount['starts_at'], $discount['ends_at']))
+                ->groupBy('product_id')
+                ->map(fn (Collection $rows) => (int) $rows->max('discount_percent'));
             $nodes = CategoryTree::nodes($locale);
 
             return collect($raw['products'])
-                ->map(function (array $row) use ($raw, $translations, $images, $filters, $options, $deals, $nodes, $locale, $fallback) {
+                ->map(function (array $row) use ($raw, $translations, $images, $filters, $options, $deals, $campaignDiscounts, $nodes, $locale, $fallback) {
                     $node = $nodes->get($row['category_id']);
 
                     if (! $node) {
@@ -394,11 +399,19 @@ class Catalog
                         $root = $nodes->get($root['parent_id']);
                     }
 
+                    $basePrice = (float) $row['price'];
                     $deal = $deals->get($row['id']);
 
                     if ($deal) {
                         $row['old_price'] = max((float) $row['price'], (float) $row['old_price']);
                         $row['price'] = $deal['price'];
+                    }
+
+                    $campaignPercent = $campaignDiscounts->get($row['id']);
+
+                    if ($campaignPercent && ($campaignPrice = Campaign::discountedPrice($basePrice, $campaignPercent)) < (float) $row['price']) {
+                        $row['old_price'] = max($basePrice, (float) $row['old_price']);
+                        $row['price'] = $campaignPrice;
                     }
 
                     return [
@@ -420,7 +433,7 @@ class Catalog
                             'text' => HomeContent::localized($deal['text']),
                             'endsAt' => $deal['ends_at'] ? Carbon::parse($deal['ends_at'])->toIso8601String() : null,
                         ] : null,
-                        ...static::presentOptions($options->get($row['id'], collect()), $locale, $fallback),
+                        ...static::presentOptions($options->get($row['id'], collect()), $locale, $fallback, $campaignPercent),
                     ];
                 })
                 ->filter()
@@ -465,12 +478,17 @@ class Catalog
         ];
     }
 
-    protected static function presentOptions(Collection $options, string $locale, string $fallback): array
+    protected static function presentOptions(Collection $options, string $locale, string $fallback, ?int $campaignPercent = null): array
     {
-        $present = function (array $option) use ($locale, $fallback) {
+        $present = function (array $option) use ($locale, $fallback, $campaignPercent) {
             $labels = json_decode((string) $option['label'], true) ?: [];
             $price = $option['price'] !== null ? (float) $option['price'] : null;
             $old = $option['old_price'] !== null ? (float) $option['old_price'] : null;
+
+            if ($campaignPercent && $price !== null) {
+                $old = max((float) $old, $price);
+                $price = Campaign::discountedPrice($price, $campaignPercent);
+            }
 
             return [
                 'id' => (int) $option['id'],
@@ -607,6 +625,13 @@ class Catalog
                 ->join('attributes as a', 'a.id', '=', 'av.attribute_id')
                 ->where(fn ($query) => $query->where('a.is_filterable', true)->orWhere('a.is_variant', true))
                 ->get(['t.attribute_value_id', 't.locale', 't.label'])
+                ->map(fn ($row) => (array) $row)
+                ->all(),
+            'campaign_discounts' => DB::table('campaign_product as cp')
+                ->join('campaigns as c', 'c.id', '=', 'cp.campaign_id')
+                ->where('c.is_active', true)
+                ->where('c.discount_percent', '>', 0)
+                ->get(['cp.product_id', 'c.discount_percent', 'c.starts_at', 'c.ends_at'])
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'deals' => DB::table('deals')

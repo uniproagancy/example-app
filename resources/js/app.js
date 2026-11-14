@@ -290,6 +290,30 @@ Alpine.data('countdown', (endsAt = null) => ({
     },
 }));
 
+Alpine.data('campaignCountdown', (endsAt) => ({
+    days: '0',
+    hours: '00',
+    minutes: '00',
+    seconds: '00',
+    timer: null,
+    init() {
+        const pad = (value) => String(value).padStart(2, '0');
+        const end = new Date(endsAt).getTime();
+        const tick = () => {
+            const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
+            this.days = String(Math.floor(left / 86400));
+            this.hours = pad(Math.floor((left % 86400) / 3600));
+            this.minutes = pad(Math.floor((left % 3600) / 60));
+            this.seconds = pad(left % 60);
+        };
+        tick();
+        this.timer = setInterval(tick, 1000);
+    },
+    destroy() {
+        clearInterval(this.timer);
+    },
+}));
+
 const carousel = () => ({
     scroll(direction) {
         const track = this.$refs.track;
