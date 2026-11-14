@@ -156,6 +156,8 @@ new class extends Component
                 </button>
                 <span class="text-center text-xs text-muted">{{ __('payments.order.pay_hint') }}</span>
             </div>
+        @elseif ($order->awaitsBankTransfer())
+            @include('partials.bank-transfer', ['amount' => Catalog::money($order->total), 'invoiceNumber' => $order->invoiceNumber(), 'invoiceUrl' => $order->invoiceUrl(app()->getLocale())])
         @elseif (! $order->isPaid())
             <p class="m-0 text-sm text-muted">{{ __('payments.order.offline') }}</p>
         @endif

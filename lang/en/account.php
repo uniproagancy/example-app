@@ -32,9 +32,10 @@ return [
         'statuses' => [
             'new' => 'New order',
             'received' => 'Received',
-            'confirmed' => 'Confirmed',
-            'shipped' => 'On the way',
-            'delivered' => 'Delivered',
+            'no_answer' => 'No answer',
+            'call_later' => 'Call back later',
+            'shipped' => 'With the courier',
+            'completed' => 'Completed',
             'cancelled' => 'Cancelled',
         ],
     ],

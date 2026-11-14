@@ -58,6 +58,15 @@ return [
         'not_yet' => 'The bank has not confirmed the payment yet.',
     ],
 
+    'transfer' => [
+        'title' => 'Bank transfer',
+        'text' => 'Transfer :amount to one of our accounts. We will contact you as soon as it arrives.',
+        'copy' => 'Copy',
+        'copied' => 'Copied',
+        'purpose' => 'Reference',
+        'invoice' => 'Download invoice',
+    ],
+
     'order' => [
         'title' => 'Order #:number',
         'thanks' => 'Thank you! Your order is in.',

@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Models\Order;
 use App\Notifications\Concerns\DescribesOrder;
 use App\Support\Catalog;
+use App\Support\Company;
 use App\Support\Site;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -35,6 +36,13 @@ class OrderPlacedNotification extends Notification
 
         if ($address) {
             $mail->line(__('notifications.address', ['address' => $address]));
+        }
+
+        if ($order->awaitsBankTransfer() && ($accounts = Company::bankAccounts())) {
+            $mail->line(__('notifications.transfer.intro', ['amount' => Catalog::money($order->total)]))
+                ->lines(collect($accounts)->map(fn (array $account) => '• '.collect([$account['bank'], $account['iban'], $account['currency']])->filter()->implode(' · '))->all())
+                ->line(__('notifications.transfer.purpose', ['purpose' => __('invoice.purpose_text', ['number' => $order->invoiceNumber()])]))
+                ->line(__('notifications.transfer.invoice'));
         }
 
         return $mail

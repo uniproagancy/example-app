@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Orders;
 
+use App\Filament\Resources\Orders\Pages\CreateOrder;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Resources\Orders\Tables\OrdersTable;
@@ -43,11 +44,6 @@ class OrderResource extends Resource
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         return parent::getRecordRouteBindingEloquentQuery()->withoutGlobalScopes([SoftDeletingScope::class]);
-    }
-
-    public static function canCreate(): bool
-    {
-        return false;
     }
 
     public static function canEdit(Model $record): bool
@@ -110,6 +106,7 @@ class OrderResource extends Resource
             'received' => 'gray',
             'no_answer' => 'primary',
             'call_later' => 'info',
+            'shipped' => 'primary',
             'completed' => 'success',
             'cancelled' => 'danger',
             default => 'gray',
@@ -144,6 +141,7 @@ class OrderResource extends Resource
     {
         return [
             'index' => ListOrders::route('/'),
+            'create' => CreateOrder::route('/create'),
             'view' => ViewOrder::route('/{record}'),
         ];
     }

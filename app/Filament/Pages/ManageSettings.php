@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Support\AdminOnlyPage;
+use App\Models\Order;
 use App\Models\Setting;
 use App\Services\Orders\OrderNotifier;
 use App\Services\Sms\SmsOffice;
@@ -13,6 +14,7 @@ use App\Support\WebpImage;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
@@ -65,6 +67,7 @@ class ManageSettings extends Page
             'logo_with_name' => (bool) Setting::get('logo_with_name'),
             'notify_buyer_mail' => OrderNotifier::enabled('notify_buyer_mail'),
             'notify_buyer_sms' => OrderNotifier::enabled('notify_buyer_sms'),
+            'status_sms' => OrderNotifier::statusSmsList(),
             'bank_accounts' => Company::bankAccounts(),
         ]);
     }
@@ -204,6 +207,12 @@ class ManageSettings extends Page
                             ->label(__('admin.settings.notify_buyer_mail')),
                         Toggle::make('notify_buyer_sms')
                             ->label(__('admin.settings.notify_buyer_sms')),
+                        CheckboxList::make('status_sms')
+                            ->label(__('admin.settings.status_sms'))
+                            ->helperText(__('admin.settings.status_sms_help'))
+                            ->options(collect(Order::NOTIFIABLE_STATUSES)->mapWithKeys(fn (string $status) => [$status => __("account.orders.statuses.$status")])->all())
+                            ->columns(2)
+                            ->columnSpanFull(),
                         TextInput::make('order_alert_emails')
                             ->label(__('admin.settings.order_alert_emails'))
                             ->helperText(__('admin.settings.order_alert_emails_help'))
@@ -312,7 +321,9 @@ class ManageSettings extends Page
         }
 
         foreach ($state as $key => $value) {
-            if ($key === 'bank_accounts') {
+            if ($key === 'status_sms') {
+                Setting::put($key, implode(',', array_intersect(Order::NOTIFIABLE_STATUSES, (array) $value)) ?: null);
+            } elseif ($key === 'bank_accounts') {
                 Setting::put($key, json_encode(array_values((array) $value), JSON_UNESCAPED_UNICODE));
             } elseif (in_array($key, ['notify_buyer_mail', 'notify_buyer_sms'], true)) {
                 Setting::put($key, $value ? '1' : '0');

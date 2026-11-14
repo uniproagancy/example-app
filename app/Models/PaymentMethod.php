@@ -18,6 +18,8 @@ class PaymentMethod extends Model
     use HasTranslations;
     use LogsActivity;
 
+    public const TRANSFER = 'transfer';
+
     protected array $translatable = ['name', 'note'];
 
     protected function casts(): array

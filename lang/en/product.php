@@ -52,4 +52,15 @@ return [
         'submit' => 'Send order',
         'sent' => 'Order received! An operator will contact you shortly.',
     ],
+
+    'price_alert' => [
+        'title' => 'Tell me when the price drops',
+        'text' => 'Get an email or SMS as soon as it gets cheaper.',
+        'placeholder' => 'Email or phone',
+        'submit' => 'Notify me',
+        'hint' => 'You will get one alert. No spam.',
+        'sent' => 'Done! We will let you know when the price drops.',
+        'invalid' => 'Enter a valid email or phone number.',
+        'too_many' => 'This contact already follows too many products.',
+    ],
 ];

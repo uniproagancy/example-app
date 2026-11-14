@@ -326,6 +326,8 @@ new class extends Component
             @if ($product['inStock'])
                 <livewire:quick-order :product-id="$product['id']" :wire:key="'quick-order-'.$product['id']" />
             @endif
+
+            <livewire:price-alert :product-id="$product['id']" :wire:key="'price-alert-'.$product['id']" />
         </div>
     </section>
 

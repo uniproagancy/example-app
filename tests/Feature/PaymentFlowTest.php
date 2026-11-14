@@ -240,7 +240,8 @@ class PaymentFlowTest extends TestCase
         $this->get($order->pageUrl())
             ->assertOk()
             ->assertSee($order->number)
-            ->assertSee(__('payments.order.offline'))
+            ->assertSee(__('payments.transfer.title'))
+            ->assertSee($order->invoiceUrl('ka'), false)
             ->assertDontSee('wire:click="pay"', false);
     }
 

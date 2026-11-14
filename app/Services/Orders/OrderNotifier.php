@@ -81,6 +81,40 @@ class OrderNotifier
         }
     }
 
+    public static function statusSmsList(): array
+    {
+        return array_values(array_intersect(Order::NOTIFIABLE_STATUSES, explode(',', (string) Setting::get('status_sms'))));
+    }
+
+    public function statusChanged(Order $order): void
+    {
+        if (! in_array($order->status, static::statusSmsList(), true)) {
+            return;
+        }
+
+        defer(fn () => $this->sendStatus($order->fresh(['user']) ?? $order));
+    }
+
+    public function sendStatus(Order $order): void
+    {
+        if (! $this->buyerWants($order, 'sms')) {
+            return;
+        }
+
+        $this->attempt('buyer status sms', $order, function () use ($order): void {
+            $text = __("notifications.sms.status.{$order->status}", [
+                'number' => $order->number,
+                'amount' => Catalog::money($order->total),
+                'site' => Site::name(),
+                'phone' => Site::phone(),
+            ], $this->localeOf($order));
+
+            if ($this->sms->send($order->phone, $text, $order->number)) {
+                $order->log('note', __('admin.orders.status_sms_sent', ['status' => __("account.orders.statuses.{$order->status}", [], 'ka')], 'ka'));
+            }
+        });
+    }
+
     public function sendPaid(Order $order): void
     {
         if (static::enabled('notify_buyer_mail') && $this->buyerWants($order, 'mail') && filled($order->email)) {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AbandonedCart;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Models\PromoCode;
@@ -66,6 +67,7 @@ new class extends Component
             $this->phone = (string) $user->phone;
             $this->email = $user->email;
             $this->address = (string) $user->addresses()->first()?->line;
+            $this->rememberCart();
         }
 
         $this->payment = (string) $this->methods->first()?->code;
@@ -266,6 +268,7 @@ new class extends Component
         });
 
         Cart::clear();
+        AbandonedCart::recover($order);
         $this->dispatch('cart-refresh');
 
         app(OrderNotifier::class)->placed($order);
@@ -296,6 +299,9 @@ new class extends Component
             'payment' => $order->paymentLabel(),
             'total' => Catalog::money($order->total),
             'url' => $order->pageUrl(),
+            'transfer' => $order->awaitsBankTransfer(),
+            'invoiceNumber' => $order->invoiceNumber(),
+            'invoiceUrl' => $order->invoiceUrl(app()->getLocale()),
         ];
 
         $this->js('window.scrollTo({ top: 0 })');
@@ -352,7 +358,29 @@ new class extends Component
         Cart::store($items);
         unset($this->lines, $this->totals);
         $this->dispatch('cart-refresh');
-        $this->leaveIfEmpty();
+
+        if (! $this->leaveIfEmpty()) {
+            $this->rememberCart();
+        }
+    }
+
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['phone', 'email', 'firstName', 'lastName'], true)) {
+            $this->rememberCart();
+        }
+    }
+
+    protected function rememberCart(): void
+    {
+        $phone = preg_match('/^\+?[0-9\s\-()]{9,20}$/', trim($this->phone)) ? $this->phone : null;
+        $email = filter_var(trim($this->email), FILTER_VALIDATE_EMAIL) ? $this->email : null;
+
+        AbandonedCart::remember([
+            'name' => trim($this->firstName.' '.$this->lastName),
+            'phone' => $phone,
+            'email' => $email,
+        ]);
     }
 
     public function render()
@@ -383,6 +411,9 @@ new class extends Component
                     <div class="flex justify-between gap-3"><span class="text-muted">{{ __('checkout.done_payment') }}</span><span class="text-right font-bold">{{ $placed['payment'] }}</span></div>
                     <div class="flex justify-between gap-3"><span class="text-muted">{{ __('checkout.done_total') }}</span><span class="font-display font-extrabold">{{ $placed['total'] }}</span></div>
                 </div>
+                @if ($placed['transfer'] ?? false)
+                    @include('partials.bank-transfer', ['amount' => $placed['total'], 'invoiceNumber' => $placed['invoiceNumber'], 'invoiceUrl' => $placed['invoiceUrl']])
+                @endif
                 <div class="mt-2.5 flex flex-wrap justify-center gap-2.5">
                     <a href="{{ $placed['url'] }}" class="flex h-12 items-center rounded-full bg-brand px-6 text-sm font-bold text-white hover:bg-navy hover:text-white">{{ __('checkout.view_order') }}</a>
                     <a href="{{ route('home') }}" wire:navigate class="flex h-12 items-center rounded-full bg-navy px-6 text-sm font-bold text-white hover:bg-brand hover:text-white">{{ __('checkout.back_home') }}</a>
@@ -424,7 +455,7 @@ new class extends Component
                             ] as [$name, $type, $placeholder, $autocomplete])
                                 <label class="flex min-w-0 flex-col gap-1.5 text-xs font-bold text-[#3A4A68]">
                                     {{ __('checkout.'.str($name)->snake()) }}
-                                    <input wire:model="{{ $name }}" type="{{ $type }}" autocomplete="{{ $autocomplete }}" placeholder="{{ $placeholder }}" @class([$field, 'border-sale' => $errors->has($name), 'border-[#E3E9F3]' => ! $errors->has($name)])>
+                                    <input @if (in_array($name, ['phone', 'email'], true)) wire:model.blur="{{ $name }}" @else wire:model="{{ $name }}" @endif type="{{ $type }}" autocomplete="{{ $autocomplete }}" placeholder="{{ $placeholder }}" @class([$field, 'border-sale' => $errors->has($name), 'border-[#E3E9F3]' => ! $errors->has($name)])>
                                     @error($name)<span class="text-xs font-semibold text-sale">{{ $message }}</span>@enderror
                                 </label>
                             @endforeach

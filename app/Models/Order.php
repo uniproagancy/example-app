@@ -22,9 +22,11 @@ class Order extends Model
     use LogsActivity;
     use SoftDeletes;
 
-    public const STATUSES = ['new', 'received', 'no_answer', 'call_later', 'completed', 'cancelled'];
+    public const STATUSES = ['new', 'received', 'no_answer', 'call_later', 'shipped', 'completed', 'cancelled'];
 
-    public const SOURCES = ['checkout', 'quick'];
+    public const NOTIFIABLE_STATUSES = ['received', 'shipped', 'completed', 'cancelled'];
+
+    public const SOURCES = ['checkout', 'quick', 'admin'];
 
     public const SHIPPING_METHODS = ['courier'];
 
@@ -55,6 +57,10 @@ class Order extends Model
         static::updated(function (Order $order): void {
             if ($order->wasChanged('payment_status') && $order->payment_status === self::PAYMENT_PAID) {
                 app(OrderNotifier::class)->paid($order);
+            }
+
+            if ($order->wasChanged('status')) {
+                app(OrderNotifier::class)->statusChanged($order);
             }
         });
     }
@@ -118,6 +124,11 @@ class Order extends Model
         $locale = in_array($this->locale, Locales::codes(), true) ? $this->locale : Locales::default();
 
         return url($locale.'/order/'.$this->number);
+    }
+
+    public function awaitsBankTransfer(): bool
+    {
+        return $this->payment_method === PaymentMethod::TRANSFER && ! $this->isPaid() && $this->status !== 'cancelled';
     }
 
     public function invoiceNumber(): string

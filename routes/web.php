@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CartRestoreController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderPrintController;
@@ -14,6 +15,8 @@ Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap
 
 Route::get('/admin-print/orders', OrderPrintController::class)->name('orders.print');
 Route::get('/admin-print/invoices', [InvoiceController::class, 'admin'])->name('orders.invoices');
+
+Route::get('/cart/restore/{token}', CartRestoreController::class)->middleware(['signed', 'throttle:30,1'])->name('cart.restore');
 
 Route::get('/feed/facebook.xml', [FeedController::class, 'facebook'])->name('feed.facebook');
 Route::get('/feed/google.xml', [FeedController::class, 'google'])->name('feed.google');
