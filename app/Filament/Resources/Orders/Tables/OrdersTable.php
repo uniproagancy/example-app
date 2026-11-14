@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderPrintController;
 use App\Models\Order;
 use App\Models\PaymentMethod;
@@ -134,6 +135,11 @@ class OrdersTable
                         ->icon(Heroicon::OutlinedPrinter)
                         ->deselectRecordsAfterCompletion()
                         ->action(fn (Collection $records, $livewire) => $livewire->js('window.open('.Js::from(OrderPrintController::url($records->modelKeys())).', "_blank")')),
+                    BulkAction::make('invoices')
+                        ->label(__('admin.print.invoices_selected'))
+                        ->icon(Heroicon::OutlinedDocumentText)
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records, $livewire) => $livewire->js('window.open('.Js::from(InvoiceController::adminUrl($records->modelKeys())).', "_blank")')),
                     BulkAction::make('export')
                         ->label(__('admin.orders.export.selected'))
                         ->icon(Heroicon::OutlinedArrowDownTray)

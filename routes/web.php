@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderPrintController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SeoController;
@@ -12,6 +13,7 @@ Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');
 
 Route::get('/admin-print/orders', OrderPrintController::class)->name('orders.print');
+Route::get('/admin-print/invoices', [InvoiceController::class, 'admin'])->name('orders.invoices');
 
 Route::get('/feed/facebook.xml', [FeedController::class, 'facebook'])->name('feed.facebook');
 Route::get('/feed/google.xml', [FeedController::class, 'google'])->name('feed.google');
@@ -50,6 +52,8 @@ Route::prefix(LaravelLocalization::setLocale())
         Route::livewire('checkout', 'pages::checkout')->name('checkout');
 
         Route::livewire('order/{number}', 'pages::order')->name('order');
+
+        Route::get('order/{number}/invoice', [InvoiceController::class, 'show'])->name('order.invoice');
 
         Route::livewire('catalog', 'pages::catalog')->name('catalog');
 

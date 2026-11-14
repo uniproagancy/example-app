@@ -6,6 +6,7 @@ use App\Filament\Support\AdminOnlyPage;
 use App\Models\Setting;
 use App\Services\Orders\OrderNotifier;
 use App\Services\Sms\SmsOffice;
+use App\Support\Company;
 use App\Support\Locales;
 use App\Support\Site;
 use App\Support\WebpImage;
@@ -13,6 +14,7 @@ use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -31,7 +33,7 @@ class ManageSettings extends Page
 {
     use AdminOnlyPage;
 
-    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms', 'ga4_id', 'facebook_pixel_id'];
+    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms', 'ga4_id', 'facebook_pixel_id', ...Company::KEYS];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
@@ -63,6 +65,7 @@ class ManageSettings extends Page
             'logo_with_name' => (bool) Setting::get('logo_with_name'),
             'notify_buyer_mail' => OrderNotifier::enabled('notify_buyer_mail'),
             'notify_buyer_sms' => OrderNotifier::enabled('notify_buyer_sms'),
+            'bank_accounts' => Company::bankAccounts(),
         ]);
     }
 
@@ -127,6 +130,68 @@ class ManageSettings extends Page
                             ->label(__('admin.settings.hours_sunday'))
                             ->placeholder('11:00–18:00')
                             ->maxLength(40),
+                    ])
+                    ->columnSpanFull(),
+                Section::make(__('admin.settings.invoice'))
+                    ->description(__('admin.settings.invoice_help'))
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('company_name')
+                            ->label(__('admin.settings.company_name'))
+                            ->placeholder('შპს „ელიო“')
+                            ->maxLength(120),
+                        TextInput::make('company_code')
+                            ->label(__('admin.settings.company_code'))
+                            ->maxLength(20),
+                        TextInput::make('company_address')
+                            ->label(__('admin.settings.company_address'))
+                            ->maxLength(255),
+                        TextInput::make('company_director')
+                            ->label(__('admin.settings.company_director'))
+                            ->maxLength(120),
+                        Repeater::make('bank_accounts')
+                            ->label(__('admin.settings.bank_accounts'))
+                            ->addActionLabel(__('admin.settings.bank_accounts_add'))
+                            ->defaultItems(0)
+                            ->maxItems(6)
+                            ->reorderable()
+                            ->columns(4)
+                            ->schema([
+                                TextInput::make('bank')
+                                    ->label(__('admin.settings.bank'))
+                                    ->placeholder('საქართველოს ბანკი')
+                                    ->maxLength(80),
+                                TextInput::make('iban')
+                                    ->label('IBAN')
+                                    ->placeholder('GE00BG0000000000000000')
+                                    ->required()
+                                    ->regex('/^\s*[A-Za-z]{2}\d{2}[A-Za-z0-9 ]{10,32}\s*$/')
+                                    ->maxLength(40),
+                                TextInput::make('swift')
+                                    ->label('SWIFT')
+                                    ->placeholder('BAGAGE22')
+                                    ->maxLength(11),
+                                TextInput::make('currency')
+                                    ->label(__('admin.settings.currency'))
+                                    ->placeholder('GEL')
+                                    ->maxLength(10),
+                            ])
+                            ->columnSpanFull(),
+                        Textarea::make('invoice_note')
+                            ->label(__('admin.settings.invoice_note'))
+                            ->helperText(__('admin.settings.invoice_note_help'))
+                            ->rows(3)
+                            ->maxLength(500),
+                        FileUpload::make('invoice_stamp')
+                            ->label(__('admin.settings.invoice_stamp'))
+                            ->helperText(__('admin.settings.invoice_stamp_help'))
+                            ->image()
+                            ->acceptedFileTypes(['image/png', 'image/jpeg', 'image/webp'])
+                            ->disk('public')
+                            ->directory('branding')
+                            ->visibility('public')
+                            ->maxSize(2048)
+                            ->imagePreviewHeight('96'),
                     ])
                     ->columnSpanFull(),
                 Section::make(__('admin.settings.order_notifications'))
@@ -237,7 +302,7 @@ class ManageSettings extends Page
 
     public function save(): void
     {
-        $previous = ['logo' => Setting::get('logo'), 'seo_image' => Setting::get('seo_image')];
+        $previous = ['logo' => Setting::get('logo'), 'seo_image' => Setting::get('seo_image'), 'invoice_stamp' => Setting::get('invoice_stamp')];
         $state = $this->form->getState();
 
         foreach ($previous as $key => $path) {
@@ -247,7 +312,9 @@ class ManageSettings extends Page
         }
 
         foreach ($state as $key => $value) {
-            if (in_array($key, ['notify_buyer_mail', 'notify_buyer_sms'], true)) {
+            if ($key === 'bank_accounts') {
+                Setting::put($key, json_encode(array_values((array) $value), JSON_UNESCAPED_UNICODE));
+            } elseif (in_array($key, ['notify_buyer_mail', 'notify_buyer_sms'], true)) {
                 Setting::put($key, $value ? '1' : '0');
             } elseif (in_array($key, static::keys(), true)) {
                 Setting::put($key, filled($value) ? (string) $value : null);

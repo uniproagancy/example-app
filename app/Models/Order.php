@@ -120,6 +120,18 @@ class Order extends Model
         return url($locale.'/order/'.$this->number);
     }
 
+    public function invoiceNumber(): string
+    {
+        return 'INV-'.preg_replace('/^[A-Za-z]+-/', '', $this->number);
+    }
+
+    public function invoiceUrl(?string $locale = null): string
+    {
+        $locale ??= in_array($this->locale, Locales::codes(), true) ? $this->locale : Locales::default();
+
+        return url($locale.'/order/'.$this->number.'/invoice');
+    }
+
     public function payLink(int $days = 7): string
     {
         return URL::temporarySignedRoute('payment.link', now()->addDays($days), ['number' => $this->number]);

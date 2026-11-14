@@ -162,7 +162,13 @@ new class extends Component
 
         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-sm">
             <span class="text-muted">{{ __('payments.order.questions') }} <a href="{{ Site::phoneHref() }}" class="font-bold">{{ Site::phone() }}</a></span>
-            <a href="{{ route('home') }}" wire:navigate class="font-bold">{{ __('payments.order.continue') }}</a>
+            <span class="flex items-center gap-4">
+                <a href="{{ $order->invoiceUrl(app()->getLocale()) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 font-bold">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+                    {{ __('invoice.download') }}
+                </a>
+                <a href="{{ route('home') }}" wire:navigate class="font-bold">{{ __('payments.order.continue') }}</a>
+            </span>
         </div>
     </div>
 

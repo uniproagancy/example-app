@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Orders\Pages;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Filament\Support\Operators;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderPrintController;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -84,6 +85,11 @@ class ViewOrder extends ViewRecord
                 ->icon(Heroicon::OutlinedPrinter)
                 ->color('gray')
                 ->url(fn (): string => OrderPrintController::url([$this->order()->id]), shouldOpenInNewTab: true),
+            Action::make('invoice')
+                ->label(__('admin.print.invoice'))
+                ->icon(Heroicon::OutlinedDocumentText)
+                ->color('gray')
+                ->url(fn (): string => InvoiceController::adminUrl([$this->order()->id]), shouldOpenInNewTab: true),
             Action::make('call')
                 ->label(fn (): string => $this->order()->phone)
                 ->icon(Heroicon::OutlinedPhone)

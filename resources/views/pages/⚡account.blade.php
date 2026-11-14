@@ -324,6 +324,10 @@ new class extends Component
                             <div class="flex flex-col gap-0.5">
                                 <a href="{{ $order->pageUrl() }}" class="font-display text-base font-extrabold text-navy hover:text-brand">#{{ $order->number }}</a>
                                 <span class="text-xs text-muted">{{ $order->created_at->format('d.m.Y H:i') }} · {{ $order->paymentLabel() }} · {{ __("payments.statuses.{$order->payment_status}") }}</span>
+                                <a href="{{ $order->invoiceUrl(app()->getLocale()) }}" target="_blank" rel="noopener" class="mt-1 inline-flex w-fit items-center gap-1.5 text-xs font-bold text-brand hover:text-brand-dark">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+                                    {{ __('invoice.download') }}
+                                </a>
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="rounded-full bg-tint px-2.5 py-1 text-xs font-bold text-brand">{{ __("account.orders.statuses.{$order->status}") }}</span>

@@ -608,6 +608,8 @@ return [
         'note' => 'კომენტარი',
         'courier_signature' => 'კურიერის ხელმოწერა',
         'customer_signature' => 'მიმღების ხელმოწერა',
+        'invoice' => 'ინვოისი',
+        'invoices_selected' => 'მონიშნულების ინვოისი',
     ],
 
     'reports' => [
@@ -742,6 +744,20 @@ return [
         'google_site_verification' => 'Google Search Console კოდი',
         'google_site_verification_help' => 'მხოლოდ content="…"-ის მნიშვნელობა HTML tag მეთოდიდან.',
         'saved' => 'პარამეტრები შენახულია',
+        'invoice' => 'ინვოისი და რეკვიზიტები',
+        'invoice_help' => 'ეს მონაცემები იბეჭდება ინვოისზე, რომელსაც მყიდველი შეკვეთის გვერდიდან და ანგარიშიდან იღებს, ადმინი კი შეკვეთიდან.',
+        'company_name' => 'კომპანიის იურიდიული სახელი',
+        'company_code' => 'საიდენტიფიკაციო კოდი',
+        'company_address' => 'იურიდიული მისამართი',
+        'company_director' => 'დირექტორი',
+        'bank_accounts' => 'საბანკო ანგარიშები',
+        'bank_accounts_add' => 'ანგარიშის დამატება',
+        'bank' => 'ბანკი',
+        'currency' => 'ვალუტა',
+        'invoice_note' => 'შენიშვნა ინვოისზე',
+        'invoice_note_help' => 'მაგ.: „დღგ-ს გადამხდელი არ არის“ ან გადახდის ვადა. ცარიელი — არ იბეჭდება.',
+        'invoice_stamp' => 'ბეჭედი / ხელმოწერა',
+        'invoice_stamp_help' => 'PNG გამჭვირვალე ფონით. ჩანს ინვოისის ბოლოს.',
     ],
 
     'import' => [
