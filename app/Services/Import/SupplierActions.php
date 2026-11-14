@@ -5,8 +5,6 @@ namespace App\Services\Import;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\SupplierCategoryMap;
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class SupplierActions
@@ -115,21 +113,5 @@ class SupplierActions
         $products->each(fn (Product $product) => $product->update(['category_id' => $map->category_id]));
 
         return $products->count();
-    }
-
-    public static function impact(Collection $maps): array
-    {
-        if ($maps->isEmpty()) {
-            return [];
-        }
-
-        return DB::table('product_offers')
-            ->whereIn('supplier_id', $maps->pluck('supplier_id')->unique())
-            ->whereIn('external_category', $maps->pluck('external_name')->unique())
-            ->selectRaw('supplier_id, external_category, count(distinct product_id) as products')
-            ->groupBy('supplier_id', 'external_category')
-            ->get()
-            ->mapWithKeys(fn ($row) => [$row->supplier_id.'|'.$row->external_category => (int) $row->products])
-            ->all();
     }
 }

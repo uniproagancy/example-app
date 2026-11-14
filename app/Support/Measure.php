@@ -55,10 +55,6 @@ class Measure
 
     protected const SNAP = 0.15;
 
-    protected const CONTEXT = 0.5;
-
-    protected const LEEWAY = 3;
-
     protected const NOT_IN_NAMES = ['g', 'in'];
 
     protected const LADDER = [
@@ -144,27 +140,6 @@ class Measure
         ));
     }
 
-    public static function prevailing(array $readings, array $held = []): array
-    {
-        $weight = [];
-
-        foreach ($readings as $code => $reading) {
-            if (! $reading || in_array($reading['dimension'], self::FIXED, true)) {
-                continue;
-            }
-
-            $weight[$reading['dimension']][$reading['unit']] =
-                ($weight[$reading['dimension']][$reading['unit']] ?? 0)
-                + max(1, (int) ($held[$code] ?? 0));
-        }
-
-        return array_map(function (array $units) {
-            arsort($units);
-
-            return (string) array_key_first($units);
-        }, $weight);
-    }
-
     public static function canonical(array $reading, ?string $unit = null): string
     {
         $unit ??= $reading['unit'];
@@ -209,58 +184,6 @@ class Measure
         }
 
         return $readings;
-    }
-
-    public static function understood(array $readings, array $units, array $labels): array
-    {
-        $known = array_filter($readings);
-
-        if (count($known) < max(2, count($labels) * self::CONTEXT)) {
-            return $readings;
-        }
-
-        $quantities = array_unique(array_column($known, 'dimension'));
-
-        if (count($quantities) !== 1) {
-            return $readings;
-        }
-
-        $dimension = (string) reset($quantities);
-        $unit = $units[$dimension] ?? null;
-
-        if ($unit === null || ! isset(self::UNITS[$dimension][$unit])) {
-            return $readings;
-        }
-
-        $sizes = array_column($known, 'low');
-        $low = min($sizes) / self::LEEWAY;
-        $high = max($sizes) * self::LEEWAY;
-        $factor = self::factor($dimension, $unit);
-
-        foreach ($readings as $code => $reading) {
-            if ($reading !== null) {
-                continue;
-            }
-
-            $said = Text::tidy($labels[$code] ?? null);
-
-            if (! preg_match('/^(\d+(?:[.,]\d+)?)$/u', $said, $figure)) {
-                continue;
-            }
-
-            $size = self::figure($figure[1]) * $factor;
-
-            if ($size >= $low && $size <= $high) {
-                $readings[$code] = ['dimension' => $dimension, 'unit' => $unit, 'low' => $size, 'high' => null];
-            }
-        }
-
-        return $readings;
-    }
-
-    public static function bandable(string $dimension): bool
-    {
-        return ! in_array($dimension, self::FIXED, true);
     }
 
     public static function factor(string $dimension, string $unit): float

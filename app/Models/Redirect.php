@@ -16,8 +16,6 @@ class Redirect extends Model
 
     public const CACHE_KEY = 'redirects.active';
 
-    public const CODES = [301, 302];
-
     protected function casts(): array
     {
         return [

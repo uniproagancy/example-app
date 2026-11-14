@@ -3,8 +3,6 @@
 namespace App\Services\Import\Drivers\Zoommer;
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Pool;
-use GuzzleHttp\Psr7\Request;
 use Illuminate\Support\Facades\Log;
 
 class ZoommerClient
@@ -106,39 +104,6 @@ class ZoommerClient
         }
 
         return $out;
-    }
-
-    public function fetchMany(array $ids, int $concurrency = 5): array
-    {
-        $found = [];
-
-        $requests = function () use ($ids) {
-            foreach ($ids as $id) {
-                yield $id => new Request('GET', $this->endpoint((string) $id), ['Accept-Language' => 'ka']);
-            }
-        };
-
-        $startedAt = microtime(true);
-
-        (new Pool($this->client, $requests(), [
-            'concurrency' => $concurrency,
-            'fulfilled' => function ($response, $id) use (&$found, $startedAt) {
-                $body = (string) $response->getBody();
-                $this->report((string) $id, 'ka', $response->getStatusCode(), $startedAt, $body);
-
-                if ($response->getStatusCode() !== 200) {
-                    return;
-                }
-
-                $data = json_decode($body, true);
-
-                if (! empty($data['product'])) {
-                    $found[$id] = $data;
-                }
-            },
-        ]))->promise()->wait();
-
-        return $found;
     }
 
     protected function refusal(int $status): string

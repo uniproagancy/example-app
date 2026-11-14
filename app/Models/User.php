@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Models\Concerns\LogsActivity;
 use App\Notifications\ResetPasswordNotification;
-use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,9 +17,7 @@ use Illuminate\Notifications\Notifiable;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
-    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
-
     use LogsActivity;
 
     public const NOTIFICATION_CHANNELS = ['sms', 'mail', 'promo'];

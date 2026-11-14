@@ -2,7 +2,6 @@
 
 namespace App\Services\Import\Drivers\Alta;
 
-use App\Models\Product;
 use App\Models\Supplier;
 use Illuminate\Validation\ValidationException;
 use JsonException;
@@ -67,23 +66,6 @@ class AltaJsonAssets
 
         $valid = $this->validate(json_encode(['iapiAssets' => $encoded], JSON_THROW_ON_ERROR), array_keys($assets));
         AltaImageCache::store($valid, $directory);
-    }
-
-    public function verify(Product $product, Supplier $supplier, array $urls): bool
-    {
-        $directory = $this->directory($supplier);
-
-        if ($directory === null) {
-            return false;
-        }
-
-        try {
-            $wanted = $this->urls($urls);
-        } catch (ValidationException) {
-            return false;
-        }
-
-        return AltaImageCache::verifyProduct($product, $wanted, $directory, prune: false);
     }
 
     protected function urls(array $urls): array

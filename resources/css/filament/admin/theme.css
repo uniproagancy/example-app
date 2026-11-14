@@ -268,7 +268,7 @@
 }
 
 .fi-layout-sidebar-toggle-btn-ctn {
-    @apply sticky top-0 z-10 flex items-center border-b border-elio-line bg-white/90 px-4 py-2.5 backdrop-blur dark:border-white/[0.06] dark:bg-[#070f24]/90;
+    @apply sticky top-0 z-10 flex items-center lg:hidden border-b border-elio-line bg-white/90 px-4 py-2.5 backdrop-blur dark:border-white/[0.06] dark:bg-[#070f24]/90;
 
     & .fi-layout-sidebar-toggle-btn {
         @apply rounded-lg text-elio-navy hover:bg-elio-page dark:text-white dark:hover:bg-white/[0.06];

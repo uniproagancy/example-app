@@ -78,17 +78,6 @@ class CategoryMainCharacteristicRules
         return $profile['priorities'] ?? [$profile];
     }
 
-    public function attributePriority(Attribute $attribute, int $categoryId): ?int
-    {
-        foreach ($this->priorities($categoryId) as $index => $profile) {
-            if ($this->matches($attribute, $profile)) {
-                return $index;
-            }
-        }
-
-        return null;
-    }
-
     public function eagerRelations(): array
     {
         return ['translations', 'attributeValues.translations', 'attributeValues.attribute.translations'];

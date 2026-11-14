@@ -207,13 +207,6 @@ class TaxonomyResolver
             : $rows;
     }
 
-    public function normalizeValue(Attribute $attribute, string $value): ?string
-    {
-        return $attribute->code === RoomArea::ATTRIBUTE_CODE
-            ? RoomArea::normalize($value, $attribute->unit)
-            : $value;
-    }
-
     public function productAttribute(Supplier $supplier, Product $product, string $name, array $rows, bool $filterable = false): ?Attribute
     {
         $name = trim((string) Text::utf8($name));
