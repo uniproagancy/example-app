@@ -9,5 +9,6 @@ return [
     'category_description' => ':name — :count products at :site. Best prices, official warranty, instalments and fast delivery.',
     'catalog_description' => ':site catalogue — :count products at the best prices, with official warranty and instalments.',
     'about_description' => 'About :site — who we are, what we offer and why shoppers trust us.',
+    'promotions_description' => 'All current promotions, deals of the day and discounted products at :site in one place.',
     'contact_description' => 'Contact :site — phone, email, opening hours and frequently asked questions.',
 ];

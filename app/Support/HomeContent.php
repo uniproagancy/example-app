@@ -60,6 +60,7 @@ class HomeContent
                 'href' => static::href($row['category_id'], $row['url']),
                 'theme' => in_array($row['theme'], Promo::THEMES, true) ? $row['theme'] : 'navy',
                 'icon' => $row['icon'],
+                'endsAt' => $row['ends_at'] ? Carbon::parse($row['ends_at'])->toIso8601String() : null,
             ])
             ->values();
     }

@@ -19,7 +19,7 @@ class MenuItemSeeder extends Seeder
             ['header', ['ka' => 'განვადება', 'en' => 'Installments'], null, '#'],
             ['header', ['ka' => 'ჩვენ შესახებ', 'en' => 'About us'], 'about', null],
             ['header', ['ka' => 'კონტაქტი', 'en' => 'Contact'], 'contact', null],
-            ['header_highlight', ['ka' => 'ფასდაკლებები', 'en' => 'Discounts'], null, '#'],
+            ['header_highlight', ['ka' => 'აქციები', 'en' => 'Promotions'], 'promotions', null],
         ])->each(fn (array $item, int $index) => MenuItem::query()->create([
             'location' => $item[0],
             'title' => $item[1],

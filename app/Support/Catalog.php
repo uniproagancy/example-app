@@ -186,6 +186,14 @@ class Catalog
             ->first();
     }
 
+    public static function deals(): Collection
+    {
+        return static::products()
+            ->filter(fn (array $product) => $product['deal'] !== null)
+            ->sortBy(fn (array $product) => $product['deal']['position'])
+            ->values();
+    }
+
     public static function brands(): Collection
     {
         $counts = static::products()->countBy('brand');

@@ -43,7 +43,6 @@ return [
         'installments' => 'Installments',
         'about' => 'About us',
         'contact' => 'Contact',
-        'discounts' => 'Discounts',
     ],
 
     'sale' => [

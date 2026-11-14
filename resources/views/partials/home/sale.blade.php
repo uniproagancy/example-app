@@ -25,7 +25,7 @@
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
                         </button>
                     </div>
-                    <a href="#" class="flex h-10 items-center rounded-full bg-white px-[18px] text-[13px] font-bold text-navy hover:bg-brand hover:text-white">{{ __('shop.sale.all') }}</a>
+                    <a href="{{ route('catalog', ['only' => ['sale']]) }}" wire:navigate class="flex h-10 items-center rounded-full bg-white px-[18px] text-[13px] font-bold text-navy hover:bg-brand hover:text-white">{{ __('shop.sale.all') }}</a>
                 </div>
             </div>
             <div x-ref="track" class="carousel auto-cols-[calc((100%-10px)/2)] gap-2.5 sm:auto-cols-[calc((100%-24px)/3)] sm:gap-3 md:auto-cols-[calc((100%-36px)/4)] lg:auto-cols-[calc((100%-48px)/5)] xl:auto-cols-[calc((100%-60px)/6)]">

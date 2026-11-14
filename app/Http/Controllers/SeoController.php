@@ -60,7 +60,7 @@ class SeoController extends Controller
 
     protected function entries(): Collection
     {
-        $static = collect(['/', '/catalog', '/about', '/contact'])
+        $static = collect(['/', '/catalog', '/promotions', '/about', '/contact'])
             ->map(fn (string $path) => ['alternates' => $this->localized(fn () => $path), 'images' => []]);
 
         $pages = Page::query()->active()->pluck('slug')

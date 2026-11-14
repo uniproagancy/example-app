@@ -43,6 +43,8 @@ Route::prefix(LaravelLocalization::setLocale())
 
         Route::livewire('contact', 'pages::contact')->name('contact');
 
+        Route::livewire('promotions', 'pages::promotions')->name('promotions');
+
         Route::livewire('info/{slug}', 'pages::info')->name('page');
 
         Route::livewire('checkout', 'pages::checkout')->name('checkout');

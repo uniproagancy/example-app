@@ -43,7 +43,6 @@ return [
         'installments' => 'განვადება',
         'about' => 'ჩვენ შესახებ',
         'contact' => 'კონტაქტი',
-        'discounts' => 'ფასდაკლებები',
     ],
 
     'sale' => [

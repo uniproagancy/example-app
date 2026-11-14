@@ -21,7 +21,7 @@ class MenuItem extends Model
 
     public const LOCATIONS = ['header', 'header_highlight'];
 
-    public const ROUTES = ['home', 'catalog', 'categories', 'about', 'contact', 'checkout'];
+    public const ROUTES = ['home', 'catalog', 'categories', 'promotions', 'about', 'contact', 'checkout'];
 
     protected function casts(): array
     {

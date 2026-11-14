@@ -37,7 +37,7 @@
             @foreach ($shopLinks as $category)
                 <a href="{{ App\Support\CategoryTree::url($category) }}" wire:navigate class="text-sm font-medium text-foot hover:text-white">{{ $category['title'] }}</a>
             @endforeach
-            <a href="#" class="text-sm font-semibold text-[#FF6B6B] hover:text-white">{{ __('shop.nav.discounts') }}</a>
+            <a href="{{ route('promotions') }}" wire:navigate class="text-sm font-semibold text-[#FF6B6B] hover:text-white">{{ __('pages.promotions.title') }}</a>
         </div>
 
         <div class="flex flex-col gap-3">
