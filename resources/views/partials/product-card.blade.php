@@ -1,13 +1,23 @@
 <article
     data-card
-    x-data="{ id: @js($product['id']) }"
+    x-data="{ id: @js($product['id']), loaded: false }"
     @isset($filter) x-show="visible(@js($product['sub']))" @endisset
-    class="relative flex flex-col rounded-[18px] border border-line-soft bg-white px-1.5 pt-1.5 pb-3 transition duration-200 hover:-translate-y-0.5 hover:border-transparent hover:shadow-[0_18px_40px_-12px_rgba(10,22,51,.16)] sm:px-2 sm:pt-2 sm:pb-4"
+    class="@container relative flex flex-col rounded-[18px] border border-line-soft bg-white px-1.5 pt-1.5 pb-3 transition duration-200 hover:-translate-y-0.5 hover:border-transparent hover:shadow-[0_18px_40px_-12px_rgba(10,22,51,.16)] sm:px-2 sm:pt-2 sm:pb-4"
 >
     <div class="relative aspect-[4/4.3] w-full overflow-hidden rounded-[14px] bg-card">
         <a href="{{ $product['url'] }}" wire:navigate tabindex="-1" aria-hidden="true" class="absolute inset-0 grid place-items-center">
             @if ($product['image'])
-                <img src="{{ $product['image'] }}" alt="" loading="lazy" class="size-full object-contain p-3">
+                <span x-show="! loaded" class="absolute inset-3 animate-pulse rounded-xl bg-[#E9EEF7]"></span>
+                <img
+                    src="{{ $product['image'] }}"
+                    alt=""
+                    loading="lazy"
+                    x-init="if ($el.complete) loaded = true"
+                    x-on:load="loaded = true"
+                    x-on:error="loaded = true"
+                    :class="loaded ? 'opacity-100' : 'opacity-0'"
+                    class="relative size-full object-contain p-3 transition-opacity duration-300"
+                >
             @else
                 <span class="font-display text-[72px] leading-none font-extrabold text-brand/12 select-none">{{ mb_substr($product['brand'], 0, 1) }}</span>
             @endif
@@ -38,14 +48,12 @@
         <a href="{{ $product['url'] }}" wire:navigate class="line-clamp-2 min-h-10 text-sm leading-[1.45] font-semibold text-navy hover:text-brand">{{ $product['name'] }}</a>
         <span class="mt-0.5 inline-flex h-6 max-w-full items-center gap-1.5 self-start overflow-hidden rounded-full bg-tint pr-[9px] pl-[7px] text-[11px] font-semibold whitespace-nowrap text-brand">
             <svg class="shrink-0" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg>
-            <span class="hidden xl:inline">{{ __('shop.installment') }}</span>
+            <span class="hidden @[215px]:inline">{{ __('shop.installment') }}</span>
             <span class="font-display font-extrabold">{{ $product['monthlyLabel'] }}</span> {{ __('shop.per_month') }}
         </span>
         <div class="mt-auto flex items-center justify-between gap-2.5 pt-3">
             <div class="flex flex-col gap-px">
-                @if ($product['oldLabel'])
-                    <span class="font-ui text-xs text-subtle line-through">{{ $product['oldLabel'] }}</span>
-                @endif
+                <span @class(['font-ui text-xs text-subtle line-through', 'invisible' => ! $product['oldLabel']])>{{ $product['oldLabel'] ?: $product['priceLabel'] }}</span>
                 <span @class([
                     'font-display text-base font-extrabold tracking-[-0.3px] sm:text-[19px]',
                     'text-sale' => $product['oldLabel'],

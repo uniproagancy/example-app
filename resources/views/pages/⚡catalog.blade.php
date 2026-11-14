@@ -306,7 +306,7 @@ new class extends Component
         ];
 
         if (! $node) {
-            return ['rows' => CategoryTree::roots()->map($present)->all(), 'back' => null];
+            return ['rows' => CategoryTree::roots()->map($present)->filter(fn (array $row) => $row['count'] > 0)->values()->all(), 'back' => null];
         }
 
         $parent = $node['parent_id'] ? CategoryTree::find($node['parent_id']) : null;
@@ -315,7 +315,7 @@ new class extends Component
         $backNode = $children->isNotEmpty() ? $parent : ($parent && $parent['parent_id'] ? CategoryTree::find($parent['parent_id']) : null);
 
         return [
-            'rows' => $rows->map($present)->all(),
+            'rows' => $rows->map($present)->filter(fn (array $row) => $row['count'] > 0 || $row['id'] === $node['id'])->values()->all(),
             'back' => $backNode
                 ? ['label' => $backNode['title'], 'url' => CategoryTree::url($backNode)]
                 : ['label' => __('catalog.back_all'), 'url' => route('catalog')],

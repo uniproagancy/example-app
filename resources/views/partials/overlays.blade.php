@@ -8,7 +8,7 @@
         {{ __('shop.mobile.catalog') }}
     </button>
     <button type="button" x-on:click="$store.ui.cart = true" class="flex min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-[3px] py-1 text-[11px] font-bold text-muted">
-        <span class="relative grid">
+        <span data-cart-target class="relative grid">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
             <span
                 x-show="Object.values($store.cart.items).reduce((a, b) => a + b, 0) > 0"

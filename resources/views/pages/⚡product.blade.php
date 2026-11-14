@@ -141,7 +141,8 @@ new class extends Component
                         @if ($index > 0) x-cloak loading="lazy" @endif
                         src="{{ $image }}"
                         alt="{{ $product['name'] }} — {{ __('product.photo', ['number' => $index + 1]) }}"
-                        class="absolute top-[7%] left-[9%] h-[80%] w-[82%] animate-fade object-contain"
+                        x-on:click="zoom = true"
+                        class="absolute top-[7%] left-[9%] h-[80%] w-[82%] animate-fade cursor-zoom-in object-contain"
                     >
                 @empty
                     <div class="absolute inset-[7%_9%_13%] grid place-items-center">
@@ -150,7 +151,9 @@ new class extends Component
                 @endforelse
 
                 <div class="pointer-events-none absolute top-[22px] left-6 flex items-center gap-2.5">
-                    <span class="font-display text-[13px] font-extrabold tracking-[0.5px] text-navy" x-text="`${image + 1} / ${images}`">1 / {{ $imageCount }}</span>
+                    @if ($imageCount > 1)
+                        <span class="font-display text-[13px] font-extrabold tracking-[0.5px] text-navy" x-text="`${image + 1} / ${images}`">1 / {{ $imageCount }}</span>
+                    @endif
                     @if ($product['badge'])
                         <span @class(['h-[26px] rounded-full px-2.5 font-display text-xs leading-[26px] font-extrabold text-white', 'bg-brand' => $product['isNew'], 'bg-sale' => ! $product['isNew']])
                             @if ($product['old']) x-text="unitOld ? '−' + Math.round((unitOld - unitPrice) / unitOld * 100) + '%' : ''" @endif
@@ -159,6 +162,16 @@ new class extends Component
                 </div>
 
                 <div class="absolute top-4 right-4 flex gap-2">
+                    @if ($product['images'])
+                        <button
+                            type="button"
+                            x-on:click="zoom = true"
+                            aria-label="{{ __('product.zoom') }}"
+                            class="grid size-11 place-items-center rounded-full border border-white/80 bg-white/70 text-navy backdrop-blur-md hover:bg-white hover:text-brand"
+                        >
+                            {!! $iconSvg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M11 8v6M8 11h6"/>', 17) !!}
+                        </button>
+                    @endif
                     <button
                         type="button"
                         x-on:click="$store.favorites.toggle(id, @js(__('shop.favorites_added')), @js(__('shop.favorites_removed')))"
@@ -178,6 +191,7 @@ new class extends Component
                     </button>
                 </div>
 
+                @if ($imageCount > 1)
                 <div class="absolute inset-x-0 bottom-[22px] flex items-center justify-center gap-3.5">
                     <button type="button" x-on:click="stepImage(-1)" aria-label="{{ __('shop.prev') }}" class="grid size-10 place-items-center rounded-full bg-navy text-white hover:bg-brand">
                         {!! $iconSvg('<path d="m15 6-6 6 6 6"/>', 15, 2.4) !!}
@@ -191,7 +205,60 @@ new class extends Component
                         {!! $iconSvg('<path d="m9 6 6 6-6 6"/>', 15, 2.4) !!}
                     </button>
                 </div>
+                @endif
             </div>
+
+            @if ($product['images'])
+                <template x-teleport="body">
+                    <div
+                        x-show="zoom"
+                        x-cloak
+                        x-transition.opacity
+                        x-effect="document.documentElement.classList.toggle('overflow-hidden', zoom)"
+                        x-on:keydown.escape.window="zoom = false"
+                        x-on:keydown.arrow-left.window="zoom && stepImage(-1)"
+                        x-on:keydown.arrow-right.window="zoom && stepImage(1)"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-label="{{ __('product.zoom') }}"
+                        class="fixed inset-0 z-[80] flex flex-col bg-navy/95 backdrop-blur-sm"
+                    >
+                        <div class="flex items-center justify-between px-4 py-4 text-white sm:px-6">
+                            <span class="font-display text-sm font-extrabold tracking-[0.5px]" x-text="`${image + 1} / ${images}`"></span>
+                            <button type="button" x-on:click="zoom = false" aria-label="{{ __('shop.close') }}" class="grid size-11 place-items-center rounded-full bg-white/10 text-2xl hover:bg-white/20">×</button>
+                        </div>
+                        <div class="relative flex min-h-0 flex-1 items-center justify-center px-4 pb-6 sm:px-20" x-on:click.self="zoom = false">
+                            @foreach ($product['images'] as $index => $image)
+                                <img x-show="image === {{ $index }}" x-cloak src="{{ $image }}" alt="{{ $product['name'] }} — {{ __('product.photo', ['number' => $index + 1]) }}" loading="lazy" class="max-h-full max-w-full animate-fade rounded-2xl bg-white object-contain p-4 sm:p-8">
+                            @endforeach
+                            @if ($imageCount > 1)
+                                <button type="button" x-on:click="stepImage(-1)" aria-label="{{ __('shop.prev') }}" class="absolute left-3 grid size-12 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:left-6">
+                                    {!! $iconSvg('<path d="m15 6-6 6 6 6"/>', 18, 2.4) !!}
+                                </button>
+                                <button type="button" x-on:click="stepImage(1)" aria-label="{{ __('shop.next') }}" class="absolute right-3 grid size-12 place-items-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:right-6">
+                                    {!! $iconSvg('<path d="m9 6 6 6-6 6"/>', 18, 2.4) !!}
+                                </button>
+                            @endif
+                        </div>
+                    </div>
+                </template>
+            @endif
+
+            @if (count($product['images']) > 1)
+                <div class="hidden gap-2.5 overflow-x-auto pb-1 sm:flex">
+                    @foreach ($product['images'] as $index => $image)
+                        <button
+                            type="button"
+                            x-on:click="image = {{ $index }}"
+                            aria-label="{{ __('product.photo', ['number' => $index + 1]) }}"
+                            class="grid size-[76px] shrink-0 place-items-center overflow-hidden rounded-2xl border-[1.5px] bg-card transition hover:border-brand"
+                            :class="image === {{ $index }} ? 'border-brand' : 'border-transparent'"
+                        >
+                            <img src="{{ $image }}" alt="" loading="lazy" class="size-full object-contain p-1.5">
+                        </button>
+                    @endforeach
+                </div>
+            @endif
         </div>
 
         <div class="flex flex-col gap-4">
@@ -305,17 +372,18 @@ new class extends Component
                 @if ($product['inStock'])
                     <div class="flex gap-2.5" x-ref="mainBuy">
                         <div class="flex h-[58px] items-center rounded-2xl bg-soft">
-                            <button type="button" x-on:click="qty = Math.max(1, qty - 1)" aria-label="{{ __('product.less') }}" class="h-full w-11 text-xl text-navy">−</button>
+                            <button type="button" x-on:click="qty = Math.max(1, qty - 1)" aria-label="{{ __('product.less') }}" class="h-full w-9 text-xl text-navy sm:w-11">−</button>
                             <span class="min-w-6 text-center font-display text-base font-extrabold" x-text="qty">1</span>
-                            <button type="button" x-on:click="qty = Math.min({{ min($product['stock'], 10) }}, qty + 1)" aria-label="{{ __('product.more') }}" class="h-full w-11 text-xl text-navy">+</button>
+                            <button type="button" x-on:click="qty = Math.min({{ min($product['stock'], 10) }}, qty + 1)" aria-label="{{ __('product.more') }}" class="h-full w-9 text-xl text-navy sm:w-11">+</button>
                         </div>
                         <button
                             type="button"
+                            data-cart-origin
                             x-on:click="add()"
-                            class="flex h-[58px] flex-1 items-center justify-center gap-2.5 rounded-2xl bg-brand px-3 text-[15px] font-extrabold text-white shadow-[0_18px_36px_-16px_rgba(11,99,246,.8)] hover:bg-brand-dark"
+                            class="flex h-[58px] min-w-0 flex-1 items-center justify-center gap-2.5 rounded-2xl bg-brand px-3 text-sm font-extrabold whitespace-nowrap text-white shadow-[0_18px_36px_-16px_rgba(11,99,246,.8)] hover:bg-brand-dark sm:text-[15px]"
                         >
-                            {!! $iconSvg('<path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/>', 19) !!}
-                            <span x-text="$store.cart.qty(id) ? @js(__('product.add_more', ['count' => '__N__'])).replace('__N__', $store.cart.qty(id)) : @js(__('product.add_to_cart'))">{{ __('product.add_to_cart') }}</span>
+                            <span class="hidden shrink-0 min-[400px]:block">{!! $iconSvg('<path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/>', 19) !!}</span>
+                            <span class="truncate" x-text="$store.cart.qty(id) ? @js(__('product.add_more', ['count' => '__N__'])).replace('__N__', $store.cart.qty(id)) : @js(__('product.add_to_cart'))">{{ __('product.add_to_cart') }}</span>
                         </button>
                     </div>
                 @else
@@ -440,7 +508,7 @@ new class extends Component
                 <span class="truncate text-xs text-faint" x-text="variantLabel"></span>
             </span>
             <span class="font-display text-lg font-extrabold whitespace-nowrap sm:text-xl" x-text="money(total)">{{ $product['priceLabel'] }}</span>
-            <button type="button" x-on:click="add()" class="h-[46px] rounded-[14px] bg-brand px-4 text-sm font-bold whitespace-nowrap text-white hover:bg-brand-bright sm:px-[22px]">{{ __('product.to_cart') }}</button>
+            <button type="button" data-cart-origin x-on:click="add()" class="h-[46px] rounded-[14px] bg-brand px-4 text-sm font-bold whitespace-nowrap text-white hover:bg-brand-bright sm:px-[22px]">{{ __('product.to_cart') }}</button>
         </div>
     @endif
 </main>

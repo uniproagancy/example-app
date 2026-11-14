@@ -392,7 +392,7 @@ new class extends Component
                                     <span class="text-xs text-muted" x-text="@js(__('account.wishlist.monthly', ['amount' => '__A__'])).replace('__A__', product.monthlyLabel)"></span>
                                     <div class="mt-auto flex items-center justify-between gap-2">
                                         <span class="font-display text-lg font-extrabold" x-text="product.priceLabel"></span>
-                                        <button type="button" x-on:click="Livewire.dispatch('cart-add', { id: product.id })" class="h-10 rounded-xl px-3.5 text-[13px] font-bold text-white" :class="$store.cart.qty(product.id) ? 'bg-[#1FB866]' : 'bg-brand hover:bg-brand-dark'" x-text="$store.cart.qty(product.id) ? '✓ ' + $store.cart.qty(product.id) : @js(__('account.wishlist.add'))"></button>
+                                        <button type="button" data-cart-origin x-on:click="Livewire.dispatch('cart-add', { id: product.id })" class="h-10 rounded-xl px-3.5 text-[13px] font-bold text-white" :class="$store.cart.qty(product.id) ? 'bg-[#1FB866]' : 'bg-brand hover:bg-brand-dark'" x-text="$store.cart.qty(product.id) ? '✓ ' + $store.cart.qty(product.id) : @js(__('account.wishlist.add'))"></button>
                                     </div>
                                 </div>
                             </article>

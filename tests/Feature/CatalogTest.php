@@ -28,7 +28,9 @@ class CatalogTest extends TestCase
             ->assertSee(__('catalog.load_more', [], 'ka'))
             ->assertSee(__('catalog.shown', ['shown' => 12, 'total' => 43], 'ka'));
 
-        CategoryTree::roots()->each(fn (array $root) => $response->assertSee(url('/ka/categories/'.$root['slug']), false));
+        CategoryTree::roots()->each(fn (array $root) => Catalog::productsIn($root)->isNotEmpty()
+            ? $response->assertSee('wire:key="nav-'.$root['id'].'"', false)
+            : $response->assertDontSee('wire:key="nav-'.$root['id'].'"', false));
 
         $this->assertSame(12, substr_count($response->getContent(), 'wire:key="category-product-'));
     }

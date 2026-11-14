@@ -22,7 +22,7 @@
                     @endforeach
                 </div>
                 @if ($deal['inStock'])
-                    <button type="button" x-on:click="Livewire.dispatch('cart-add', { id: {{ $deal['id'] }} })" class="mt-1.5 h-[50px] self-start rounded-xl bg-brand px-[26px] text-[15px] font-bold text-white hover:bg-brand-bright">{{ __('shop.add_to_cart_full') }}</button>
+                    <button type="button" data-cart-origin x-on:click="Livewire.dispatch('cart-add', { id: {{ $deal['id'] }} })" class="mt-1.5 h-[50px] self-start rounded-xl bg-brand px-[26px] text-[15px] font-bold text-white hover:bg-brand-bright">{{ __('shop.add_to_cart_full') }}</button>
                 @endif
             </div>
             <a href="{{ $deal['url'] }}" wire:navigate class="relative block min-h-[220px] bg-[radial-gradient(circle_at_50%_50%,rgba(20,180,255,.22),transparent_65%)] p-7 sm:min-h-[300px]">

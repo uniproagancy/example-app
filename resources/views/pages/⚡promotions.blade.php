@@ -155,7 +155,7 @@ new class extends Component
                             </div>
                             <div class="mt-1 flex flex-wrap gap-2">
                                 @if ($deal['inStock'])
-                                    <button type="button" x-on:click="Livewire.dispatch('cart-add', { id: {{ $deal['id'] }} })" class="h-10 rounded-xl bg-brand px-4 text-[13px] font-bold text-white hover:bg-brand-bright">{{ __('shop.add_to_cart_full') }}</button>
+                                    <button type="button" data-cart-origin x-on:click="Livewire.dispatch('cart-add', { id: {{ $deal['id'] }} })" class="h-10 rounded-xl bg-brand px-4 text-[13px] font-bold text-white hover:bg-brand-bright">{{ __('shop.add_to_cart_full') }}</button>
                                 @endif
                                 <a href="{{ $deal['url'] }}" wire:navigate class="flex h-10 items-center rounded-xl bg-soft px-4 text-[13px] font-bold text-navy hover:bg-brand hover:text-white">{{ __('pages.promotions.buy') }}</a>
                             </div>

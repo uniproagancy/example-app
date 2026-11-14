@@ -111,7 +111,7 @@ new class extends Component
         aria-label="{{ __('shop.cart') }}"
         class="hidden h-[52px] items-center gap-2.5 rounded-full bg-tint pr-2 pl-2 text-left text-navy hover:bg-tint-strong sm:flex lg:pr-[18px]"
     >
-        <span class="relative grid size-9 place-items-center rounded-full bg-brand text-white">
+        <span data-cart-target class="relative grid size-9 place-items-center rounded-full bg-brand text-white">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
             <span class="absolute -top-[5px] -right-[5px] h-[18px] min-w-[18px] rounded-[9px] border-2 border-tint bg-navy px-[5px] text-center text-[10px] leading-[14px] font-bold text-white">{{ $this->count }}</span>
         </span>

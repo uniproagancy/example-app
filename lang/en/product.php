@@ -63,4 +63,5 @@ return [
         'invalid' => 'Enter a valid email or phone number.',
         'too_many' => 'This contact already follows too many products.',
     ],
+    'zoom' => 'Enlarge photo',
 ];

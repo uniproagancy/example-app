@@ -100,8 +100,64 @@ window.addEventListener('cart-updated', (event) => {
     Alpine.store('cart').items = event.detail.items || {};
 });
 
+let cartFlightOrigin = null;
+
+document.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-addbtn], [data-cart-origin]');
+
+    if (button) {
+        const rect = button.getBoundingClientRect();
+        cartFlightOrigin = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, at: Date.now() };
+    }
+}, true);
+
+const flyToCart = () => {
+    const target = [...document.querySelectorAll('[data-cart-target]')].find((element) => element.offsetParent !== null);
+    const origin = cartFlightOrigin;
+    cartFlightOrigin = null;
+
+    if (!target) {
+        return;
+    }
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const bump = () => target.animate(
+        [{ transform: 'scale(1)' }, { transform: 'scale(1.28)' }, { transform: 'scale(0.94)' }, { transform: 'scale(1)' }],
+        { duration: 520, easing: 'cubic-bezier(.3, 1.5, .5, 1)' },
+    );
+
+    if (reduced || !origin || Date.now() - origin.at > 4000) {
+        bump();
+
+        return;
+    }
+
+    const end = target.getBoundingClientRect();
+    const dx = end.left + end.width / 2 - origin.x;
+    const dy = end.top + end.height / 2 - origin.y;
+    const dot = document.createElement('span');
+    dot.style.cssText = `position:fixed;left:${origin.x - 9}px;top:${origin.y - 9}px;width:18px;height:18px;border-radius:9999px;background:var(--color-brand);box-shadow:0 6px 18px -4px rgba(11,99,246,.7);z-index:90;pointer-events:none`;
+    document.body.appendChild(dot);
+
+    dot.animate(
+        [
+            { transform: 'translate(0, 0) scale(1)', opacity: 1 },
+            { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 70}px) scale(1.15)`, opacity: 1, offset: 0.45 },
+            { transform: `translate(${dx}px, ${dy}px) scale(0.35)`, opacity: 0.6 },
+        ],
+        { duration: 620, easing: 'cubic-bezier(.45, 0, .25, 1)' },
+    ).finished.then(() => {
+        dot.remove();
+        bump();
+    });
+};
+
 window.addEventListener('toast', (event) => {
     Alpine.store('toast').show(event.detail.message, !!event.detail.withCart);
+
+    if (event.detail.withCart) {
+        flyToCart();
+    }
 });
 
 window.addEventListener('keydown', (event) => {
@@ -265,6 +321,7 @@ Alpine.data('productPage', (config) => ({
     ...config,
     qty: 1,
     image: 0,
+    zoom: false,
     showBar: false,
     money,
     init() {
