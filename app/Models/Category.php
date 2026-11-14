@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasTranslations;
+use App\Models\Concerns\LogsActivity;
 use App\Support\CategoryTree;
 use App\Support\Slug;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\DB;
 class Category extends Model
 {
     use HasTranslations;
+    use LogsActivity;
 
     protected array $translatable = ['title', 'short_title', 'slug', 'description', 'name'];
 

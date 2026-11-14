@@ -155,4 +155,12 @@ return [
         'cart' => 'Cart',
         'account' => 'Account',
     ],
+
+    'consent' => [
+        'title' => 'Cookies',
+        'text' => 'We use cookies to improve site analytics and advertising. You can accept or decline.',
+        'more' => 'Learn more',
+        'accept' => 'Accept',
+        'decline' => 'Decline',
+    ],
 ];

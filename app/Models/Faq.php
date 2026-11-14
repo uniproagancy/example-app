@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -9,6 +10,8 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['icon', 'question', 'answer', 'position', 'is_active'])]
 class Faq extends Model
 {
+    use LogsActivity;
+
     public const ICONS = ['delivery', 'warranty', 'installments', 'returns', 'payment', 'help'];
 
     protected function casts(): array

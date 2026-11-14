@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Orders\Pages;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Filament\Support\Operators;
+use App\Http\Controllers\OrderPrintController;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\PaymentMethod;
@@ -78,6 +79,11 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('print')
+                ->label(__('admin.print.button'))
+                ->icon(Heroicon::OutlinedPrinter)
+                ->color('gray')
+                ->url(fn (): string => OrderPrintController::url([$this->order()->id]), shouldOpenInNewTab: true),
             Action::make('call')
                 ->label(fn (): string => $this->order()->phone)
                 ->icon(Heroicon::OutlinedPhone)

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use App\Support\Catalog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['product_id', 'price', 'text', 'position', 'is_active', 'starts_at', 'ends_at'])]
 class Deal extends Model
 {
+    use LogsActivity;
+
     protected function casts(): array
     {
         return [

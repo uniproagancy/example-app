@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use App\Services\Orders\OrderNotifier;
 use App\Support\Locales;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,6 +19,7 @@ use Illuminate\Support\Facades\URL;
 ])]
 class Order extends Model
 {
+    use LogsActivity;
     use SoftDeletes;
 
     public const STATUSES = ['new', 'received', 'no_answer', 'call_later', 'completed', 'cancelled'];

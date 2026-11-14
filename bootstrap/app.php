@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Middleware\TrackPageView;
+use App\Models\Redirect;
 use App\Services\Facebook\Pixel;
+use App\Support\Consent;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,6 +13,7 @@ use Mcamara\LaravelLocalization\Middleware\LaravelLocalizationRoutes;
 use Mcamara\LaravelLocalization\Middleware\LaravelLocalizationViewPath;
 use Mcamara\LaravelLocalization\Middleware\LocaleCookieRedirect;
 use Mcamara\LaravelLocalization\Middleware\LocaleSessionRedirect;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -29,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->preventRequestForgery(except: ['payment/callback/*', 'payment/return/*']);
 
-        $middleware->encryptCookies(except: ['_fbp', '_fbc', Pixel::VISITOR_COOKIE]);
+        $middleware->encryptCookies(except: ['_fbp', '_fbc', Pixel::VISITOR_COOKIE, Consent::COOKIE]);
 
         $middleware->web(append: [TrackPageView::class]);
 
@@ -40,4 +43,20 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (NotFoundHttpException $exception, Request $request) {
+            if (! $request->isMethod('GET') || $request->expectsJson()) {
+                return null;
+            }
+
+            $redirect = Redirect::matching($request->path());
+
+            if (! $redirect) {
+                return null;
+            }
+
+            $redirect->registerHit();
+
+            return redirect()->to($redirect->target(), $redirect->status_code);
+        });
     })->create();

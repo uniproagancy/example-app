@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Http\Controllers\OrderPrintController;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Services\Orders\OrdersExport;
@@ -28,6 +29,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Js;
 
 class OrdersTable
 {
@@ -127,6 +129,11 @@ class OrdersTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('print')
+                        ->label(__('admin.print.selected'))
+                        ->icon(Heroicon::OutlinedPrinter)
+                        ->deselectRecordsAfterCompletion()
+                        ->action(fn (Collection $records, $livewire) => $livewire->js('window.open('.Js::from(OrderPrintController::url($records->modelKeys())).', "_blank")')),
                     BulkAction::make('export')
                         ->label(__('admin.orders.export.selected'))
                         ->icon(Heroicon::OutlinedArrowDownTray)

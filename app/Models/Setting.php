@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -9,6 +10,8 @@ use Illuminate\Support\Facades\Cache;
 #[Fillable(['key', 'value'])]
 class Setting extends Model
 {
+    use LogsActivity;
+
     public const CACHE_KEY = 'settings.all';
 
     protected static function booted(): void

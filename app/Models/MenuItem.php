@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -14,6 +15,8 @@ use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 #[Fillable(['location', 'title', 'route_name', 'url', 'position', 'is_active'])]
 class MenuItem extends Model
 {
+    use LogsActivity;
+
     public const CACHE_KEY = 'menu_items.all';
 
     public const LOCATIONS = ['header', 'header_highlight'];

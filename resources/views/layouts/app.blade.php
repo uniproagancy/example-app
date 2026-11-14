@@ -12,6 +12,7 @@
         <link rel="icon" type="image/png" href="{{ App\Support\Site::faviconUrl() }}">
 
         @include('partials.seo')
+        @include('partials.analytics')
 
         <script>
             window.elioFavorites = @js(auth()->user()?->favoriteIds());
@@ -30,6 +31,7 @@
 
         @include('partials.footer')
         @include('partials.overlays')
+        @include('partials.cookie-consent')
 
         @livewireScriptConfig
     </body>

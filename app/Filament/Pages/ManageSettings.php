@@ -31,7 +31,7 @@ class ManageSettings extends Page
 {
     use AdminOnlyPage;
 
-    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms'];
+    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms', 'ga4_id', 'facebook_pixel_id'];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
@@ -159,6 +159,25 @@ class ManageSettings extends Page
                             ->tel()
                             ->placeholder('5XX XX XX XX')
                             ->maxLength(32),
+                    ])
+                    ->columnSpanFull(),
+                Section::make(__('admin.settings.analytics'))
+                    ->description(__('admin.settings.analytics_help'))
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('ga4_id')
+                            ->label(__('admin.settings.ga4_id'))
+                            ->helperText(__('admin.settings.ga4_id_help'))
+                            ->placeholder('G-XXXXXXXXXX')
+                            ->regex('/^G-[A-Z0-9]{4,20}$/i')
+                            ->dehydrateStateUsing(fn (?string $state) => filled($state) ? mb_strtoupper(trim($state)) : null)
+                            ->maxLength(30),
+                        TextInput::make('facebook_pixel_id')
+                            ->label(__('admin.settings.facebook_pixel_id'))
+                            ->helperText(__('admin.settings.facebook_pixel_id_help'))
+                            ->placeholder('123456789012345')
+                            ->regex('/^[0-9]{6,20}$/')
+                            ->maxLength(20),
                     ])
                     ->columnSpanFull(),
                 Section::make(__('admin.settings.seo'))

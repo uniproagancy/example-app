@@ -5,8 +5,10 @@ namespace App\Services\Facebook;
 use App\Jobs\SendPixelEventJob;
 use App\Models\Order;
 use App\Models\OrderPixelData;
+use App\Models\Setting;
 use App\Models\User;
 use App\Support\Catalog;
+use App\Support\Consent;
 use App\Support\Phone;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -37,7 +39,7 @@ class Pixel
 
     public function pixelId(): ?string
     {
-        return config('services.facebook.pixel_id') ?: null;
+        return trim((string) Setting::get('facebook_pixel_id')) ?: (config('services.facebook.pixel_id') ?: null);
     }
 
     public function enabled(): bool
@@ -57,7 +59,7 @@ class Pixel
 
     public function consented(): bool
     {
-        return ! $this->staff();
+        return ! $this->staff() && ! Consent::denied();
     }
 
     public function testMode(): bool

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use App\Support\CategoryTree;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,8 @@ use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 #[Fillable(['title', 'text', 'button_label', 'category_id', 'url', 'image', 'theme', 'icon', 'position', 'is_active', 'starts_at', 'ends_at'])]
 class Slide extends Model
 {
+    use LogsActivity;
+
     public const CACHE_KEY = 'slides.all';
 
     public const THEMES = ['blue', 'red', 'indigo'];

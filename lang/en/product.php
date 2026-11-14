@@ -31,6 +31,7 @@ return [
         'description' => 'Description',
     ],
     'specs_text' => 'Full technical details for the selected configuration.',
+    'recently_viewed' => 'Recently viewed',
     'similar' => 'Similar products',
     'quick' => [
         'title' => 'Quick purchase',

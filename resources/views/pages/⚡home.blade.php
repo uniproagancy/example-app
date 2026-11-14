@@ -3,6 +3,7 @@
 use App\Models\Slide;
 use App\Support\Catalog;
 use App\Support\HomeContent;
+use App\Support\RecentlyViewed;
 use App\Support\Seo;
 use App\Support\Site;
 use Livewire\Component;
@@ -25,6 +26,7 @@ new class extends Component
             'brands' => Catalog::brands(),
             'saleProducts' => Catalog::onSale(),
             'sections' => Catalog::sections(),
+            'recentProducts' => RecentlyViewed::products(),
         ])->title(__('shop.nav.home'));
     }
 };
@@ -70,5 +72,7 @@ new class extends Component
                     @break
             @endswitch
         @endforeach
+
+        @include('partials.recently-viewed')
     </main>
 </div>

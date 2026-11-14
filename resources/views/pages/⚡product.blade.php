@@ -1,10 +1,11 @@
 <?php
 
 use App\Models\ProductSpec;
-use App\Support\Catalog;
 use App\Services\Facebook\Pixel;
+use App\Support\Catalog;
 use App\Support\CategoryTree;
 use App\Support\Locales;
+use App\Support\RecentlyViewed;
 use App\Support\Seo;
 use App\Support\Site;
 use Livewire\Component;
@@ -29,6 +30,7 @@ new class extends Component
         }
 
         $this->productId = $product['id'];
+        RecentlyViewed::push($product['id']);
 
         $this->dispatch('pixel', app(Pixel::class)->viewContent([
             'id' => $product['id'],
@@ -86,6 +88,7 @@ new class extends Component
                     ->values()
                 : collect(),
             'similar' => $product ? Catalog::similar($product) : collect(),
+            'recentProducts' => RecentlyViewed::products($product['id'] ?? null),
             'variants' => $product ? Catalog::variantSwitchers($product) : [],
         ])->title($product['name'] ?? '');
     }
@@ -413,6 +416,8 @@ new class extends Component
             </div>
         </section>
     @endif
+
+    @include('partials.recently-viewed')
 
     @if ($product['inStock'])
         <div

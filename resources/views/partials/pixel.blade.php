@@ -52,6 +52,7 @@
             const p = window.ELIO_PIXEL;
 
             if (!window.ELIO_PIXEL_READY) {
+                fbq('consent', window.elioConsent === 'granted' ? 'grant' : 'revoke');
                 Object.keys(p.match).length ? fbq('init', p.id, p.match) : fbq('init', p.id);
                 window.ELIO_PIXEL_READY = true;
             }
