@@ -221,7 +221,7 @@ class CampaignResource extends Resource
                     ->label(__('admin.campaigns.open'))
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                     ->color('gray')
-                    ->url(fn (Campaign $record) => route('promotions.show', ['slug' => $record->slug]))
+                    ->url(fn (Campaign $record) => route('promotions.show', ['campaign' => $record->slug]))
                     ->openUrlInNewTab(),
                 EditAction::make()->slideOver(),
                 DeleteAction::make(),

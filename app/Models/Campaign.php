@@ -102,7 +102,7 @@ class Campaign extends Model
             'badge' => HomeContent::localized($this->badge) ?? ($this->discount_percent ? '−'.$this->discount_percent.'%' : null),
             'image' => $this->image ? Storage::disk('public')->url($this->image) : null,
             'background' => self::BACKGROUNDS[$this->theme] ?? self::BACKGROUNDS['navy'],
-            'url' => route('promotions.show', ['slug' => $this->slug]),
+            'url' => route('promotions.show', ['campaign' => $this->slug]),
             'endsAt' => $this->ends_at ? Carbon::parse($this->ends_at)->toIso8601String() : null,
             'products' => $items,
             'count' => $items->count(),

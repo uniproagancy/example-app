@@ -1,10 +1,12 @@
 <?php
 
+use App\Models\Campaign;
 use App\Support\Catalog;
 use App\Support\CategoryTree;
 use App\Support\Locales;
 use App\Support\Seo;
 use App\Support\Site;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -24,6 +26,9 @@ new class extends Component
 
     #[Locked]
     public ?int $categoryId = null;
+
+    #[Locked]
+    public ?string $campaignSlug = null;
 
     #[Url(except: 'popular')]
     public string $sort = 'popular';
@@ -51,8 +56,17 @@ new class extends Component
 
     public int $limit = self::PER_PAGE;
 
-    public function mount(?string $slug = null): void
+    public function mount(?string $slug = null, ?string $campaign = null): void
     {
+        if ($campaign !== null) {
+            abort_unless(Campaign::findLive($campaign), 404);
+
+            $this->campaignSlug = $campaign;
+            $this->normalize();
+
+            return;
+        }
+
         if ($slug !== null) {
             $node = CategoryTree::findBySlug($slug);
 
@@ -147,8 +161,18 @@ new class extends Component
     }
 
     #[Computed]
+    public function campaign(): ?array
+    {
+        return $this->campaignSlug !== null ? Campaign::findLive($this->campaignSlug) : null;
+    }
+
+    #[Computed]
     public function baseProducts(): Collection
     {
+        if ($this->campaignSlug !== null) {
+            return $this->campaign['products'] ?? collect();
+        }
+
         return $this->category ? Catalog::productsIn($this->category) : Catalog::products();
     }
 
@@ -224,7 +248,7 @@ new class extends Component
         $lineage = $this->category ? [$this->category['id'], ...CategoryTree::ancestors($this->category['id'])->pluck('id')->all()] : [];
 
         return Catalog::filterAttributes()
-            ->filter(fn (array $attribute) => $attribute['categories'] === [] || array_intersect($attribute['categories'], $lineage) !== [])
+            ->filter(fn (array $attribute) => $this->campaignSlug !== null || $attribute['categories'] === [] || array_intersect($attribute['categories'], $lineage) !== [])
             ->map(function (array $attribute) {
                 $counts = $this->matched
                     ->flatMap(fn (array $product) => $product['filters'][$attribute['code']] ?? [])
@@ -253,7 +277,7 @@ new class extends Component
 
     public function isLanding(): bool
     {
-        return $this->categoryId === null && ! $this->browseAll && $this->searchTerm() === '' && $this->activeCount() === 0;
+        return $this->categoryId === null && $this->campaignSlug === null && ! $this->browseAll && $this->searchTerm() === '' && $this->activeCount() === 0;
     }
 
     protected function landingTiles(): Collection
@@ -294,8 +318,25 @@ new class extends Component
         }
     }
 
+    public function validity(?string $endsAt): string
+    {
+        if (! $endsAt) {
+            return __('pages.promotions.no_end');
+        }
+
+        $date = Carbon::parse($endsAt)->timezone(config('app.timezone'));
+
+        return $date->isToday()
+            ? __('pages.promotions.ends_today')
+            : __('pages.promotions.until', ['date' => $date->format('d.m.Y')]);
+    }
+
     protected function navigation(): array
     {
+        if ($this->campaignSlug !== null) {
+            return ['rows' => [], 'back' => null];
+        }
+
         $node = $this->category;
         $products = Catalog::products();
         $present = fn (array $item) => [
@@ -324,6 +365,10 @@ new class extends Component
 
     public function render()
     {
+        if ($this->campaignSlug !== null) {
+            return $this->renderCampaign();
+        }
+
         $node = $this->category;
         if ($node) {
             view()->share('alternateUrls', collect($node['slugs'])
@@ -356,8 +401,39 @@ new class extends Component
             'node' => $node,
             'ancestors' => $node ? CategoryTree::ancestors($node['id']) : collect(),
             'navigation' => $this->navigation(),
+            'campaign' => null,
+            'others' => collect(),
             'shown' => $this->results->take($this->limit),
         ])->title($node['title'] ?? ($term !== '' ? __('catalog.search.title', ['term' => $term]) : __('catalog.title')));
+    }
+
+    protected function renderCampaign()
+    {
+        $campaign = $this->campaign;
+
+        abort_unless($campaign, 404);
+
+        Seo::set([
+            'description' => Seo::text($campaign['text'], __('pages.campaign.seo', ['title' => $campaign['title'], 'count' => $campaign['count']])),
+            'canonical' => $campaign['url'],
+            'image' => $campaign['image'],
+            'schema' => [Seo::breadcrumbs([
+                ['name' => __('pages.promotions.title'), 'url' => route('promotions')],
+                ['name' => $campaign['title'], 'url' => $campaign['url']],
+            ])],
+        ]);
+
+        return $this->view([
+            'landing' => false,
+            'term' => $this->searchTerm(),
+            'tiles' => collect(),
+            'node' => null,
+            'ancestors' => collect(),
+            'navigation' => $this->navigation(),
+            'campaign' => $campaign,
+            'others' => Campaign::listing()->where('slug', '!=', $this->campaignSlug)->take(3)->values(),
+            'shown' => $this->results->take($this->limit),
+        ])->title($campaign['title']);
     }
 };
 ?>
@@ -379,7 +455,11 @@ new class extends Component
     <nav aria-label="breadcrumb" class="flex flex-wrap items-center gap-2 text-xs tracking-[0.2px] text-subtle">
         <a href="{{ route('home') }}" wire:navigate class="text-muted hover:text-brand">{{ __('account.home') }}</a>
         <span class="size-1 rounded-full bg-[#C9D3E3]"></span>
-        @if ($node)
+        @if ($campaign)
+            <a href="{{ route('promotions') }}" wire:navigate class="text-muted hover:text-brand">{{ __('pages.promotions.title') }}</a>
+            <span class="size-1 rounded-full bg-[#C9D3E3]"></span>
+            <span class="font-semibold text-navy">{{ $campaign['title'] }}</span>
+        @elseif ($node)
             <a href="{{ route('catalog') }}" wire:navigate class="text-muted hover:text-brand">{{ __('catalog.title') }}</a>
             @foreach ($ancestors as $ancestor)
                 <span class="size-1 rounded-full bg-[#C9D3E3]"></span>
@@ -392,6 +472,11 @@ new class extends Component
         @endif
     </nav>
 
+    @if ($campaign)
+        <div class="mt-[22px]">
+            @include('partials.campaign-hero', ['campaign' => $campaign, 'heading' => 'h1'])
+        </div>
+    @else
     <h1 class="m-0 mt-[22px] flex items-start gap-3.5 text-[clamp(26px,3.4vw,46px)] leading-[1.1] font-extrabold tracking-[0.2px] text-balance">
         @if ($node)
             {{ $node['title'] }}
@@ -404,6 +489,7 @@ new class extends Component
         @endif
         <span class="mt-1 shrink-0 rounded-full bg-tint px-[11px] py-[5px] font-display text-[15px] leading-none font-extrabold tracking-normal text-brand">{{ $this->matched->count() }}</span>
     </h1>
+    @endif
 
     @if ($landing)
         <div class="mt-7 grid auto-rows-[140px] grid-cols-2 gap-2.5 sm:auto-rows-[170px] sm:grid-cols-4 sm:gap-3.5 lg:auto-rows-[190px] lg:grid-cols-5">
@@ -528,6 +614,7 @@ new class extends Component
                 </button>
             </div>
 
+            @unless ($campaign)
             @if ($navigation['back'])
                 <a href="{{ $navigation['back']['url'] }}" wire:navigate class="flex h-9 max-w-full items-center gap-2 self-start rounded-full bg-[#F3F5F9] pr-3.5 pl-2.5 text-xs font-bold text-navy hover:bg-navy hover:text-white">
                     <svg class="shrink-0" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg>
@@ -564,6 +651,7 @@ new class extends Component
                     </button>
                 @endif
             </div>
+            @endunless
 
             <div class="mt-7 flex items-center justify-between">
                 <span class="font-caps text-[11px] font-extrabold tracking-[1.2px] text-subtle uppercase">{{ __('catalog.filters') }}</span>
@@ -754,5 +842,24 @@ new class extends Component
             @endif
         </div>
     </div>
+    @endif
+
+    @if ($others->isNotEmpty())
+        <section class="mt-14 flex flex-col gap-5">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+                <h2 class="m-0 text-xl font-extrabold tracking-[0.3px] sm:text-2xl">{{ __('pages.campaign.others') }}</h2>
+                <a href="{{ route('promotions') }}" wire:navigate class="flex h-10 items-center gap-1.5 rounded-full bg-navy px-[18px] text-[13px] font-bold text-white hover:bg-brand hover:text-white">
+                    {{ __('pages.campaign.all') }}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+                @foreach ($others as $other)
+                    <div wire:key="other-campaign-{{ $other['id'] }}">
+                        @include('partials.campaign-card', ['campaign' => $other])
+                    </div>
+                @endforeach
+            </div>
+        </section>
     @endif
 </main>

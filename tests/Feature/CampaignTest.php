@@ -49,15 +49,17 @@ class CampaignTest extends TestCase
         $this->get('/ka/promotions')
             ->assertOk()
             ->assertSee('შავი პარასკევი')
-            ->assertSee(route('promotions.show', ['slug' => 'black-friday']), false)
+            ->assertSee(route('promotions.show', ['campaign' => 'black-friday']), false)
             ->assertDontSee('ძველი აქცია')
             ->assertDontSee('გამორთული აქცია');
 
         $this->get('/ka/promotions/black-friday')
             ->assertOk()
             ->assertSee('<title>შავი პარასკევი — ELIO.GE</title>', false)
-            ->assertSee('wire:key="campaign-product-'.$speaker['id'].'"', false)
-            ->assertDontSee('wire:key="campaign-product-'.$otherProduct['id'].'"', false);
+            ->assertSee('wire:key="category-product-'.$speaker['id'].'"', false)
+            ->assertDontSee('wire:key="category-product-'.$otherProduct['id'].'"', false)
+            ->assertSee(__('catalog.filters'))
+            ->assertSee(__('catalog.sort.popular'));
 
         $this->get('/sitemap.xml')->assertOk()->assertSee(url('/ka/promotions/black-friday'), false);
     }
@@ -84,6 +86,23 @@ class CampaignTest extends TestCase
         $campaign->update(['ends_at' => now()->subMinute()]);
 
         $this->assertEquals($regular, Catalog::find($speaker->id)['price']);
+    }
+
+    public function test_campaign_products_can_be_filtered_like_the_catalog(): void
+    {
+        $speaker = Catalog::find($this->product('jbl')->id);
+        $other = Catalog::products()->first(fn (array $product) => $product['id'] !== $speaker['id'] && $product['brand'] && $product['brand'] !== $speaker['brand']);
+
+        $campaign = Campaign::factory()->create(['slug' => 'brand-week']);
+        $campaign->products()->sync([$speaker['id'], $other['id']]);
+
+        Livewire::withQueryParams([])
+            ->test('pages::catalog', ['campaign' => 'brand-week'])
+            ->assertSee('category-product-'.$speaker['id'].'"', false)
+            ->assertSee('category-product-'.$other['id'].'"', false)
+            ->call('toggleBrand', $speaker['brand'])
+            ->assertSee('category-product-'.$speaker['id'].'"', false)
+            ->assertDontSee('category-product-'.$other['id'].'"', false);
     }
 
     public function test_finished_or_unknown_campaign_pages_are_not_found(): void

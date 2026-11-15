@@ -15,7 +15,7 @@ class PromotionsPageTest extends TestCase
 
     protected bool $seed = true;
 
-    public function test_lists_every_live_promotion_deal_and_discounted_product(): void
+    public function test_lists_every_live_promotion_and_deal_without_the_discounted_products(): void
     {
         $this->refreshApplicationWithLocale('ka');
 
@@ -40,8 +40,7 @@ class PromotionsPageTest extends TestCase
             ->assertDontSee('გამორთული აქცია')
             ->assertSee(__('pages.promotions.deals'))
             ->assertSee('Galaxy Tab S10')
-            ->assertSee(__('pages.promotions.sale'))
-            ->assertSee('/ka/catalog?only%5B0%5D=sale', false)
+            ->assertDontSee('id="promotions-sale"', false)
             ->assertSee('<link rel="canonical" href="'.url('/ka/promotions').'">', false);
     }
 
@@ -65,7 +64,7 @@ class PromotionsPageTest extends TestCase
 
         $this->assertTrue(MenuItem::query()->where('route_name', 'promotions')->exists());
 
-        $this->get('/ka')->assertOk()->assertSee(url('/ka/promotions'), false);
+        $this->get('/ka')->assertOk()->assertSee(url('/ka/promotions'), false)->assertDontSee('/ka/catalog?only%5B0%5D=sale', false);
         $this->get('/sitemap.xml')->assertOk()->assertSee(url('/ka/promotions'), false);
     }
 }

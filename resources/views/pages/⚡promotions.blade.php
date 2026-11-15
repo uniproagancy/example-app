@@ -12,8 +12,6 @@ new class extends Component
 {
     public function render()
     {
-        $saleProducts = Catalog::onSale();
-
         Seo::set([
             'description' => Seo::text(__('seo.promotions_description', ['site' => Site::name()])),
             'canonical' => route('promotions'),
@@ -24,8 +22,6 @@ new class extends Component
             'campaigns' => Campaign::listing(),
             'promos' => HomeContent::promos(),
             'deals' => Catalog::deals(),
-            'saleProducts' => $saleProducts->sortByDesc(fn (array $product) => $product['old'] - ($product['price'] ?? $product['old']))->take(15)->values(),
-            'saleCount' => $saleProducts->count(),
         ])->title(__('pages.promotions.title'));
     }
 
@@ -77,7 +73,6 @@ new class extends Component
                     'campaigns' => $campaigns->count(),
                     'offers' => $promos->count(),
                     'deals' => $deals->count(),
-                    'sale' => $saleCount,
                 ]) as $key => $count)
                     <a href="#promotions-{{ $key }}" class="flex flex-col rounded-2xl bg-white/8 px-5 py-3 leading-tight hover:bg-white/12 hover:text-white">
                         <span class="font-display text-2xl font-extrabold text-white tabular-nums">{{ $count }}</span>
@@ -88,7 +83,7 @@ new class extends Component
         </div>
     </section>
 
-    @if ($campaigns->isEmpty() && $promos->isEmpty() && $deals->isEmpty() && $saleCount === 0)
+    @if ($campaigns->isEmpty() && $promos->isEmpty() && $deals->isEmpty())
         <section class="flex flex-col items-center gap-3 rounded-[28px] border border-line-soft bg-white px-6 py-16 text-center">
             <span class="grid size-16 place-items-center rounded-2xl bg-soft font-display text-3xl font-extrabold text-brand">%</span>
             <h2 class="m-0 text-xl font-extrabold">{{ __('pages.promotions.empty') }}</h2>
@@ -177,27 +172,6 @@ new class extends Component
                             </div>
                         </div>
                     </article>
-                @endforeach
-            </div>
-        </section>
-    @endif
-
-    @if ($saleProducts->isNotEmpty())
-        <section id="promotions-sale" class="mt-6 flex scroll-mt-28 flex-col gap-5">
-            <div class="flex flex-wrap items-end justify-between gap-3">
-                <div class="flex flex-col gap-1">
-                    <h2 class="m-0 text-2xl font-extrabold tracking-[0.3px]">{{ __('pages.promotions.sale') }}</h2>
-                    <span class="text-[13px] text-muted">{{ __('pages.promotions.sale_count', ['count' => $saleCount]) }}</span>
-                </div>
-                <a href="{{ route('catalog', ['only' => ['sale']]) }}" wire:navigate class="flex h-10 items-center gap-1.5 rounded-full bg-navy px-[18px] text-[13px] font-bold text-white hover:bg-brand hover:text-white">
-                    {{ __('pages.promotions.all_sale') }} {!! $arrowIcon !!}
-                </a>
-            </div>
-            <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4 xl:grid-cols-5">
-                @foreach ($saleProducts as $item)
-                    <div wire:key="sale-{{ $item['id'] }}">
-                        @include('partials.product-card', ['product' => $item])
-                    </div>
                 @endforeach
             </div>
         </section>
