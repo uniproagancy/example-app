@@ -98,4 +98,31 @@ class CategoryTreeAdminTest extends TestCase
             ->callTableAction('addChild', $parent, ['title' => ''])
             ->assertHasTableActionErrors(['title' => 'required']);
     }
+
+    public function test_dragging_reorders_only_among_siblings_and_never_moves_a_category_to_another_parent(): void
+    {
+        $parent = Category::query()->whereHas('children', null, '>=', 2)->whereNull('parent_id')->firstOrFail();
+        [$first, $second] = $parent->children()->orderBy('position')->orderBy('id')->take(2)->get()->all();
+        $roots = Category::query()->whereNull('parent_id')->orderBy('position')->orderBy('id')->pluck('id')->all();
+
+        $order = [$second->id, ...array_reverse($roots), $first->id];
+
+        Livewire::test(ListCategories::class)
+            ->call('reorderTable', array_map('strval', $order));
+
+        $this->assertSame($parent->id, $first->fresh()->parent_id);
+        $this->assertSame($parent->id, $second->fresh()->parent_id);
+        $this->assertLessThan($first->fresh()->position, $second->fresh()->position);
+        $this->assertSame(
+            array_reverse($roots),
+            Category::query()->whereNull('parent_id')->orderBy('position')->orderBy('id')->pluck('id')->all(),
+        );
+
+        $page = Livewire::test(ListCategories::class);
+        $records = $page->instance()->getTableRecords()->pluck('id')->all();
+        $this->assertSame(array_search($parent->id, $records) + 1, array_search($second->id, $records));
+
+        $page->call('toggleTableReordering');
+        $this->assertSame($records, $page->instance()->getTableRecords()->pluck('id')->all());
+    }
 }

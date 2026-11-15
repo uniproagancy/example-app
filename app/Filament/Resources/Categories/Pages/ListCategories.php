@@ -16,4 +16,13 @@ class ListCategories extends ListRecords
             CreateAction::make(),
         ];
     }
+
+    public function reorderTable(array $order, int|string|null $draggedRecordKey = null): void
+    {
+        if (! $this->getTable()->isReorderable()) {
+            return;
+        }
+
+        CategoryResource::reorderSiblings($order);
+    }
 }

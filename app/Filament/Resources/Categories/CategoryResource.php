@@ -14,6 +14,7 @@ use App\Filament\Support\TrashActions;
 use App\Models\Category;
 use App\Models\CategoryTranslation;
 use App\Models\Product;
+use App\Support\CategoryTree;
 use App\Support\Warranty;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -45,6 +46,8 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Unique;
 
@@ -170,6 +173,7 @@ class CategoryResource extends Resource
                 ->with('kaTranslation')
                 ->withCount(['children', 'products'])
                 ->orderByRaw(static::treeOrderSql($query)))
+            ->reorderable('position')
             ->paginated([50, 100, 'all'])
             ->defaultPaginationPageOption('all')
             ->columns([
@@ -319,6 +323,22 @@ class CategoryResource extends Resource
         }
 
         return static::$tree = $tree;
+    }
+
+    public static function reorderSiblings(array $order): void
+    {
+        $categories = Category::query()->whereKey($order)->get(['id', 'parent_id'])->keyBy('id');
+
+        DB::transaction(fn () => collect($order)
+            ->map(fn (int|string $id): ?Category => $categories->get((int) $id))
+            ->filter()
+            ->groupBy(fn (Category $category): int => (int) $category->parent_id)
+            ->each(fn (Collection $siblings) => $siblings->values()->each(
+                fn (Category $category, int $index) => Category::query()->whereKey($category->id)->update(['position' => $index + 1]),
+            )));
+
+        static::flushTree();
+        CategoryTree::flush();
     }
 
     public static function flushTree(): void
