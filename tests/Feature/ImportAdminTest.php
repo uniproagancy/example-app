@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Filament\Pages\ImportSpreadsheet;
 use App\Filament\Resources\Attributes\AttributeResource;
 use App\Filament\Resources\Attributes\Pages\EditAttribute;
+use App\Filament\Resources\Attributes\Pages\ListAttributes;
 use App\Filament\Resources\Attributes\RelationManagers\ValuesRelationManager;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\ProductResource;
@@ -207,5 +208,25 @@ class ImportAdminTest extends TestCase
         Catalog::flush();
 
         $this->assertTrue(Livewire::test('pages::catalog', ['slug' => 'gaming'])->get('attributeFacets')->isEmpty());
+    }
+
+    public function test_switching_a_filter_off_in_admin_removes_it_from_the_catalog(): void
+    {
+        $this->refreshApplicationWithLocale('en');
+
+        $attribute = Attribute::query()->create(['code' => 'bluetooth', 'type' => 'select', 'is_filterable' => true]);
+        $attribute->saveTranslations(['ka' => ['name' => 'Bluetooth'], 'en' => ['name' => 'Bluetooth']]);
+        $value = $attribute->values()->create(['code' => '60']);
+        $value->saveTranslations(['ka' => ['label' => '6.0'], 'en' => ['label' => '6.0']]);
+        Product::query()->where('sku', 'ip16')->sole()->attributeValues()->sync([$value->id]);
+        Catalog::flush();
+
+        $this->get('/en/catalog?all=1')->assertSee('wire:key="facet-bluetooth"', false);
+
+        Livewire::test(ListAttributes::class)
+            ->call('updateTableColumnState', 'is_filterable', (string) $attribute->getKey(), false);
+
+        $this->assertFalse($attribute->fresh()->is_filterable);
+        $this->get('/en/catalog?all=1')->assertDontSee('wire:key="facet-bluetooth"', false);
     }
 }
