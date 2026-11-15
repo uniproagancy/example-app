@@ -1,5 +1,5 @@
 @php
-    $shopLinks = App\Support\CategoryTree::roots()->take(6);
+    $shopLinks = App\Support\CategoryTree::roots()->filter(fn (array $root) => App\Support\Catalog::productsIn($root)->isNotEmpty())->take(6);
     $socialLinks = App\Support\Site::socials();
     $pageLinks = App\Models\Page::menu();
     $pageUrl = fn (string $slug): string => $pageLinks->firstWhere('slug', $slug)['url'] ?? '#';

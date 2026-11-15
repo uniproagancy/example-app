@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Support\Catalog;
 use App\Support\CategoryTree;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
@@ -24,7 +25,7 @@ class ErrorPagesTest extends TestCase
             ->assertSee(__('errors.404.text', [], 'ka'))
             ->assertSee('href="'.url('/ka/catalog').'"', false);
 
-        CategoryTree::roots()->take(8)->each(fn (array $root) => $response->assertSee(url('/ka/categories/'.$root['slug']), false));
+        CategoryTree::roots()->filter(fn (array $root) => Catalog::productsIn($root)->isNotEmpty())->take(8)->each(fn (array $root) => $response->assertSee(url('/ka/categories/'.$root['slug']), false));
     }
 
     public function test_404_keeps_the_signed_in_header(): void

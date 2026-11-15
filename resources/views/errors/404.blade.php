@@ -2,7 +2,7 @@
     @include('errors.partials.standalone-404')
 @else
 @php
-    $errorRoots = App\Support\CategoryTree::roots()->take(8);
+    $errorRoots = App\Support\CategoryTree::roots()->filter(fn (array $root) => App\Support\Catalog::productsIn($root)->isNotEmpty())->take(8);
 @endphp
 
 <x-layouts::app :title="__('errors.404.title')">

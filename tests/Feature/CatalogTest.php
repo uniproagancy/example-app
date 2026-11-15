@@ -255,4 +255,28 @@ class CatalogTest extends TestCase
         $this->assertLessThanOrEqual(Catalog::SECTION_CHIPS, count($section['chips']));
         $this->assertSame($counts->keys()->take(Catalog::SECTION_CHIPS)->map(fn ($sub) => (string) $sub)->values()->all(), $section['chips']);
     }
+
+    public function test_catalog_menu_hides_categories_without_products(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        $root = CategoryTree::roots()->first(fn (array $node) => Catalog::productsIn($node)->isNotEmpty());
+        $emptyGroup = Category::createUnder($root['id'], 'ცარიელი ჯგუფი');
+        Category::createUnder($emptyGroup->id, 'ცარიელი ქვეჯგუფი');
+        Category::createUnder(null, 'ცარიელი კატეგორია');
+
+        $categories = Catalog::categories();
+        $names = $categories->flatMap(fn (array $category) => [
+            $category['name'],
+            ...collect($category['groups'])->flatMap(fn (array $group) => [$group['name'], ...collect($group['subs'])->pluck('name')]),
+        ]);
+
+        $this->assertTrue($categories->contains('key', $root['id']));
+        $this->assertNotContains('ცარიელი ჯგუფი', $names);
+        $this->assertNotContains('ცარიელი ქვეჯგუფი', $names);
+        $this->assertNotContains('ცარიელი კატეგორია', $names);
+        $this->assertTrue($categories->every(fn (array $category) => $category['count'] > 0 && collect($category['groups'])->every(fn (array $group) => $group['count'] > 0)));
+
+        $this->get('/ka')->assertOk()->assertDontSee('ცარიელი კატეგორია');
+    }
 }

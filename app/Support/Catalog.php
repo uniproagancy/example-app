@@ -84,6 +84,7 @@ class Catalog
                 'count' => collect($node['subtree'])->sum(fn (int $id) => $counts->get($id, 0)),
                 'url' => CategoryTree::url($node),
             ])
+            ->filter(fn (array $category) => $category['count'] > 0)
             ->sortBy([['count', 'desc'], ['depth', 'asc']])
             ->values();
     }
@@ -140,13 +141,15 @@ class Catalog
     {
         $products = static::products();
 
+        $filled = fn (array $category) => $category['count'] > 0;
+
         return CategoryTree::roots()->map(fn (array $root) => [
             ...static::presentCategory($root, $products),
             'groups' => CategoryTree::children($root['id'])->map(fn (array $group) => [
                 ...static::presentCategory($group, $products),
-                'subs' => CategoryTree::children($group['id'])->map(fn (array $sub) => static::presentCategory($sub, $products))->all(),
-            ])->all(),
-        ])->values();
+                'subs' => CategoryTree::children($group['id'])->map(fn (array $sub) => static::presentCategory($sub, $products))->filter($filled)->values()->all(),
+            ])->filter($filled)->values()->all(),
+        ])->filter($filled)->values();
     }
 
     public static function productsIn(array $node, ?Collection $products = null): Collection
