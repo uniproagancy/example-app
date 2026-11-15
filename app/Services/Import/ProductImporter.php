@@ -170,7 +170,7 @@ class ProductImporter
             $product ??= new Product([
                 'sku' => $payload->sku,
                 'is_active' => false,
-                'price' => $supplier->markup($payload->costPrice),
+                'price' => $payload->costPrice,
                 'stock' => $payload->stock,
             ]);
 
@@ -264,7 +264,7 @@ class ProductImporter
             $product->cost_price = $best->cost_price;
 
             if (! $product->price_lock) {
-                $product->price = $best->supplier->markup((float) $best->cost_price);
+                $product->price = (float) $best->cost_price;
                 $product->old_price = $this->strikeThrough($best, (float) $product->price);
             }
         }
@@ -278,7 +278,7 @@ class ProductImporter
             return null;
         }
 
-        $was = $offer->supplier->markup((float) $offer->old_cost_price);
+        $was = (float) $offer->old_cost_price;
 
         return $was > $price ? $was : null;
     }

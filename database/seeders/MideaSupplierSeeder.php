@@ -53,10 +53,7 @@ class MideaSupplierSeeder extends Seeder
                 ],
             ],
 
-            'markup' => [
-                ['up_to' => 500, 'percent' => 25],
-                ['percent' => 20],
-            ],
+            'markup' => [],
         ]);
     }
 }

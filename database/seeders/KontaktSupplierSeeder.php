@@ -33,10 +33,7 @@ class KontaktSupplierSeeder extends Seeder
                     'შიდა განვადება' => '',
                 ],
             ],
-            'markup' => [
-                ['up_to' => 500, 'percent' => 18],
-                ['percent' => 14],
-            ],
+            'markup' => [],
         ]);
     }
 }

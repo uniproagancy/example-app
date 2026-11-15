@@ -31,10 +31,7 @@ class IngcoSupplierSeeder extends Seeder
                     'stock' => 'D',
                 ],
             ],
-            'markup' => [
-                ['up_to' => 200, 'percent' => 25],
-                ['percent' => 20],
-            ],
+            'markup' => [],
         ]);
     }
 }

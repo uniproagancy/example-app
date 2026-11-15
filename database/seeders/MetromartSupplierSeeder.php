@@ -28,10 +28,7 @@ class MetromartSupplierSeeder extends Seeder
 
                 'site_price_uplift' => 0.20,
             ],
-            'markup' => [
-                ['up_to' => 500, 'percent' => 18],
-                ['percent' => 14],
-            ],
+            'markup' => [],
         ]);
     }
 }

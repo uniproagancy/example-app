@@ -34,10 +34,7 @@ class AlneoSupplierSeeder extends Seeder
                     'Alneo' => 'IAPI.GE',
                 ],
             ],
-            'markup' => [
-                ['up_to' => 500, 'percent' => 20],
-                ['percent' => 15],
-            ],
+            'markup' => [],
         ]);
     }
 }

@@ -113,7 +113,7 @@ class ImportJsonTest extends TestCase
         $product = Product::query()->where('sku', 'alta-BC9')->sole();
         $this->assertSame(11, $product->stock);
         $this->assertSame('150.00', $product->cost_price);
-        $this->assertSame((float) $alta->markup(150), (float) $product->price);
+        $this->assertSame('150.00', $product->price);
     }
 
     public function test_paste_and_file_together_or_garbage_are_refused(): void

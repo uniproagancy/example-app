@@ -93,11 +93,6 @@ class AltaDriver implements ChecksImportSource, HasStockFeed, SupplierDriver
             return null;
         }
 
-        if ($this->supplier->markup($payload->costPrice) !== $payload->costPrice
-            || ($payload->oldCostPrice !== null && $this->supplier->markup($payload->oldCostPrice) !== $payload->oldCostPrice)) {
-            throw new AltaUnavailable('Alta retail prices must be imported unchanged. Remove supplier markup or review unsupported fractional prices first.');
-        }
-
         return new ProductPayload(
             externalId: $code,
             sku: $this->supplier->code.'-'.$code,

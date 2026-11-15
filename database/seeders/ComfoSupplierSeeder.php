@@ -32,10 +32,7 @@ class ComfoSupplierSeeder extends Seeder
                 ],
             ],
 
-            'markup' => [
-                ['up_to' => 100, 'add' => 50],
-                ['add' => 100],
-            ],
+            'markup' => [],
         ]);
     }
 }

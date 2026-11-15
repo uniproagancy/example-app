@@ -44,9 +44,6 @@ class OffersRelationManager extends RelationManager
                     ->label(__('admin.suppliers.cost_price'))
                     ->formatStateUsing(fn ($state) => Catalog::money($state))
                     ->description(fn (ProductOffer $record) => $record->old_cost_price ? Catalog::money($record->old_cost_price) : null),
-                TextColumn::make('markup_price')
-                    ->label(__('admin.products.price'))
-                    ->state(fn (ProductOffer $record) => $record->supplier ? Catalog::money($record->supplier->markup((float) $record->cost_price)) : null),
                 TextColumn::make('stock')
                     ->label(__('admin.products.stock'))
                     ->badge()

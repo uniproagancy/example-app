@@ -76,7 +76,6 @@ class ImportAdminTest extends TestCase
                 'config.publish_on_import' => true,
                 'config.rate' => 30,
                 'config_json' => '{"base_url": "https://www.midea.ge", "from": 5}',
-                'markup' => [['up_to' => 200, 'percent' => 25, 'add' => null], ['up_to' => null, 'percent' => null, 'add' => 60]],
             ])
             ->call('save')
             ->assertHasNoFormErrors();
@@ -85,8 +84,7 @@ class ImportAdminTest extends TestCase
 
         $this->assertTrue($supplier->is_active);
         $this->assertEquals(['base_url' => 'https://www.midea.ge', 'from' => 5, 'rate' => 30, 'require_stock' => false, 'require_image' => false, 'publish_on_import' => true, 'columns' => $columns], $supplier->config);
-        $this->assertSame(125.0, $supplier->markup(100));
-        $this->assertSame(360.0, $supplier->markup(300));
+        $this->assertSame([], $supplier->markup);
 
         Livewire::test(EditSupplier::class, ['record' => $supplier->getRouteKey()])
             ->fillForm(['config.columns' => ['key' => ' c', 'cost' => 'g', 'key_as' => 'url', 'stock' => '']])

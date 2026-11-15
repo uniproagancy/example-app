@@ -507,7 +507,7 @@ class ImportJson extends Page
             return null;
         }
 
-        return Catalog::money($supplier->markup((float) $price));
+        return Catalog::money((float) $price);
     }
 
     protected function problem(int $number, string $message): void

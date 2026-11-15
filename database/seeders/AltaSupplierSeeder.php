@@ -19,11 +19,7 @@ class AltaSupplierSeeder extends Seeder
                 'locale' => 'ka',
                 'min_quantity' => 2,
             ],
-            'markup' => [
-                ['up_to' => 100, 'add' => 30],
-                ['up_to' => 500, 'add' => 50],
-                ['add' => 100],
-            ],
+            'markup' => [],
         ]);
     }
 }

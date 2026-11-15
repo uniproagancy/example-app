@@ -24,11 +24,7 @@ class EliteSupplierSeeder extends Seeder
                     'key' => 'A',
                 ],
             ],
-            'markup' => [
-                ['up_to' => 100, 'add' => 30],
-                ['up_to' => 500, 'add' => 50],
-                ['add' => 100],
-            ],
+            'markup' => [],
         ]);
     }
 }

@@ -38,9 +38,7 @@ class ThermocenterSupplierSeeder extends Seeder
                 ],
             ],
 
-            'markup' => [
-                ['percent' => 20],
-            ],
+            'markup' => [],
         ]);
     }
 }

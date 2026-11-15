@@ -22,7 +22,6 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\CodeEditor;
 use Filament\Forms\Components\CodeEditor\Enums\Language;
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -89,22 +88,6 @@ class SupplierResource extends Resource
                                 ->integer()
                                 ->minValue(0)
                                 ->default(100),
-                        ]),
-
-                    Section::make(__('admin.suppliers.markup'))
-                        ->description(__('admin.suppliers.markup_help'))
-                        ->schema([
-                            Repeater::make('markup')
-                                ->hiddenLabel()
-                                ->columns(3)
-                                ->defaultItems(0)
-                                ->reorderableWithDragAndDrop()
-                                ->addActionLabel(__('admin.suppliers.markup_tier'))
-                                ->schema([
-                                    TextInput::make('up_to')->label(__('admin.suppliers.up_to'))->numeric()->minValue(0)->suffix('₾'),
-                                    TextInput::make('percent')->label(__('admin.suppliers.percent'))->numeric()->suffix('%'),
-                                    TextInput::make('add')->label(__('admin.suppliers.add'))->numeric()->suffix('₾'),
-                                ]),
                         ]),
 
                     Section::make(__('admin.suppliers.columns'))
@@ -324,7 +307,7 @@ class SupplierResource extends Resource
         return [
             ...$data,
             'config' => array_merge(is_array($rest) ? $rest : [], $common),
-            'markup' => array_values(array_filter((array) ($data['markup'] ?? []), fn ($tier) => array_filter((array) $tier, fn ($value) => $value !== null && $value !== ''))),
+            'markup' => [],
         ];
     }
 

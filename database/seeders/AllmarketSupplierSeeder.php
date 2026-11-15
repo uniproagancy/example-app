@@ -19,11 +19,7 @@ class AllmarketSupplierSeeder extends Seeder
                 'timeout' => 60,
                 'locale' => 'ka',
             ],
-            'markup' => [
-                ['up_to' => 100, 'percent' => 20],
-                ['up_to' => 500, 'percent' => 15],
-                ['percent' => 12],
-            ],
+            'markup' => [],
         ]);
     }
 }

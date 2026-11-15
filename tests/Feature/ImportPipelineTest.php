@@ -67,7 +67,7 @@ class ImportPipelineTest extends TestCase
 
         $this->assertFalse($product->is_active);
         $this->assertNull($product->category_id);
-        $this->assertSame('120.00', $product->price);
+        $this->assertSame('100.00', $product->price);
         $this->assertSame('100.00', $product->cost_price);
         $this->assertSame(5, $product->stock);
         $this->assertSame('Acme', $product->brand->name);
@@ -134,7 +134,7 @@ class ImportPipelineTest extends TestCase
 
         $product = Product::query()->where('sku', 'SKU-1')->sole();
         $this->assertSame(2, $product->offers()->count());
-        $this->assertSame('260.00', $product->price);
+        $this->assertSame('250.00', $product->price);
         $this->assertSame(5, $product->stock);
 
         $phones = Category::query()->where('code', 'smartphones')->sole();
@@ -263,5 +263,16 @@ class ImportPipelineTest extends TestCase
         $this->import($supplier, [FakeSupplierDriver::payload('1')]);
 
         $this->assertNotSame($product->id, Product::query()->where('sku', 'SKU-1')->sole()->id);
+    }
+
+    public function test_supplied_prices_reach_the_shop_unchanged_even_with_old_markup_tiers(): void
+    {
+        $supplier = $this->supplier(markup: [['up_to' => 500, 'percent' => 20], ['add' => 150]]);
+
+        $this->import($supplier, [FakeSupplierDriver::payload('1', ['costPrice' => 89.99, 'oldCostPrice' => 119.5])]);
+
+        $product = Product::query()->where('sku', 'SKU-1')->sole();
+        $this->assertSame('89.99', $product->price);
+        $this->assertSame('119.50', $product->old_price);
     }
 }

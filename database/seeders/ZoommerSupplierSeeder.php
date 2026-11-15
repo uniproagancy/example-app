@@ -24,11 +24,7 @@ class ZoommerSupplierSeeder extends Seeder
 
                 'require_stock' => true,
             ],
-            'markup' => [
-                ['up_to' => 100, 'add' => 30],
-                ['up_to' => 500, 'add' => 50],
-                ['add' => 100],
-            ],
+            'markup' => [],
         ]);
     }
 }
