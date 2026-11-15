@@ -27,7 +27,8 @@ class TextPagesTest extends TestCase
         $this->get('/ka/info/delivery')
             ->assertOk()
             ->assertSee('<title>მიწოდების პირობები — ELIO.GE</title>', false)
-            ->assertSee('<h3>ვადები</h3>', false)
+            ->assertSee('<h3>ვადები და ღირებულება</h3>', false)
+            ->assertSee('<td>უფასო</td>', false)
             ->assertSee(url('/ka/info/warranty'), false)
             ->assertDontSee(url('/ka/info/returns'), false)
             ->assertSee(url('/ka/info/terms'), false);
@@ -36,6 +37,25 @@ class TextPagesTest extends TestCase
 
         Page::query()->where('slug', 'warranty')->update(['is_active' => false]);
         $this->get('/ka/info/warranty')->assertNotFound();
+    }
+
+    public function test_legal_pages_migration_replaces_old_texts_and_keeps_other_pages(): void
+    {
+        $this->refreshApplicationWithLocale('en');
+
+        Page::query()->where('slug', 'privacy')->sole()->saveTranslations(['ka' => ['title' => 'ძველი', 'body' => '<p>ძველი ტექსტი</p>']]);
+        Page::query()->where('slug', 'installments')->sole()->saveTranslations(['ka' => ['title' => 'ჩემი განვადება']]);
+        Page::query()->where('slug', 'terms')->delete();
+
+        (require database_path('migrations/2026_11_15_143507_update_legal_pages_content.php'))->up();
+
+        $this->assertSame('კონფიდენციალურობის პოლიტიკა', Page::query()->where('slug', 'privacy')->sole()->translate('ka')->title);
+        $this->assertSame('ჩემი განვადება', Page::query()->where('slug', 'installments')->sole()->translate('ka')->title);
+
+        $this->get('/en/info/terms')->assertOk()->assertSee('Terms and conditions')->assertSee('<h3>5. Payment</h3>', false);
+        $this->get('/en/info/warranty')->assertOk()->assertSee('Warranty and returns')->assertSee('Items costing 30 ₾ or less');
+        $this->get('/en/info/privacy')->assertOk()->assertSee('Privacy policy')->assertSee('Personal Data Protection Service');
+        $this->assertStringNotContainsString('ძველი ტექსტი', Page::query()->where('slug', 'privacy')->sole()->translate('ka')->body);
     }
 
     public function test_admin_edits_a_page_and_adds_a_new_one(): void
