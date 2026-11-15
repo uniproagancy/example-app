@@ -36,7 +36,7 @@ new class extends Component
 
     public function order(): Order
     {
-        return Order::query()->with(['items.product.coverImage', 'paymentMethod.translations'])->where('number', $this->number)->firstOrFail();
+        return Order::query()->with(['items.product.coverImage', 'items.order', 'paymentMethod.translations'])->where('number', $this->number)->firstOrFail();
     }
 
     public function pay(): void
@@ -128,6 +128,12 @@ new class extends Component
                     <span class="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span class="truncate text-sm font-bold text-navy">{{ $item->name }}</span>
                         <span class="text-xs text-muted">{{ $item->quantity }} × {{ Catalog::money($item->unit_price) }}@if ($item->options) · {{ implode(' · ', (array) $item->options) }}@endif</span>
+                        @if ($order->warrantyIssued())
+                            <span class="inline-flex items-center gap-1 text-xs font-semibold text-[#14804A]">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+                                {{ __('warranty.open') }}: {{ $item->warrantyLabel() }}@if ($ends = $item->warrantyEndsAt()) · {{ __('warranty.until', ['date' => $ends->format('d.m.Y')]) }}@endif
+                            </span>
+                        @endif
                     </span>
                     <span class="font-display text-sm font-extrabold">{{ Catalog::money($item->total) }}</span>
                 </div>
@@ -165,6 +171,12 @@ new class extends Component
         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-sm">
             <span class="text-muted">{{ __('payments.order.questions') }} <a href="{{ Site::phoneHref() }}" class="font-bold">{{ Site::phone() }}</a></span>
             <span class="flex items-center gap-4">
+                @if ($order->warrantyIssued())
+                    <a href="{{ $order->warrantyUrl(app()->getLocale()) }}" wire:navigate class="inline-flex items-center gap-1.5 font-bold">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+                        {{ __('warranty.view') }}
+                    </a>
+                @endif
                 <a href="{{ $order->invoiceUrl(app()->getLocale()) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 font-bold">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
                     {{ __('invoice.download') }}

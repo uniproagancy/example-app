@@ -52,7 +52,7 @@ new class extends Component
     #[Computed]
     public function orders()
     {
-        return $this->user->orders()->with('items')->limit(50)->get();
+        return $this->user->orders()->with('items.order')->limit(50)->get();
     }
 
     #[Computed]
@@ -328,6 +328,12 @@ new class extends Component
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
                                     {{ __('invoice.download') }}
                                 </a>
+                                @if ($order->warrantyIssued())
+                                    <a href="{{ $order->warrantyUrl(app()->getLocale()) }}" wire:navigate class="inline-flex w-fit items-center gap-1.5 text-xs font-bold text-brand hover:text-brand-dark">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+                                        {{ __('warranty.view') }}
+                                    </a>
+                                @endif
                             </div>
                             <div class="flex items-center gap-3">
                                 <span class="rounded-full bg-tint px-2.5 py-1 text-xs font-bold text-brand">{{ __("account.orders.statuses.{$order->status}") }}</span>
@@ -353,6 +359,9 @@ new class extends Component
                                         @endif
                                         @if ($item->options)
                                             <span class="text-xs text-subtle">{{ implode(' · ', $item->options) }}</span>
+                                        @endif
+                                        @if ($order->warrantyIssued())
+                                            <span class="text-xs font-semibold text-[#14804A]">{{ __('warranty.open') }}: {{ $item->warrantyLabel() }}@if ($ends = $item->warrantyEndsAt()) · {{ __('warranty.until', ['date' => $ends->format('d.m.Y')]) }}@endif</span>
                                         @endif
                                         <span class="text-xs text-muted sm:hidden">{{ $item->quantity }} × {{ Catalog::money($item->unit_price) }}</span>
                                     </span>

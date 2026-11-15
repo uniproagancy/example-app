@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Storage;
 
-#[Fillable(['category_id', 'brand_id', 'sku', 'supplier_sku', 'price', 'old_price', 'cost_price', 'price_lock', 'taxonomy_lock', 'stock', 'weight', 'variant_group', 'is_active', 'is_new', 'is_preorder', 'release_date', 'position', 'synced_at'])]
+#[Fillable(['category_id', 'brand_id', 'sku', 'supplier_sku', 'price', 'old_price', 'cost_price', 'price_lock', 'taxonomy_lock', 'stock', 'weight', 'warranty_months', 'variant_group', 'is_active', 'is_new', 'is_preorder', 'release_date', 'position', 'synced_at'])]
 class Product extends Model
 {
     use HasTranslations;
@@ -31,6 +31,7 @@ class Product extends Model
             'price_lock' => 'boolean',
             'taxonomy_lock' => 'boolean',
             'weight' => 'integer',
+            'warranty_months' => 'integer',
             'is_preorder' => 'boolean',
             'release_date' => 'date',
             'synced_at' => 'datetime',

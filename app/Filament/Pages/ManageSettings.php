@@ -10,6 +10,7 @@ use App\Services\Sms\SmsOffice;
 use App\Support\Company;
 use App\Support\Locales;
 use App\Support\Site;
+use App\Support\Warranty;
 use App\Support\WebpImage;
 use BackedEnum;
 use Closure;
@@ -35,7 +36,7 @@ class ManageSettings extends Page
 {
     use AdminOnlyPage;
 
-    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms', 'ga4_id', 'facebook_pixel_id', ...Company::KEYS];
+    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms', 'ga4_id', 'facebook_pixel_id', Warranty::SETTING, ...Company::KEYS];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
@@ -133,6 +134,19 @@ class ManageSettings extends Page
                             ->label(__('admin.settings.hours_sunday'))
                             ->placeholder('11:00–18:00')
                             ->maxLength(40),
+                    ])
+                    ->columnSpanFull(),
+                Section::make(__('admin.warranty.section'))
+                    ->description(__('admin.warranty.section_help'))
+                    ->schema([
+                        TextInput::make(Warranty::SETTING)
+                            ->label(__('admin.warranty.default'))
+                            ->helperText(__('admin.warranty.default_help'))
+                            ->integer()
+                            ->minValue(1)
+                            ->maxValue(120)
+                            ->placeholder((string) Warranty::DEFAULT_MONTHS)
+                            ->suffix(__('admin.warranty.suffix')),
                     ])
                     ->columnSpanFull(),
                 Section::make(__('admin.settings.invoice'))

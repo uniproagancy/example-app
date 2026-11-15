@@ -117,6 +117,13 @@
                                         · {{ implode(' · ', (array) $line['options']) }}
                                     @endif
                                 </span>
+                                @if ($order->warrantyIssued() && ($lineWarranty = $line['item_id'] ? $this->warrantyItems->get($line['item_id']) : null))
+                                    <span class="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                                        <x-filament::icon icon="heroicon-o-shield-check" class="size-3.5 text-success-600 dark:text-success-400" />
+                                        {{ __('admin.warranty.title') }}: {{ $lineWarranty->warrantyLabel('ka') }}@if ($lineWarranty->serial_number) · {{ $lineWarranty->serial_number }}@endif
+                                        @if ($lineEnd = $lineWarranty->warrantyEndsAt()) · {{ __('admin.warranty.until', ['date' => $lineEnd->format('d.m.Y')]) }}@endif
+                                    </span>
+                                @endif
                             </div>
 
                             <span class="w-24 text-end text-sm text-gray-600 dark:text-gray-300">{{ Catalog::money($line['price']) }}</span>
@@ -366,6 +373,90 @@
                     @endif
                 </div>
             </x-filament::section>
+
+            @if ($order->status !== 'cancelled' && $this->warrantyItems->isNotEmpty())
+                <x-filament::section icon="heroicon-o-shield-check" :heading="__('admin.warranty.link')">
+                    <x-slot name="afterHeader">
+                        <x-filament::badge :color="$order->warrantyIssued() ? 'success' : 'warning'">
+                            {{ $order->warrantyIssued() ? __('admin.warranty.state_issued') : __('admin.warranty.state_draft') }}
+                        </x-filament::badge>
+                    </x-slot>
+
+                    <form wire:submit="issueWarranty" class="flex flex-col gap-3">
+                        @unless ($order->warrantyIssued())
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ __('admin.warranty.draft_help') }}</p>
+                        @endunless
+
+                        <label class="flex flex-col gap-1">
+                            <span class="{{ $label }}">{{ __('admin.warranty.starts_at') }}</span>
+                            <x-filament::input.wrapper :valid="! $errors->has('warranty.starts_at')">
+                                <x-filament::input type="date" wire:model="warranty.starts_at" />
+                            </x-filament::input.wrapper>
+                            @error('warranty.starts_at') <span class="{{ $error }}">{{ $message }}</span> @enderror
+                        </label>
+
+                        @foreach ($this->warrantyItems as $warrantyItem)
+                            @php($warrantyKey = 'i'.$warrantyItem->id)
+                            <div wire:key="warranty-{{ $warrantyItem->id }}" class="flex flex-col gap-2 rounded-xl border border-gray-200 p-3 dark:border-white/10">
+                                <span class="text-sm font-semibold text-gray-950 dark:text-white">{{ $warrantyItem->name }}@if ($warrantyItem->quantity > 1) <span class="font-normal text-gray-500">× {{ $warrantyItem->quantity }}</span>@endif</span>
+                                <div class="grid grid-cols-[110px_1fr] gap-2">
+                                    <x-filament::input.wrapper :valid="! $errors->has('warranty.items.'.$warrantyKey.'.months')" :suffix="__('admin.warranty.suffix')">
+                                        <x-filament::input type="number" min="1" max="120" wire:model="warranty.items.{{ $warrantyKey }}.months" :aria-label="__('admin.warranty.months')" />
+                                    </x-filament::input.wrapper>
+                                    <x-filament::input.wrapper :valid="! $errors->has('warranty.items.'.$warrantyKey.'.serial')">
+                                        <x-filament::input type="text" maxlength="100" wire:model="warranty.items.{{ $warrantyKey }}.serial" :placeholder="__('admin.warranty.serial')" :aria-label="__('admin.warranty.serial')" />
+                                    </x-filament::input.wrapper>
+                                </div>
+                                @error('warranty.items.'.$warrantyKey.'.months') <span class="{{ $error }}">{{ $message }}</span> @enderror
+                                @if ($order->warrantyIssued() && ($warrantyEnd = $warrantyItem->warrantyEndsAt()))
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('admin.warranty.until', ['date' => $warrantyEnd->format('d.m.Y')]) }}</span>
+                                @endif
+                            </div>
+                        @endforeach
+
+                        <div class="flex gap-2">
+                            <x-filament::button type="submit" icon="heroicon-o-check-badge" wire:target="issueWarranty" class="flex-1">
+                                {{ $order->warrantyIssued() ? __('admin.warranty.save') : __('admin.warranty.issue') }}
+                            </x-filament::button>
+                            @if ($order->warrantyIssued())
+                                <x-filament::button color="danger" outlined wire:click="revokeWarranty" wire:confirm="{{ __('admin.warranty.revoke_confirm') }}" wire:target="revokeWarranty">
+                                    {{ __('admin.warranty.revoke') }}
+                                </x-filament::button>
+                            @endif
+                        </div>
+                    </form>
+
+                    @if ($order->warrantyIssued())
+                        <div class="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 dark:border-white/5" x-data="{ copied: false }">
+                            <x-filament::input.wrapper>
+                                <x-filament::input type="text" readonly :value="$order->warrantyLink()" x-ref="warrantyLink" x-on:focus="$el.select()" />
+                                <x-slot name="suffix">
+                                    <button type="button" class="text-sm font-medium text-primary-600 dark:text-primary-400" x-on:click="navigator.clipboard?.writeText($refs.warrantyLink.value); copied = true; setTimeout(() => copied = false, 1500)">
+                                        <span x-show="! copied">{{ __('admin.orders.copy') }}</span>
+                                        <span x-show="copied" x-cloak>{{ __('admin.orders.copied') }}</span>
+                                    </button>
+                                </x-slot>
+                            </x-filament::input.wrapper>
+                            <div class="grid grid-cols-3 gap-2">
+                                <x-filament::button color="gray" icon="heroicon-o-chat-bubble-left-ellipsis" wire:click="sendWarrantySms" wire:target="sendWarrantySms" :disabled="! $this->canSendLinkSms()">
+                                    SMS
+                                </x-filament::button>
+                                <x-filament::button color="gray" icon="heroicon-o-paper-airplane" tag="a" :href="'https://wa.me/?text='.rawurlencode($this->warrantyMessage())" target="_blank">
+                                    WhatsApp
+                                </x-filament::button>
+                                <x-filament::button color="gray" icon="heroicon-o-arrow-top-right-on-square" tag="a" :href="$order->warrantyUrl()" target="_blank">
+                                    {{ __('admin.warranty.open') }}
+                                </x-filament::button>
+                            </div>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ __('admin.warranty.link_help') }}</span>
+                        </div>
+                    @else
+                        <div class="mt-3">
+                            <x-filament::link :href="$order->warrantyUrl()" target="_blank" icon="heroicon-o-eye" size="sm">{{ __('admin.warranty.preview') }}</x-filament::link>
+                        </div>
+                    @endif
+                </x-filament::section>
+            @endif
 
             <x-filament::section icon="heroicon-o-user" :heading="__('admin.orders.customer')">
                 <div class="mb-4 flex items-center gap-3">

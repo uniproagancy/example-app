@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ProductSpec;
+use App\Support\Warranty;
 use App\Services\Facebook\Pixel;
 use App\Support\Catalog;
 use App\Support\CategoryTree;
@@ -84,7 +85,7 @@ new class extends Component
             'specs' => $product
                 ? ProductSpec::query()->where('product_id', $product['id'])->with(['translations', 'attribute.translations'])->orderBy('position')->get()
                     ->map(fn (ProductSpec $spec) => ['name' => (string) $spec->attribute?->name, 'value' => (string) $spec->value])
-                    ->filter(fn (array $spec) => $spec['name'] !== '' && $spec['value'] !== '')
+                    ->filter(fn (array $spec) => $spec['name'] !== '' && $spec['value'] !== '' && ! Warranty::isWarrantySpec($spec['name']))
                     ->values()
                 : collect(),
             'similar' => $product ? Catalog::similar($product) : collect(),
@@ -405,7 +406,7 @@ new class extends Component
                 <span class="grid size-11 shrink-0 place-items-center rounded-full border-[1.5px] border-[#D5E2F7] text-brand">{!! $iconSvg($icon, 19, 1.8) !!}</span>
                 <span class="flex min-w-0 flex-col gap-[3px]">
                     <span class="text-sm font-bold">{{ __("product.perks.$perk.title") }}</span>
-                    <span class="text-xs leading-[1.45] text-muted">{{ __("product.perks.$perk.text") }}</span>
+                    <span class="text-xs leading-[1.45] text-muted">{{ $perk === 'warranty' ? __('warranty.perk', ['period' => \App\Support\Warranty::label(\App\Support\Warranty::monthsFor($product['id']))]) : __("product.perks.$perk.text") }}</span>
                 </span>
             </div>
         @endforeach

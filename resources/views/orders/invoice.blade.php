@@ -150,6 +150,9 @@
                                     @if ($item->options)
                                         <div class="muted">{{ implode(' · ', (array) $item->options) }}</div>
                                     @endif
+                                    @if ($order->warrantyIssued())
+                                        <div class="muted">{{ __('warranty.open') }}: {{ $item->warrantyLabel() }}@if ($item->serial_number) · {{ $item->serial_number }}@endif</div>
+                                    @endif
                                 </td>
                                 <td class="num">{{ $item->quantity }}</td>
                                 <td class="num">{{ Catalog::money($item->unit_price) }}</td>

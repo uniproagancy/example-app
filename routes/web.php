@@ -6,6 +6,7 @@ use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderPrintController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\SeoController;
+use App\Http\Controllers\WarrantyLinkController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -17,6 +18,8 @@ Route::get('/admin-print/orders', OrderPrintController::class)->name('orders.pri
 Route::get('/admin-print/invoices', [InvoiceController::class, 'admin'])->name('orders.invoices');
 
 Route::get('/cart/restore/{token}', CartRestoreController::class)->middleware(['signed', 'throttle:30,1'])->name('cart.restore');
+
+Route::get('/w/{number}', WarrantyLinkController::class)->middleware(['signed', 'throttle:30,1'])->name('warranty.link');
 
 Route::get('/feed/facebook.xml', [FeedController::class, 'facebook'])->name('feed.facebook');
 Route::get('/feed/google.xml', [FeedController::class, 'google'])->name('feed.google');
@@ -59,6 +62,8 @@ Route::prefix(LaravelLocalization::setLocale())
         Route::livewire('order/{number}', 'pages::order')->name('order');
 
         Route::get('order/{number}/invoice', [InvoiceController::class, 'show'])->name('order.invoice');
+
+        Route::livewire('warranty/{number}', 'pages::warranty')->name('warranty');
 
         Route::livewire('catalog', 'pages::catalog')->name('catalog');
 

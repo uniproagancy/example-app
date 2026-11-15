@@ -13,6 +13,7 @@ use App\Models\ProductTranslation;
 use App\Services\Import\TaxonomyResolver;
 use App\Support\Slug;
 use App\Support\VariantGroups;
+use App\Support\Warranty;
 use App\Support\WebpImage;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\FileUpload;
@@ -281,6 +282,13 @@ class ProductForm
                             TextInput::make('supplier_sku')
                                 ->label(__('admin.products.supplier_sku'))
                                 ->maxLength(64),
+                            TextInput::make('warranty_months')
+                                ->label(__('admin.warranty.months'))
+                                ->helperText(fn (Get $get) => __('admin.warranty.product_help', ['period' => Warranty::label(Warranty::monthsForCategory(filled($get('category_id')) ? (int) $get('category_id') : null))]))
+                                ->integer()
+                                ->minValue(1)
+                                ->maxValue(120)
+                                ->suffix(__('admin.warranty.suffix')),
                         ]),
 
                     Section::make(__('admin.product_import.section'))

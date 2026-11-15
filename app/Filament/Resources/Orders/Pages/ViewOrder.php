@@ -69,6 +69,8 @@ class ViewOrder extends ViewRecord
 
     public ?string $generatedLink = null;
 
+    public array $warranty = [];
+
     public function mount(int|string $record): void
     {
         parent::mount($record);
@@ -191,8 +193,17 @@ class ViewOrder extends ViewRecord
             ]])
             ->all();
         $this->linesChanged = false;
+        $this->warranty = [
+            'starts_at' => ($order->warranty_starts_at ?? $order->completed_at ?? now())->format('Y-m-d'),
+            'items' => $order->items
+                ->mapWithKeys(fn (OrderItem $item) => ['i'.$item->id => [
+                    'months' => $item->warrantyMonths(),
+                    'serial' => (string) $item->serial_number,
+                ]])
+                ->all(),
+        ];
 
-        unset($this->totals, $this->lineProducts, $this->events, $this->transactions);
+        unset($this->totals, $this->lineProducts, $this->events, $this->transactions, $this->warrantyItems);
     }
 
     #[Computed]
@@ -393,6 +404,98 @@ class ViewOrder extends ViewRecord
 
         $order->log('payment', __('admin.orders.pay_link_sms_sent', ['phone' => $order->phone]));
         Notification::make()->title(__('admin.orders.pay_link_sms_sent', ['phone' => $order->phone]))->success()->send();
+
+        unset($this->events);
+    }
+
+    #[Computed]
+    public function warrantyItems(): Collection
+    {
+        return $this->order()->items()->with('order')->get()->keyBy('id');
+    }
+
+    public function warrantyMessage(): string
+    {
+        $order = $this->order();
+
+        return __('warranty.sms', [
+            'site' => Site::name(),
+            'number' => $order->number,
+            'url' => $order->warrantyLink(),
+        ], $order->locale ?: 'ka');
+    }
+
+    public function issueWarranty(): void
+    {
+        $order = $this->order();
+
+        abort_if($order->status === 'cancelled', 403);
+
+        $this->validate([
+            'warranty.starts_at' => ['required', 'date'],
+            'warranty.items' => ['required', 'array'],
+            'warranty.items.*.months' => ['required', 'integer', 'min:1', 'max:120'],
+            'warranty.items.*.serial' => ['nullable', 'string', 'max:100'],
+        ], attributes: [
+            'warranty.starts_at' => __('admin.warranty.starts_at'),
+            'warranty.items.*.months' => __('admin.warranty.months'),
+            'warranty.items.*.serial' => __('admin.warranty.serial'),
+        ]);
+
+        $wasIssued = $order->warranty_issued_at !== null;
+
+        DB::transaction(function () use ($order): void {
+            foreach ($order->items as $item) {
+                $values = $this->warranty['items']['i'.$item->id] ?? null;
+
+                if ($values !== null) {
+                    $item->update([
+                        'warranty_months' => (int) $values['months'],
+                        'serial_number' => filled($values['serial'] ?? null) ? trim($values['serial']) : null,
+                    ]);
+                }
+            }
+
+            $order->update([
+                'warranty_starts_at' => $this->warranty['starts_at'],
+                'warranty_issued_at' => $order->warranty_issued_at ?? now(),
+            ]);
+        });
+
+        $message = $wasIssued ? __('admin.warranty.updated') : __('admin.warranty.issued');
+        $order->log('note', $message);
+        Notification::make()->title($message)->success()->send();
+
+        $this->fillFromOrder();
+    }
+
+    public function revokeWarranty(): void
+    {
+        $order = $this->order();
+        $order->update(['warranty_issued_at' => null]);
+        $order->log('note', __('admin.warranty.revoked'));
+
+        Notification::make()->title(__('admin.warranty.revoked'))->warning()->send();
+
+        $this->fillFromOrder();
+    }
+
+    public function sendWarrantySms(): void
+    {
+        $order = $this->order();
+
+        if (! $order->warrantyIssued()) {
+            return;
+        }
+
+        if (! app(SmsOffice::class)->send($order->phone, $this->warrantyMessage(), $order->number)) {
+            Notification::make()->title(__('admin.warranty.sms_failed'))->danger()->send();
+
+            return;
+        }
+
+        $order->log('note', __('admin.warranty.sms_sent', ['phone' => $order->phone]));
+        Notification::make()->title(__('admin.warranty.sms_sent', ['phone' => $order->phone]))->success()->send();
 
         unset($this->events);
     }

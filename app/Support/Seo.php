@@ -11,7 +11,7 @@ class Seo
 {
     public const DESCRIPTION_LENGTH = 160;
 
-    public const PRIVATE_ROUTES = ['checkout', 'account', 'order', 'password.reset'];
+    public const PRIVATE_ROUTES = ['checkout', 'account', 'order', 'warranty', 'password.reset'];
 
     public static function set(array $data): void
     {

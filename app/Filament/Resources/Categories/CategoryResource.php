@@ -12,6 +12,7 @@ use App\Filament\Support\Localized;
 use App\Models\Category;
 use App\Models\CategoryTranslation;
 use App\Models\Product;
+use App\Support\Warranty;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -139,6 +140,13 @@ class CategoryResource extends Resource
                                 ->label(__('admin.categories.in_feed'))
                                 ->helperText(__('admin.categories.in_feed_help'))
                                 ->default(true),
+                            TextInput::make('warranty_months')
+                                ->label(__('admin.warranty.months'))
+                                ->helperText(fn (?Category $record) => __('admin.warranty.category_help', ['period' => Warranty::label(Warranty::inheritedForCategory($record?->getKey()))]))
+                                ->integer()
+                                ->minValue(1)
+                                ->maxValue(120)
+                                ->suffix(__('admin.warranty.suffix')),
                             TextInput::make('google_category_id')
                                 ->label(__('admin.categories.google_category'))
                                 ->helperText(__('admin.categories.google_category_help'))

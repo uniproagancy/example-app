@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\LogsActivity;
 use App\Services\Orders\OrderNotifier;
 use App\Support\Locales;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\URL;
 
 #[Fillable([
     'number', 'user_id', 'status', 'source', 'first_name', 'last_name', 'phone', 'email', 'shipping_method', 'city', 'address',
-    'apartment', 'note', 'payment_method', 'payment_status', 'paid_at', 'installment_months', 'bank', 'term_months', 'promo_code',
+    'apartment', 'note', 'payment_method', 'payment_status', 'paid_at', 'completed_at', 'warranty_starts_at', 'warranty_issued_at', 'installment_months', 'bank', 'term_months', 'promo_code',
     'subtotal', 'discount', 'shipping', 'total', 'locale',
 ])]
 class Order extends Model
@@ -46,6 +47,12 @@ class Order extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Order $order): void {
+            if ($order->isDirty('status') && $order->status === 'completed' && $order->completed_at === null) {
+                $order->completed_at = now();
+            }
+        });
+
         static::deleted(function (Order $order): void {
             if (! $order->isForceDeleting()) {
                 $order->log('deleted');
@@ -78,6 +85,9 @@ class Order extends Model
             'term_months' => 'integer',
             'installment_months' => 'integer',
             'paid_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'warranty_starts_at' => 'date',
+            'warranty_issued_at' => 'datetime',
             'subtotal' => 'decimal:2',
             'discount' => 'decimal:2',
             'shipping' => 'decimal:2',
@@ -143,6 +153,18 @@ class Order extends Model
         return url($locale.'/order/'.$this->number.'/invoice');
     }
 
+    public function warrantyLink(): string
+    {
+        return URL::signedRoute('warranty.link', ['number' => $this->number]);
+    }
+
+    public function warrantyUrl(?string $locale = null): string
+    {
+        $locale ??= in_array($this->locale, Locales::codes(), true) ? $this->locale : Locales::default();
+
+        return url($locale.'/warranty/'.$this->number);
+    }
+
     public function payLink(int $days = 7, ?string $method = null): string
     {
         return URL::temporarySignedRoute('payment.link', now()->addDays($days), array_filter([
@@ -165,6 +187,28 @@ class Order extends Model
         }
 
         return in_array($this->id, (array) session('placed_orders', []), true);
+    }
+
+    public function rememberWarrantyAccess(): void
+    {
+        if (! in_array($this->id, (array) session('warranty_orders', []), true)) {
+            session()->push('warranty_orders', $this->id);
+        }
+    }
+
+    public function warrantyIssued(): bool
+    {
+        return $this->warranty_issued_at !== null && $this->status !== 'cancelled';
+    }
+
+    public function warrantyVisibleToVisitor(): bool
+    {
+        if (auth()->user()?->canAccessPanel(Filament::getPanel('admin'))) {
+            return true;
+        }
+
+        return $this->warrantyIssued()
+            && ($this->mayBePaidByVisitor() || in_array($this->id, (array) session('warranty_orders', []), true));
     }
 
     public function isPaid(): bool
