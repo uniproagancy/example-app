@@ -9,12 +9,15 @@ use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
 use App\Filament\Resources\Suppliers\RelationManagers\OffersRelationManager;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
+use App\Filament\Support\TrashActions;
 use App\Models\Supplier;
 use App\Services\Import\HasStockFeed;
 use App\Services\Import\SupplierActions;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\CodeEditor;
 use Filament\Forms\Components\CodeEditor\Enums\Language;
@@ -40,6 +43,7 @@ class SupplierResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     public const COMMON_CONFIG = ['require_stock', 'require_image', 'publish_on_import', 'min_cost', 'rate', 'columns'];
 
@@ -205,10 +209,17 @@ class SupplierResource extends Resource
                 ToggleColumn::make('is_active')
                     ->label(__('admin.common.is_active')),
             ])
+            ->filters([
+                TrashActions::filter(),
+            ])
             ->recordActions([
                 static::runAction()->hiddenLabel()->tooltip(__('admin.suppliers.run')),
                 static::uploadAction()->hiddenLabel()->tooltip(__('admin.suppliers.upload')),
                 EditAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

@@ -335,8 +335,28 @@ class PaymentFlowTest extends TestCase
 
         Livewire::test(ManagePaymentMethods::class)
             ->assertCanSeeTableRecords([$cash])
-            ->callTableAction('delete', PaymentMethod::query()->where('code', 'card')->sole())
+            ->callTableAction('delete', $card = PaymentMethod::query()->where('code', 'card')->sole(), ['force' => true])
             ->assertNotified(__('admin.payment_methods.cannot_delete'));
+
+        $this->assertNotSoftDeleted($card);
+
+        Livewire::test(ManagePaymentMethods::class)
+            ->callTableAction('delete', $card);
+
+        $this->assertSoftDeleted($card);
+
+        Livewire::test(ManagePaymentMethods::class)
+            ->filterTable('trashed', false)
+            ->callTableAction('forceDelete', $card)
+            ->assertNotified(__('admin.payment_methods.cannot_delete'));
+
+        $this->assertSoftDeleted($card);
+
+        Livewire::test(ManagePaymentMethods::class)
+            ->filterTable('trashed', false)
+            ->callTableAction('restore', $card);
+
+        $this->assertNotSoftDeleted($card);
 
         Livewire::test(ManagePaymentMethods::class)
             ->callAction('create', [

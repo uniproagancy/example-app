@@ -5,10 +5,12 @@ namespace App\Filament\Resources\MenuItems;
 use App\Filament\Resources\MenuItems\Pages\ManageMenuItems;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
 use App\Filament\Support\Localized;
+use App\Filament\Support\TrashActions;
 use App\Models\MenuItem;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -26,6 +28,7 @@ class MenuItemResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'menu_items';
 
@@ -92,13 +95,17 @@ class MenuItemResource extends Resource
                     ->label(__('admin.common.is_active')),
             ])
             ->filters([
+                TrashActions::filter(),
                 SelectFilter::make('location')
                     ->label(__('admin.menu_items.location'))
                     ->options(Localized::options('admin.menu_items.locations', MenuItem::LOCATIONS)),
             ])
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Attributes\Pages;
 
 use App\Filament\Resources\Attributes\AttributeResource;
-use Filament\Actions\DeleteAction;
+use App\Filament\Support\TrashActions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditAttribute extends EditRecord
@@ -13,7 +13,7 @@ class EditAttribute extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            DeleteAction::make(),
+            ...TrashActions::header(),
         ];
     }
 }

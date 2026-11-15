@@ -5,12 +5,14 @@ namespace App\Filament\Resources\PromoCodes;
 use App\Filament\Resources\PromoCodes\Pages\ManagePromoCodes;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
 use App\Filament\Support\Schedule;
+use App\Filament\Support\TrashActions;
 use App\Models\Order;
 use App\Models\PromoCode;
 use App\Support\Catalog;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -27,6 +29,7 @@ class PromoCodeResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'promo_codes';
 
@@ -98,9 +101,15 @@ class PromoCodeResource extends Resource
                 ToggleColumn::make('is_active')
                     ->label(__('admin.common.is_active')),
             ])
+            ->filters([
+                TrashActions::filter(),
+            ])
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 
 #[Fillable(['parent_id', 'created_by_supplier_id', 'code', 'icon', 'google_category_id', 'in_feed', 'warranty_months', 'position', 'is_active', 'show_on_main'])]
@@ -20,6 +21,7 @@ class Category extends Model
 {
     use HasTranslations;
     use LogsActivity;
+    use SoftDeletes;
 
     protected array $translatable = ['title', 'short_title', 'slug', 'description', 'name'];
 

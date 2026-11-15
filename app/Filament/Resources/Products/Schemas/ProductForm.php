@@ -337,10 +337,14 @@ class ProductForm
 
     public static function createAttribute(string $name): int
     {
-        $attribute = Attribute::query()->firstOrCreate(
+        $attribute = Attribute::withTrashed()->firstOrCreate(
             ['code' => TaxonomyResolver::fitTo(Slug::make($name) ?: 'spec-'.substr(md5($name), 0, 8))],
             ['type' => Attribute::TYPE_SELECT, 'sort_order' => 100],
         );
+
+        if ($attribute->trashed()) {
+            $attribute->restore();
+        }
 
         if ($attribute->wasRecentlyCreated) {
             $attribute->saveTranslations(['ka' => ['name' => $name]]);

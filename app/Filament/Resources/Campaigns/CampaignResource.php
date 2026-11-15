@@ -6,8 +6,10 @@ use App\Filament\Resources\Campaigns\Pages\ManageCampaigns;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\CategoryOptions;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
 use App\Filament\Support\Localized;
 use App\Filament\Support\Schedule;
+use App\Filament\Support\TrashActions;
 use App\Models\Campaign;
 use App\Models\Product;
 use App\Support\Catalog;
@@ -15,7 +17,7 @@ use App\Support\CategoryTree;
 use App\Support\WebpImage;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -39,6 +41,7 @@ class CampaignResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'campaigns';
 
@@ -216,6 +219,9 @@ class CampaignResource extends Resource
                 ToggleColumn::make('is_active')
                     ->label(__('admin.common.is_active')),
             ])
+            ->filters([
+                TrashActions::filter(),
+            ])
             ->recordActions([
                 Action::make('open')
                     ->label(__('admin.campaigns.open'))
@@ -224,7 +230,10 @@ class CampaignResource extends Resource
                     ->url(fn (Campaign $record) => route('promotions.show', ['campaign' => $record->slug]))
                     ->openUrlInNewTab(),
                 EditAction::make()->slideOver(),
-                DeleteAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

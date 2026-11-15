@@ -79,6 +79,7 @@ class Warranty
     {
         return once(function (): array {
             return DB::table('categories')
+                ->whereNull('deleted_at')
                 ->get(['id', 'parent_id', 'warranty_months'])
                 ->mapWithKeys(fn (object $row) => [(int) $row->id => [$row->parent_id ? (int) $row->parent_id : null, (int) $row->warranty_months]])
                 ->all();

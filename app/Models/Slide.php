@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,7 @@ use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 class Slide extends Model
 {
     use LogsActivity;
+    use SoftDeletes;
 
     public const CACHE_KEY = 'slides.all';
 

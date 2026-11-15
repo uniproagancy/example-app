@@ -20,6 +20,6 @@ class AttributeTranslation extends Model
 
     public function attribute(): BelongsTo
     {
-        return $this->belongsTo(Attribute::class);
+        return $this->belongsTo(Attribute::class)->withTrashed();
     }
 }

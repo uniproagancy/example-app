@@ -7,12 +7,14 @@ use App\Support\Catalog;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 #[Fillable(['name', 'slug', 'position', 'is_active', 'show_on_home', 'home_position'])]
 class Brand extends Model
 {
     use LogsActivity;
+    use SoftDeletes;
 
     public const HOME_LIMIT = 8;
 

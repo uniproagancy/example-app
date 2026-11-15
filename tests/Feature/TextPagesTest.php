@@ -45,7 +45,7 @@ class TextPagesTest extends TestCase
 
         Page::query()->where('slug', 'privacy')->sole()->saveTranslations(['ka' => ['title' => 'ძველი', 'body' => '<p>ძველი ტექსტი</p>']]);
         Page::query()->where('slug', 'installments')->sole()->saveTranslations(['ka' => ['title' => 'ჩემი განვადება']]);
-        Page::query()->where('slug', 'terms')->delete();
+        Page::query()->where('slug', 'terms')->forceDelete();
 
         (require database_path('migrations/2026_11_15_143507_update_legal_pages_content.php'))->up();
 

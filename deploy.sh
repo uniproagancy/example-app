@@ -28,6 +28,21 @@ artisan() {
     "$PHP" artisan "$@" --no-interaction
 }
 
+link_storage() {
+    local target="$REPO/storage/app/public"
+
+    if [ -L "$WEB/storage" ]; then
+        [ "$(readlink "$WEB/storage")" = "$target" ] && return
+        rm "$WEB/storage"
+    elif [ -e "$WEB/storage" ]; then
+        log "WARNING: $WEB/storage is a real folder, not a link to $target. Uploaded images will return 403 until it is replaced by the link."
+        return
+    fi
+
+    ln -s "$target" "$WEB/storage"
+    log "Linked $WEB/storage -> $target"
+}
+
 finish() {
     local status=$?
 
@@ -152,7 +167,8 @@ release() {
     artisan view:cache
 
     log "Publishing public files to $WEB"
-    cp -R public/. "$WEB/"
+    find public -mindepth 1 -maxdepth 1 ! -name storage -exec cp -R {} "$WEB/" \;
+    link_storage
 
     artisan queue:restart
 

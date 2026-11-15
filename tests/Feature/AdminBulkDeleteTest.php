@@ -77,11 +77,11 @@ class AdminBulkDeleteTest extends TestCase
             ->callTableBulkAction('delete', [$parent, $grandchild, $child, $withProducts, $withChildren])
             ->assertNotified();
 
-        $this->assertModelMissing($parent);
-        $this->assertModelMissing($child);
-        $this->assertModelMissing($grandchild);
-        $this->assertModelExists($withProducts);
-        $this->assertModelExists($withChildren);
-        $this->assertModelExists($unselectedChild);
+        $this->assertSoftDeleted($parent);
+        $this->assertSoftDeleted($child);
+        $this->assertSoftDeleted($grandchild);
+        $this->assertNotSoftDeleted($withProducts);
+        $this->assertNotSoftDeleted($withChildren);
+        $this->assertNotSoftDeleted($unselectedChild);
     }
 }

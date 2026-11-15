@@ -5,14 +5,19 @@ namespace App\Filament\Resources\PaymentMethods;
 use App\Filament\Resources\PaymentMethods\Pages\ManagePaymentMethods;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
 use App\Filament\Support\Localized;
+use App\Filament\Support\TrashActions;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Services\Payments\Drivers\BogInstallment;
 use App\Services\Payments\PaymentManager;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -32,6 +37,7 @@ class PaymentMethodResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'payment_methods';
 
@@ -157,17 +163,28 @@ class PaymentMethodResource extends Resource
                 ToggleColumn::make('is_active')
                     ->label(__('admin.common.is_active')),
             ])
+            ->filters([
+                TrashActions::filter(),
+            ])
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make()
-                    ->before(function (DeleteAction $action, PaymentMethod $record): void {
-                        if (Order::query()->where('payment_method', $record->code)->exists()) {
-                            Notification::make()->title(__('admin.payment_methods.cannot_delete'))->danger()->send();
-
-                            $action->halt();
-                        }
-                    }),
+                ...TrashActions::record(
+                    TrashActions::delete()->before(fn (DeleteAction $action, PaymentMethod $record, array $data) => ($data['force'] ?? false) ? static::guardForceDelete($action, $record) : null),
+                    forceDelete: ForceDeleteAction::make()->before(fn (ForceDeleteAction $action, PaymentMethod $record) => static::guardForceDelete($action, $record)),
+                ),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk(withForce: false)),
             ]);
+    }
+
+    public static function guardForceDelete(Action $action, PaymentMethod $record): void
+    {
+        if (Order::withTrashed()->where('payment_method', $record->code)->exists()) {
+            Notification::make()->title(__('admin.payment_methods.cannot_delete'))->danger()->send();
+
+            $action->halt();
+        }
     }
 
     public static function driverHint(?string $driver): string

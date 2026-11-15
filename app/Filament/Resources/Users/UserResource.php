@@ -5,9 +5,11 @@ namespace App\Filament\Resources\Users;
 use App\Filament\Resources\Users\Pages\ManageUsers;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
+use App\Filament\Support\TrashActions;
 use App\Models\User;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -27,6 +29,7 @@ class UserResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'users';
 
@@ -120,6 +123,7 @@ class UserResource extends Resource
                     ->sortable(),
             ])
             ->filters([
+                TrashActions::filter(),
                 Filter::make('search')
                     ->schema([
                         TextInput::make('text')
@@ -142,8 +146,10 @@ class UserResource extends Resource
             ->recordActions([
                 EditAction::make()
                     ->using(fn (User $record, array $data) => static::saveUser($record, $data)),
-                DeleteAction::make()
-                    ->hidden(fn (User $record) => static::isCurrentUser($record)),
+                ...TrashActions::record(TrashActions::delete()->visible(fn (User $record) => ! static::isCurrentUser($record))),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

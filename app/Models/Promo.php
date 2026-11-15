@@ -7,11 +7,13 @@ use App\Support\HomeContent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['badge', 'title', 'text', 'note', 'category_id', 'url', 'theme', 'icon', 'position', 'is_active', 'starts_at', 'ends_at'])]
 class Promo extends Model
 {
     use LogsActivity;
+    use SoftDeletes;
 
     public const THEMES = ['navy', 'tint', 'field'];
 

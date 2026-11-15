@@ -10,11 +10,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['code', 'type', 'unit', 'is_filterable', 'is_variant', 'sort_order'])]
 class Attribute extends Model
 {
     use HasTranslations;
+    use SoftDeletes;
 
     public const TYPE_SELECT = 'select';
 

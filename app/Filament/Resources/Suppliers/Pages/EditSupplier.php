@@ -3,7 +3,7 @@
 namespace App\Filament\Resources\Suppliers\Pages;
 
 use App\Filament\Resources\Suppliers\SupplierResource;
-use Filament\Actions\DeleteAction;
+use App\Filament\Support\TrashActions;
 use Filament\Resources\Pages\EditRecord;
 
 class EditSupplier extends EditRecord
@@ -16,7 +16,7 @@ class EditSupplier extends EditRecord
             SupplierResource::runAction(),
             SupplierResource::uploadAction(),
             SupplierResource::stockAction(),
-            DeleteAction::make(),
+            ...TrashActions::header(),
         ];
     }
 

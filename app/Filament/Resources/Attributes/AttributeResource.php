@@ -9,11 +9,13 @@ use App\Filament\Resources\Attributes\RelationManagers\ValuesRelationManager;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\CategoryOptions;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
 use App\Filament\Support\Localized;
+use App\Filament\Support\TrashActions;
 use App\Models\Attribute;
 use App\Support\Catalog;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -34,6 +36,7 @@ class AttributeResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'attributes';
 
@@ -140,12 +143,16 @@ class AttributeResource extends Resource
                     ->label(__('admin.attributes.is_filterable')),
             ])
             ->filters([
+                TrashActions::filter(),
                 TernaryFilter::make('is_filterable')
                     ->label(__('admin.attributes.is_filterable')),
             ])
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

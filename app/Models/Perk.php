@@ -5,10 +5,13 @@ namespace App\Models;
 use App\Support\HomeContent;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['icon', 'title', 'text', 'position', 'is_active'])]
 class Perk extends Model
 {
+    use SoftDeletes;
+
     public const ICONS = ['delivery', 'warranty', 'installments', 'returns', 'support', 'store'];
 
     protected function casts(): array

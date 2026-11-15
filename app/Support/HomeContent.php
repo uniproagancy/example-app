@@ -106,6 +106,7 @@ class HomeContent
                 ->map(fn ($row) => [...(array) $row, 'is_active' => (bool) $row->is_active])
                 ->all(),
             'perks' => DB::table('perks')
+                ->whereNull('deleted_at')
                 ->where('is_active', true)
                 ->orderBy('position')
                 ->orderBy('id')
@@ -113,6 +114,7 @@ class HomeContent
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'promos' => DB::table('promos')
+                ->whereNull('deleted_at')
                 ->where('is_active', true)
                 ->orderBy('position')
                 ->orderBy('id')

@@ -128,6 +128,7 @@ class CategoryTree
     {
         return Cache::rememberForever(self::CACHE_KEY, fn () => [
             'categories' => DB::table('categories')
+                ->whereNull('deleted_at')
                 ->where('is_active', true)
                 ->orderBy('position')
                 ->orderBy('id')

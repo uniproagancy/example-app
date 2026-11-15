@@ -11,10 +11,10 @@ return new class extends Migration
         $content = PageSeeder::content();
 
         foreach (PageSeeder::LEGAL_PAGES as $slug) {
-            $page = Page::query()->firstOrCreate(['slug' => $slug], [
+            $page = Page::withoutGlobalScopes()->firstOrCreate(['slug' => $slug], [
                 'is_active' => true,
                 'in_footer' => true,
-                'position' => (int) Page::query()->max('position') + 1,
+                'position' => (int) Page::withoutGlobalScopes()->max('position') + 1,
             ]);
 
             $page->saveTranslations($content[$slug]);

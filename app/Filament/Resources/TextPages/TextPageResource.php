@@ -7,11 +7,13 @@ use App\Filament\Resources\TextPages\Pages\EditTextPage;
 use App\Filament\Resources\TextPages\Pages\ListTextPages;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
 use App\Filament\Support\Localized;
+use App\Filament\Support\TrashActions;
 use App\Models\Page;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Textarea;
@@ -32,6 +34,7 @@ class TextPageResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'text_pages';
 
@@ -131,6 +134,9 @@ class TextPageResource extends Resource
                     ->since()
                     ->sortable(),
             ])
+            ->filters([
+                TrashActions::filter(),
+            ])
             ->recordActions([
                 Action::make('view')
                     ->label('')
@@ -140,7 +146,10 @@ class TextPageResource extends Resource
                     ->url(fn (Page $record): string => url('ka/info/'.$record->slug), shouldOpenInNewTab: true)
                     ->visible(fn (Page $record): bool => $record->is_active),
                 EditAction::make(),
-                DeleteAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

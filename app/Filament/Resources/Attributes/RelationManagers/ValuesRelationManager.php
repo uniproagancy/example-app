@@ -2,11 +2,12 @@
 
 namespace App\Filament\Resources\Attributes\RelationManagers;
 
+use App\Filament\Support\TrashActions;
 use App\Models\Attribute;
 use App\Models\AttributeValue;
 use App\Services\Import\TaxonomyResolver;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\TextInput;
@@ -91,7 +92,13 @@ class ValuesRelationManager extends RelationManager
                         'color_hex' => $record->color_hex,
                     ])
                     ->using(fn (AttributeValue $record, array $data) => $this->saveValue($record, $data)),
-                DeleteAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->filters([
+                TrashActions::filter(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

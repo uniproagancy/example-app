@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Pages\ManageSettings;
 use App\Filament\Resources\Brands\BrandResource;
+use App\Filament\Resources\Brands\Pages\ManageBrands;
 use App\Filament\Resources\Categories\CategoryResource;
 use App\Filament\Resources\Categories\Pages\EditCategory;
 use App\Filament\Resources\ContactMessages\ContactMessageResource;
@@ -209,6 +210,46 @@ class AdminPanelTest extends TestCase
             ->callAction('forceDelete');
 
         $this->assertModelMissing($speaker);
+    }
+
+    public function test_trashed_brands_disappear_from_the_shop_until_restored(): void
+    {
+        $this->actingAs($this->admin);
+
+        $sony = Brand::query()->where('name', 'Sony')->sole();
+
+        Livewire::test(ManageBrands::class)
+            ->callTableAction('delete', $sony);
+
+        $this->assertSoftDeleted($sony);
+        $this->assertSame('', Catalog::products()->firstWhere('sku', 'ps5')['brand']);
+
+        Livewire::test(ManageBrands::class)
+            ->filterTable('trashed', false)
+            ->assertCanSeeTableRecords([$sony])
+            ->callTableBulkAction('restore', [$sony]);
+
+        $this->assertNotSoftDeleted($sony);
+        $this->assertSame('Sony', Catalog::products()->firstWhere('sku', 'ps5')['brand']);
+    }
+
+    public function test_trashed_categories_hide_their_page_and_can_be_opened_in_admin(): void
+    {
+        $this->actingAs($this->admin);
+
+        $category = Category::query()->create(['is_active' => true, 'position' => 99]);
+        $category->saveTranslations(['ka' => ['title' => 'დროებითი', 'slug' => 'droebiti']]);
+        $slug = 'droebiti';
+
+        $category->delete();
+
+        $this->get('/ka/categories/'.$slug)->assertNotFound();
+
+        Livewire::test(EditCategory::class, ['record' => $category->getRouteKey()])
+            ->assertActionVisible('restore')
+            ->callAction('forceDelete');
+
+        $this->assertModelMissing($category);
     }
 
     public function test_orders_are_deleted_for_good_when_the_checkbox_is_ticked(): void

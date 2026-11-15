@@ -8,7 +8,9 @@ use App\Filament\Resources\Categories\Pages\ListCategories;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\CategoryOptions;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
 use App\Filament\Support\Localized;
+use App\Filament\Support\TrashActions;
 use App\Models\Category;
 use App\Models\CategoryTranslation;
 use App\Models\Product;
@@ -19,6 +21,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -48,6 +52,7 @@ class CategoryResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static ?array $tree = null;
 
@@ -199,6 +204,7 @@ class CategoryResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                TrashActions::filter(),
                 TernaryFilter::make('roots')
                     ->label(__('admin.categories.roots_only'))
                     ->queries(
@@ -214,11 +220,11 @@ class CategoryResource extends Resource
                 static::addChildAction(),
                 EditAction::make()->iconButton(),
                 static::deleteAction()->iconButton(),
+                RestoreAction::make()->iconButton(),
+                ForceDeleteAction::make()->iconButton(),
             ])
             ->toolbarActions([
-                BulkActionGroup::make([
-                    static::deleteBulkAction(),
-                ]),
+                BulkActionGroup::make(TrashActions::bulk(static::deleteBulkAction())),
             ]);
     }
 
@@ -354,20 +360,20 @@ class CategoryResource extends Resource
 
     public static function deleteBulkAction(): DeleteBulkAction
     {
-        return DeleteBulkAction::make()
+        return TrashActions::deleteBulk()
             ->modalHeading(fn (EloquentCollection $records): string => __('admin.categories.bulk_delete_heading', ['count' => $records->count()]))
             ->modalDescription(__('admin.categories.bulk_delete_help'))
-            ->using(function (EloquentCollection $records, DeleteBulkAction $action): void {
+            ->using(function (EloquentCollection $records, DeleteBulkAction $action, array $data): void {
                 $records
                     ->sortByDesc(fn (Category $category): int => count($category->ancestorIds()))
-                    ->each(function (Category $category) use ($action): void {
+                    ->each(function (Category $category) use ($action, $data): void {
                         if ($category->children()->exists() || $category->products()->exists()) {
                             $action->reportBulkProcessingFailure('in_use', fn (int $count): string => __('admin.categories.bulk_delete_kept', ['count' => $count]));
 
                             return;
                         }
 
-                        $category->delete();
+                        ($data['force'] ?? false) ? $category->forceDelete() : $category->delete();
                     });
 
                 static::flushTree();
@@ -376,7 +382,7 @@ class CategoryResource extends Resource
 
     public static function deleteAction(): DeleteAction
     {
-        return DeleteAction::make()
+        return TrashActions::delete()
             ->before(function (DeleteAction $action, Category $record): void {
                 if ($record->children()->exists() || $record->products()->exists()) {
                     Notification::make()

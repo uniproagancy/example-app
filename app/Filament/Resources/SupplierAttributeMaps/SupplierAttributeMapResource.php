@@ -12,6 +12,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
@@ -145,6 +146,8 @@ class SupplierAttributeMapResource extends Resource
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->label(__('admin.mapping.forget')),
                     BulkAction::make('map')
                         ->label(__('admin.mapping.bulk_map'))
                         ->icon(Heroicon::OutlinedLink)

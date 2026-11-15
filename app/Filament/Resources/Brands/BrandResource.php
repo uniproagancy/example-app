@@ -5,9 +5,11 @@ namespace App\Filament\Resources\Brands;
 use App\Filament\Resources\Brands\Pages\ManageBrands;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
+use App\Filament\Support\TrashActions;
 use App\Models\Brand;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -25,6 +27,7 @@ class BrandResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'brands';
 
@@ -90,12 +93,16 @@ class BrandResource extends Resource
                     ->label(__('admin.common.is_active')),
             ])
             ->filters([
+                TrashActions::filter(),
                 TernaryFilter::make('show_on_home')
                     ->label(__('admin.brands.show_on_home')),
             ])
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

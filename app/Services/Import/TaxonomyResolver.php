@@ -105,7 +105,7 @@ class TaxonomyResolver
 
         $slug = $this->fit(Slug::make($name) ?: Str::slug($name), 255);
 
-        return $this->memo["brand:{$slug}"] ??= Brand::firstOrCreate(
+        return $this->memo["brand:{$slug}"] ??= Brand::withTrashed()->firstOrCreate(
             ['slug' => $slug],
             ['name' => $name, 'is_active' => true],
         );
@@ -140,7 +140,7 @@ class TaxonomyResolver
             return $typed === null || $this->matchesTypedValue($attribute, $value, $typed) ? $value : null;
         }
 
-        $value = AttributeValue::firstOrCreate(
+        $value = AttributeValue::withTrashed()->firstOrCreate(
             ['attribute_id' => $attribute->id, 'code' => $code],
             [
                 'sort_order' => 0,
@@ -321,7 +321,7 @@ class TaxonomyResolver
 
         $names = SpecNames::translate($name);
 
-        $attribute = Attribute::firstOrCreate(
+        $attribute = Attribute::withTrashed()->firstOrCreate(
             ['code' => $this->attributeCode($names['ka'] ?: $name)],
             [
                 'type' => Str::contains(Str::lower($name), ['color', 'colour', 'ფერი']) ? 'color' : 'select',

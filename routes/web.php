@@ -5,11 +5,17 @@ use App\Http\Controllers\FeedController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderPrintController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PublicFileController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\WarrantyLinkController;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
+
+Route::get('/storage/{path}', PublicFileController::class)
+    ->where('path', '.*')
+    ->withoutMiddleware('web')
+    ->name('storage.public');
 
 Route::get('/robots.txt', [SeoController::class, 'robots'])->name('seo.robots');
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap');

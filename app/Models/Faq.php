@@ -6,11 +6,13 @@ use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['icon', 'question', 'answer', 'position', 'is_active'])]
 class Faq extends Model
 {
     use LogsActivity;
+    use SoftDeletes;
 
     public const ICONS = ['delivery', 'warranty', 'installments', 'returns', 'payment', 'help'];
 

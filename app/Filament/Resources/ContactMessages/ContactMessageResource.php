@@ -5,10 +5,12 @@ namespace App\Filament\Resources\ContactMessages;
 use App\Filament\Resources\ContactMessages\Pages\ManageContactMessages;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
+use App\Filament\Support\TrashActions;
 use App\Models\ContactMessage;
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
@@ -25,6 +27,7 @@ class ContactMessageResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'messages';
 
@@ -115,6 +118,7 @@ class ContactMessageResource extends Resource
                     ->sortable(),
             ])
             ->filters([
+                TrashActions::filter(),
                 TernaryFilter::make('handled')
                     ->label(__('admin.messages.handled'))
                     ->queries(
@@ -133,7 +137,10 @@ class ContactMessageResource extends Resource
                     ->icon(fn (ContactMessage $record) => $record->handled_at ? Heroicon::OutlinedArrowUturnLeft : Heroicon::OutlinedCheckCircle)
                     ->color(fn (ContactMessage $record) => $record->handled_at ? 'gray' : 'success')
                     ->action(fn (ContactMessage $record) => $record->update(['handled_at' => $record->handled_at ? null : now()])),
-                DeleteAction::make()->hiddenLabel(),
+                ...TrashActions::record(iconOnly: true),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

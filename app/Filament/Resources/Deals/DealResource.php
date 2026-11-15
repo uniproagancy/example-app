@@ -5,13 +5,15 @@ namespace App\Filament\Resources\Deals;
 use App\Filament\Resources\Deals\Pages\ManageDeals;
 use App\Filament\Support\AdminOnly;
 use App\Filament\Support\HasAdminLabels;
+use App\Filament\Support\HasTrash;
 use App\Filament\Support\Localized;
 use App\Filament\Support\Schedule;
+use App\Filament\Support\TrashActions;
 use App\Models\Deal;
 use App\Models\Product;
 use App\Support\Catalog;
 use BackedEnum;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -31,6 +33,7 @@ class DealResource extends Resource
 {
     use AdminOnly;
     use HasAdminLabels;
+    use HasTrash;
 
     protected static string $labelKey = 'deals';
 
@@ -115,9 +118,15 @@ class DealResource extends Resource
                 ToggleColumn::make('is_active')
                     ->label(__('admin.common.is_active')),
             ])
+            ->filters([
+                TrashActions::filter(),
+            ])
             ->recordActions([
                 EditAction::make(),
-                DeleteAction::make(),
+                ...TrashActions::record(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make(TrashActions::bulk()),
             ]);
     }
 

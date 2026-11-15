@@ -9,11 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['attribute_id', 'code', 'color_hex', 'sort_order'])]
 class AttributeValue extends Model
 {
     use HasTranslations;
+    use SoftDeletes;
 
     protected array $translatable = ['label'];
 
@@ -40,7 +42,7 @@ class AttributeValue extends Model
 
     public function attribute(): BelongsTo
     {
-        return $this->belongsTo(Attribute::class);
+        return $this->belongsTo(Attribute::class)->withTrashed();
     }
 
     public function products(): BelongsToMany

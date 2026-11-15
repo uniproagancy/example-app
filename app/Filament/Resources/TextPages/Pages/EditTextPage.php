@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\TextPages\Pages;
 
 use App\Filament\Resources\TextPages\TextPageResource;
+use App\Filament\Support\TrashActions;
 use App\Models\Page;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Cache;
@@ -22,7 +22,7 @@ class EditTextPage extends EditRecord
                 ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                 ->color('gray')
                 ->url(fn (): string => url('ka/info/'.$this->getRecord()->slug), shouldOpenInNewTab: true),
-            DeleteAction::make(),
+            ...TrashActions::header(),
         ];
     }
 

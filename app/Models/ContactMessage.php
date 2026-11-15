@@ -5,10 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['user_id', 'topic', 'name', 'phone', 'order_number', 'message', 'locale', 'handled_at'])]
 class ContactMessage extends Model
 {
+    use SoftDeletes;
+
     public const TOPICS = ['consultation', 'order', 'warranty', 'installment'];
 
     public const TOPICS_WITH_ORDER = ['order', 'warranty'];

@@ -5,11 +5,13 @@ namespace App\Models;
 use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable(['code', 'percent', 'min_subtotal', 'is_active', 'starts_at', 'ends_at'])]
 class PromoCode extends Model
 {
     use LogsActivity;
+    use SoftDeletes;
 
     protected function casts(): array
     {
