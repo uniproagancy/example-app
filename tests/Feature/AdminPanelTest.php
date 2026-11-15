@@ -17,6 +17,7 @@ use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Filament\Resources\Perks\PerkResource;
 use App\Filament\Resources\Products\Pages\CreateProduct;
 use App\Filament\Resources\Products\Pages\EditProduct;
+use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Resources\PromoCodes\PromoCodeResource;
 use App\Filament\Resources\Promos\PromoResource;
@@ -175,6 +176,58 @@ class AdminPanelTest extends TestCase
         $this->assertModelExists($parent);
     }
 
+    public function test_products_go_to_the_trash_and_the_checkbox_deletes_them_for_good(): void
+    {
+        $this->actingAs($this->admin);
+
+        $speaker = Product::query()->where('sku', 'jbl')->sole();
+        $phone = Product::query()->where('sku', 'ip16')->sole();
+        $others = Product::query()->whereKeyNot([$speaker->id, $phone->id])->get();
+
+        Livewire::test(ListProducts::class)
+            ->callTableAction('delete', $speaker)
+            ->assertCanNotSeeTableRecords([$speaker])
+            ->filterTable('trashed', false)
+            ->assertCanSeeTableRecords([$speaker])
+            ->assertCanNotSeeTableRecords($others->take(1))
+            ->callTableAction('restore', $speaker)
+            ->resetTableFilters()
+            ->callTableAction('delete', $phone, ['force' => true]);
+
+        $this->assertNotSoftDeleted($speaker);
+        $this->assertModelMissing($phone);
+        $this->assertNull(Catalog::products()->firstWhere('sku', 'ip16'));
+
+        $speaker->delete();
+        $this->assertNull(Catalog::products()->firstWhere('sku', 'jbl'));
+        $this->get('/ka/product/'.$speaker->kaTranslation()->value('slug'))->assertNotFound();
+
+        Livewire::test(EditProduct::class, ['record' => $speaker->getRouteKey()])
+            ->assertActionVisible('restore')
+            ->assertActionVisible('forceDelete')
+            ->assertActionHidden('delete')
+            ->callAction('forceDelete');
+
+        $this->assertModelMissing($speaker);
+    }
+
+    public function test_orders_are_deleted_for_good_when_the_checkbox_is_ticked(): void
+    {
+        $this->actingAs($this->admin);
+
+        $order = Order::query()->create([
+            'number' => 'EL-000021', 'status' => 'new', 'first_name' => 'Nino', 'last_name' => 'Beridze', 'phone' => '555000000',
+            'email' => 'nino@example.com', 'shipping_method' => 'courier', 'city' => 'tbilisi', 'address' => 'Chavchavadze 1',
+            'payment_method' => 'cash', 'subtotal' => 100, 'discount' => 0, 'shipping' => 5, 'total' => 105, 'locale' => 'ka',
+        ]);
+
+        Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->callAction('delete', ['force' => true])
+            ->assertRedirect(OrderResource::getUrl());
+
+        $this->assertModelMissing($order);
+    }
+
     public function test_quick_orders_appear_in_the_orders_list(): void
     {
         $this->actingAs($this->admin);
@@ -201,6 +254,9 @@ class AdminPanelTest extends TestCase
             ->assertSee(PaymentMethod::labelFor('transfer'));
 
         $iphone->delete();
+        $this->assertSame($iphone->id, $quickOrder->items()->first()->product_id);
+
+        $iphone->forceDelete();
         $this->assertNull($quickOrder->items()->first()->product_id);
     }
 

@@ -164,7 +164,7 @@ class PurgeSupplierProducts extends Command
                 Storage::disk('public')->deleteDirectory("products/{$id}");
             }
 
-            Product::query()->whereIn('id', $chunk)->get()->each->delete();
+            Product::withTrashed()->whereIn('id', $chunk)->get()->each->forceDelete();
 
             $bar->advance($chunk->count());
         }

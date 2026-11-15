@@ -245,4 +245,23 @@ class ImportPipelineTest extends TestCase
 
         $this->assertSame($saved, $supplier->fresh()->config);
     }
+
+    public function test_import_leaves_deleted_products_in_the_trash_until_they_are_deleted_for_good(): void
+    {
+        $supplier = $this->supplier();
+
+        $this->import($supplier, [FakeSupplierDriver::payload('1')]);
+        $product = Product::query()->where('sku', 'SKU-1')->sole();
+        $product->delete();
+
+        $this->import($supplier, [FakeSupplierDriver::payload('1')]);
+
+        $this->assertSoftDeleted($product);
+        $this->assertSame(1, Product::withTrashed()->where('sku', 'SKU-1')->count());
+
+        $product->forceDelete();
+        $this->import($supplier, [FakeSupplierDriver::payload('1')]);
+
+        $this->assertNotSame($product->id, Product::query()->where('sku', 'SKU-1')->sole()->id);
+    }
 }

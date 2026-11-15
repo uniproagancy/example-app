@@ -564,6 +564,7 @@ class Catalog
             'products' => DB::table('products')
                 ->leftJoin('brands', 'brands.id', '=', 'products.brand_id')
                 ->where('products.is_active', true)
+                ->whereNull('products.deleted_at')
                 ->orderBy('products.position')
                 ->orderBy('products.id')
                 ->get([

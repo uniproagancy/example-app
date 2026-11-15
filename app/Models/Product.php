@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 #[Fillable(['category_id', 'brand_id', 'sku', 'supplier_sku', 'price', 'old_price', 'cost_price', 'price_lock', 'taxonomy_lock', 'stock', 'weight', 'warranty_months', 'variant_group', 'is_active', 'is_new', 'is_preorder', 'release_date', 'position', 'synced_at'])]
@@ -19,6 +20,7 @@ class Product extends Model
 {
     use HasTranslations;
     use LogsActivity;
+    use SoftDeletes;
 
     protected array $translatable = ['name', 'slug', 'subtitle', 'description'];
 
@@ -46,6 +48,7 @@ class Product extends Model
     {
         static::saved(fn () => Catalog::flush());
         static::deleted(fn () => Catalog::flush());
+        static::forceDeleted(fn (Product $product) => Storage::disk('public')->deleteDirectory("products/{$product->id}"));
     }
 
     public function category(): BelongsTo

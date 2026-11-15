@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Orders\Tables;
 
 use App\Filament\Resources\Orders\OrderResource;
+use App\Filament\Support\TrashActions;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderPrintController;
 use App\Models\Order;
@@ -12,8 +13,6 @@ use App\Support\Catalog;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
@@ -107,7 +106,7 @@ class OrdersTable
                 OrderResource::changeStatusAction()
                     ->hiddenLabel()
                     ->tooltip(__('admin.orders.change_status')),
-                DeleteAction::make()
+                TrashActions::delete()
                     ->hiddenLabel()
                     ->tooltip(__('admin.orders.delete'))
                     ->modalHeading(fn (Order $record): string => __('admin.orders.delete_heading', ['number' => $record->number]))
@@ -145,7 +144,7 @@ class OrdersTable
                         ->icon(Heroicon::OutlinedArrowDownTray)
                         ->deselectRecordsAfterCompletion()
                         ->action(fn (Collection $records) => app(OrdersExport::class)->download(Order::withTrashed()->whereKey($records->modelKeys()))),
-                    DeleteBulkAction::make()
+                    TrashActions::deleteBulk()
                         ->modalDescription(__('admin.orders.delete_help')),
                     RestoreBulkAction::make(),
                     ForceDeleteBulkAction::make()

@@ -83,7 +83,7 @@ class PurgeSupplier extends Command
 
         ProductOffer::where('supplier_id', $supplier->id)->delete();
 
-        Product::whereIn('id', $going)->get()->each->delete();
+        Product::withTrashed()->whereIn('id', $going)->get()->each->forceDelete();
 
         Product::whereIn('id', $shared)->get()->each(
             fn (Product $product) => $importer->refreshFromOffers($product),

@@ -51,11 +51,17 @@ class AdminBulkDeleteTest extends TestCase
             ->assertHasNoTableBulkActionErrors()
             ->assertNotified();
 
-        $this->assertModelMissing($iphone);
-        $this->assertModelMissing($console);
-        $this->assertModelExists($kept);
+        $this->assertSoftDeleted($iphone);
+        $this->assertSoftDeleted($console);
+        $this->assertNotSoftDeleted($kept);
         $this->assertNull(Catalog::findBySku('ip16'));
         $this->assertNotNull(Catalog::findBySku('s25'));
+
+        Livewire::test(ListProducts::class)
+            ->callTableBulkAction('delete', [$kept], ['force' => true])
+            ->assertHasNoTableBulkActionErrors();
+
+        $this->assertModelMissing($kept);
     }
 
     public function test_only_empty_categories_are_deleted_and_a_selected_branch_goes_together(): void

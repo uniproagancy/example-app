@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Products\Tables;
 
 use App\Filament\Support\CategoryOptions;
 use App\Filament\Support\Operators;
+use App\Filament\Support\TrashActions;
 use App\Models\Brand;
 use App\Models\Product;
 use App\Models\Supplier;
@@ -11,9 +12,11 @@ use App\Support\Catalog;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\ForceDeleteBulkAction;
+use Filament\Actions\RestoreAction;
+use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -29,6 +32,7 @@ use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -121,6 +125,7 @@ class ProductsTable
                 Filter::make('out_of_stock')
                     ->label(__('admin.products.out_of_stock'))
                     ->query(fn (Builder $query) => $query->where('stock', 0)),
+                TrashedFilter::make(),
             ])
             ->recordActions([
                 Action::make('view')
@@ -129,9 +134,13 @@ class ProductsTable
                     ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                     ->color('gray')
                     ->url(fn (Product $record) => static::siteUrl($record), shouldOpenInNewTab: true)
-                    ->visible(fn (Product $record) => $record->is_active),
+                    ->visible(fn (Product $record) => $record->is_active && ! $record->trashed()),
                 EditAction::make(),
-                DeleteAction::make(),
+                TrashActions::delete()
+                    ->modalDescription(__('admin.products.delete_help')),
+                RestoreAction::make(),
+                ForceDeleteAction::make()
+                    ->modalDescription(__('admin.products.force_delete_help')),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -149,7 +158,7 @@ class ProductsTable
                         ->icon(Heroicon::OutlinedEyeSlash)
                         ->action(fn (Collection $records) => $records->each->update(['is_active' => false]))
                         ->deselectRecordsAfterCompletion(),
-                    DeleteBulkAction::make()
+                    TrashActions::deleteBulk()
                         ->modalHeading(fn (Collection $records): string => __('admin.products.bulk_delete_heading', ['count' => $records->count()]))
                         ->modalDescription(function (Collection $records): string {
                             $imported = Product::query()->whereKey($records->modelKeys())->has('offers')->count();
@@ -158,6 +167,9 @@ class ProductsTable
                                 ? __('admin.products.bulk_delete_imported', ['count' => $imported])
                                 : __('admin.products.bulk_delete_help');
                         }),
+                    RestoreBulkAction::make(),
+                    ForceDeleteBulkAction::make()
+                        ->modalDescription(__('admin.products.force_delete_help')),
                 ]),
             ]);
     }

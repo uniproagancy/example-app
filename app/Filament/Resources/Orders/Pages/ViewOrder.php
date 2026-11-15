@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Orders\Pages;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Products\Tables\ProductsTable;
 use App\Filament\Support\Operators;
+use App\Filament\Support\TrashActions;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderPrintController;
 use App\Models\Order;
@@ -20,7 +21,6 @@ use App\Support\Cart;
 use App\Support\Catalog;
 use App\Support\Site;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
 use Filament\Forms\Components\Textarea;
@@ -139,7 +139,7 @@ class ViewOrder extends ViewRecord
                 ->icon(Heroicon::OutlinedCheck)
                 ->visible(fn (): bool => $this->order()->isEditable())
                 ->action(fn () => $this->save()),
-            DeleteAction::make()
+            TrashActions::delete()
                 ->label(__('admin.orders.delete'))
                 ->modalHeading(fn (): string => __('admin.orders.delete_heading', ['number' => $this->order()->number]))
                 ->modalDescription(__('admin.orders.delete_help'))

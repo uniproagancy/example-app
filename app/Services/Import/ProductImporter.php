@@ -134,7 +134,7 @@ class ProductImporter
             'product' => $product->id,
         ]);
 
-        $product->delete();
+        $product->forceDelete();
 
         return false;
     }
@@ -154,6 +154,12 @@ class ProductImporter
     protected function writeInTransaction(Supplier $supplier, ProductPayload $payload, bool $insist = false): array
     {
         return DB::transaction(function () use ($supplier, $payload, $insist) {
+            if ($this->deletedByAdmin($supplier, $payload)) {
+                $this->log('skipped (deleted)', $supplier, $payload, []);
+
+                return [null, false];
+            }
+
             $product = $this->find($supplier, $payload);
             $isNew = ! $product;
 
@@ -215,6 +221,15 @@ class ProductImporter
 
             return [$product, $isNew];
         });
+    }
+
+    protected function deletedByAdmin(Supplier $supplier, ProductPayload $payload): bool
+    {
+        return Product::onlyTrashed()
+            ->where(fn ($query) => $query
+                ->where('sku', $payload->sku)
+                ->orWhereIn('id', ProductOffer::where('supplier_id', $supplier->id)->where('external_id', $payload->externalId)->select('product_id')))
+            ->exists();
     }
 
     protected function find(Supplier $supplier, ProductPayload $payload): ?Product
