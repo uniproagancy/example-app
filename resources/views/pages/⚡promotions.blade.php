@@ -5,7 +5,6 @@ use App\Support\Catalog;
 use App\Support\HomeContent;
 use App\Support\Seo;
 use App\Support\Site;
-use Illuminate\Support\Carbon;
 use Livewire\Component;
 
 new class extends Component
@@ -27,15 +26,7 @@ new class extends Component
 
     public function validity(?string $endsAt): string
     {
-        if (! $endsAt) {
-            return __('pages.promotions.no_end');
-        }
-
-        $date = Carbon::parse($endsAt)->timezone(config('app.timezone'));
-
-        return $date->isToday()
-            ? __('pages.promotions.ends_today')
-            : __('pages.promotions.until', ['date' => $date->format('d.m.Y')]);
+        return Campaign::validity($endsAt);
     }
 };
 ?>

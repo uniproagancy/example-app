@@ -9,7 +9,7 @@
     <div class="flex flex-wrap items-center gap-2">
         <span class="inline-flex h-7 items-center gap-1.5 rounded-full bg-white/12 px-3 text-xs font-semibold backdrop-blur-sm">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-            {{ $this->validity($campaign['endsAt']) }}
+            {{ App\Models\Campaign::validity($campaign['endsAt']) }}
         </span>
         @if ($campaign['maxDiscount'] > 0)
             <span class="inline-flex h-7 items-center rounded-full bg-sale px-3 text-xs font-extrabold">{{ __('pages.campaign.up_to', ['percent' => $campaign['maxDiscount']]) }}</span>

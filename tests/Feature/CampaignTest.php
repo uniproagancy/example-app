@@ -12,6 +12,7 @@ use App\Support\CategoryTree;
 use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Once;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -103,6 +104,27 @@ class CampaignTest extends TestCase
             ->call('toggleBrand', $speaker['brand'])
             ->assertSee('category-product-'.$speaker['id'].'"', false)
             ->assertDontSee('category-product-'.$other['id'].'"', false);
+    }
+
+    public function test_home_page_shows_live_campaigns_instead_of_discounted_products(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        $live = Campaign::factory()->create(['slug' => 'black-friday']);
+        $live->products()->sync([$this->product('jbl')->id]);
+        Campaign::factory()->expired()->create(['slug' => 'new-year']);
+
+        $this->get('/ka')
+            ->assertOk()
+            ->assertSee('id="home-campaigns"', false)
+            ->assertSee('/ka/promotions/black-friday', false)
+            ->assertDontSee('/ka/promotions/new-year', false)
+            ->assertSee(__('shop.sale.all'));
+
+        Campaign::query()->forceDelete();
+        Once::flush();
+
+        $this->get('/ka')->assertOk()->assertDontSee('id="home-campaigns"', false);
     }
 
     public function test_finished_or_unknown_campaign_pages_are_not_found(): void

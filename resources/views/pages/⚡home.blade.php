@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Campaign;
 use App\Models\Slide;
 use App\Support\Catalog;
 use App\Support\HomeContent;
@@ -24,7 +25,7 @@ new class extends Component
             'promos' => HomeContent::promos(),
             'deal' => Catalog::deal(),
             'brands' => Catalog::brands(),
-            'saleProducts' => Catalog::onSale(),
+            'campaigns' => Campaign::listing(),
             'sections' => Catalog::sections(),
             'recentProducts' => RecentlyViewed::products(),
         ])->title(__('shop.nav.home'));
@@ -46,7 +47,7 @@ new class extends Component
                     @endif
                     @break
                 @case('sale')
-                    @if ($saleProducts->isNotEmpty())
+                    @if ($campaigns->isNotEmpty())
                         @include('partials.home.sale')
                     @endif
                     @break

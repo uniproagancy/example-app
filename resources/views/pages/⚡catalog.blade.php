@@ -6,7 +6,6 @@ use App\Support\CategoryTree;
 use App\Support\Locales;
 use App\Support\Seo;
 use App\Support\Site;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Locked;
@@ -316,19 +315,6 @@ new class extends Component
         if ($this->minPrice !== null && $this->maxPrice !== null && $this->minPrice > $this->maxPrice) {
             [$this->minPrice, $this->maxPrice] = [$this->maxPrice, $this->minPrice];
         }
-    }
-
-    public function validity(?string $endsAt): string
-    {
-        if (! $endsAt) {
-            return __('pages.promotions.no_end');
-        }
-
-        $date = Carbon::parse($endsAt)->timezone(config('app.timezone'));
-
-        return $date->isToday()
-            ? __('pages.promotions.ends_today')
-            : __('pages.promotions.until', ['date' => $date->format('d.m.Y')]);
     }
 
     protected function navigation(): array

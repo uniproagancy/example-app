@@ -68,6 +68,19 @@ class Campaign extends Model
             ->where(fn (Builder $query) => $query->whereNull('ends_at')->orWhere('ends_at', '>', now()));
     }
 
+    public static function validity(?string $endsAt): string
+    {
+        if (! $endsAt) {
+            return __('pages.promotions.no_end');
+        }
+
+        $date = Carbon::parse($endsAt)->timezone(config('app.timezone'));
+
+        return $date->isToday()
+            ? __('pages.promotions.ends_today')
+            : __('pages.promotions.until', ['date' => $date->format('d.m.Y')]);
+    }
+
     public static function listing(): Collection
     {
         return once(function () {
