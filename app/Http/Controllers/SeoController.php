@@ -9,6 +9,7 @@ use App\Support\CategoryTree;
 use App\Support\Locales;
 use App\Support\Seo;
 use Illuminate\Http\Response;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 use XMLWriter;
@@ -76,8 +77,9 @@ class SeoController extends Controller
 
         $products = Catalog::products()
             ->map(fn (array $product) => [
-                'alternates' => $this->localized(fn (string $locale) => isset($product['slugs'][$locale]) ? '/product/'.$product['slugs'][$locale] : null),
+                'alternates' => $this->localized(fn (string $locale) => ($slug = $product['slugs'][$locale] ?? $product['slugs'][Locales::default()] ?? null) ? '/product/'.$slug : null),
                 'images' => array_slice(array_map(Seo::absolute(...), $product['images']), 0, 5),
+                'lastmod' => $product['updatedAt'] ? Carbon::parse($product['updatedAt'])->toAtomString() : null,
             ]);
 
         $campaigns = Campaign::listing()
@@ -104,6 +106,10 @@ class SeoController extends Controller
         foreach ($entry['alternates'] as $url) {
             $xml->startElement('url');
             $xml->writeElement('loc', $url);
+
+            if (filled($entry['lastmod'] ?? null)) {
+                $xml->writeElement('lastmod', $entry['lastmod']);
+            }
 
             if (count($entry['alternates']) > 1) {
                 foreach ($entry['alternates'] as $locale => $alternate) {

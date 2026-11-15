@@ -7,6 +7,7 @@ use App\Models\Page;
 use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Catalog;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -47,9 +48,39 @@ class SeoTest extends TestCase
         $this->assertSame('GEL', $schema['Product']['offers']['priceCurrency']);
         $this->assertMatchesRegularExpression('/^\d+\.\d{2}$/', $schema['Product']['offers']['price']);
         $this->assertStringStartsWith('https://schema.org/', $schema['Product']['offers']['availability']);
+        $this->assertSame('GE', $schema['Product']['offers']['shippingDetails']['shippingDestination']['addressCountry']);
+        $this->assertSame('0.00', $schema['Product']['offers']['shippingDetails']['shippingRate']['value']);
+        $this->assertSame(14, $schema['Product']['offers']['hasMerchantReturnPolicy']['merchantReturnDays']);
+        $this->assertSame(url('/ka/info/warranty'), $schema['Product']['offers']['hasMerchantReturnPolicy']['merchantReturnLink']);
         $this->assertSame('ELIO.GE', $schema['Organization']['name']);
         $this->assertSame('iPhone 16 Pro', last($schema['BreadcrumbList']['itemListElement'])['name']);
         $this->assertGreaterThan(2, count($schema['BreadcrumbList']['itemListElement']));
+    }
+
+    public function test_english_pages_point_x_default_to_the_georgian_version(): void
+    {
+        $this->refreshApplicationWithLocale('en');
+
+        $this->get('/en/product/apple-iphone-16-pro')
+            ->assertOk()
+            ->assertSee('hreflang="x-default" href="'.url('/ka/product/apple-iphone-16-pro').'"', false)
+            ->assertDontSee('hreflang="x-default" href="'.url('/en/product/apple-iphone-16-pro').'"', false);
+    }
+
+    public function test_discounted_products_show_the_old_price_in_their_schema(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        Product::query()->where('sku', 'jbl')->sole()->update(['price' => 50, 'old_price' => 80]);
+        Catalog::flush();
+
+        $product = Catalog::products()->firstWhere('sku', 'jbl');
+        $offer = $this->jsonLd($this->get($product['url'])->assertOk()->getContent())['Product']['offers'];
+
+        $this->assertSame('50.00', $offer['price']);
+        $this->assertSame('80.00', $offer['priceSpecification']['price']);
+        $this->assertSame('https://schema.org/StrikethroughPrice', $offer['priceSpecification']['priceType']);
+        $this->assertSame('5.00', $offer['shippingDetails']['shippingRate']['value']);
     }
 
     public function test_home_has_website_search_schema_and_a_heading(): void
@@ -129,6 +160,21 @@ class SeoTest extends TestCase
         $this->assertFalse($locs->contains(fn (string $loc) => str_contains($loc, 'checkout') || str_contains($loc, 'account')));
         $this->assertSame($locs->count(), $locs->unique()->count());
         $this->assertStringContainsString('hreflang="x-default"', $response->getContent());
+    }
+
+    public function test_sitemap_lists_products_without_an_english_slug_in_english_too_with_lastmod(): void
+    {
+        $product = Product::query()->where('sku', 'jbl')->sole();
+        $slug = $product->translations()->where('locale', 'ka')->value('slug');
+        $product->translations()->where('locale', 'en')->delete();
+        Catalog::flush();
+
+        $xml = simplexml_load_string($this->get('/sitemap.xml')->assertOk()->getContent());
+        $urls = collect(iterator_to_array($xml->url, false))->keyBy(fn ($url) => (string) $url->loc);
+
+        $this->assertTrue($urls->has(url('/ka/product/'.$slug)));
+        $this->assertTrue($urls->has(url('/en/product/'.$slug)));
+        $this->assertNotSame('', (string) $urls[url('/en/product/'.$slug)]->lastmod);
     }
 
     public function test_admin_sets_the_default_description_and_search_console_code(): void

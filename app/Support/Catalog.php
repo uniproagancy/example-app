@@ -478,6 +478,7 @@ class Catalog
             'inStock' => (int) $row['stock'] > 0,
             'image' => $imageUrls[0] ?? null,
             'images' => $imageUrls,
+            'updatedAt' => $row['updated_at'] ?? null,
         ];
     }
 
@@ -567,7 +568,7 @@ class Catalog
                 ->orderBy('products.id')
                 ->get([
                     'products.id', 'products.category_id', 'products.sku', 'products.supplier_sku', 'products.price', 'products.old_price',
-                    'products.stock', 'products.is_new', 'products.variant_group', 'brands.name as brand_name',
+                    'products.stock', 'products.is_new', 'products.variant_group', 'products.updated_at', 'brands.name as brand_name',
                 ])
                 ->map(fn ($row) => (array) $row)
                 ->all(),

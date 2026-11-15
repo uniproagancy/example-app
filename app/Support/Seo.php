@@ -11,6 +11,8 @@ class Seo
 {
     public const DESCRIPTION_LENGTH = 160;
 
+    public const RETURN_DAYS = 14;
+
     public const PRIVATE_ROUTES = ['checkout', 'account', 'order', 'warranty', 'password.reset'];
 
     public static function set(array $data): void
@@ -139,7 +141,7 @@ class Seo
             'description' => static::text($product['description'] ?? null, $product['subtitle'] ?? null),
             'category' => $product['subLabel'] ?? null,
             'brand' => filled($product['brand'] ?? null) ? ['@type' => 'Brand', 'name' => $product['brand']] : null,
-            'offers' => [
+            'offers' => array_filter([
                 '@type' => 'Offer',
                 'url' => $product['url'],
                 'priceCurrency' => 'GEL',
@@ -147,8 +149,45 @@ class Seo
                 'availability' => ($product['inStock'] ?? false) ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
                 'itemCondition' => 'https://schema.org/NewCondition',
                 'seller' => ['@id' => url('/').'#organization'],
-            ],
+                'priceSpecification' => filled($product['old'] ?? null) ? [
+                    '@type' => 'UnitPriceSpecification',
+                    'priceType' => 'https://schema.org/StrikethroughPrice',
+                    'price' => number_format((float) $product['old'], 2, '.', ''),
+                    'priceCurrency' => 'GEL',
+                ] : null,
+                'shippingDetails' => static::shipping((float) $product['price']),
+                'hasMerchantReturnPolicy' => static::returnPolicy(),
+            ]),
         ]);
+    }
+
+    public static function shipping(float $price): array
+    {
+        return [
+            '@type' => 'OfferShippingDetails',
+            'shippingRate' => [
+                '@type' => 'MonetaryAmount',
+                'value' => number_format(Cart::shippingFor($price), 2, '.', ''),
+                'currency' => 'GEL',
+            ],
+            'shippingDestination' => ['@type' => 'DefinedRegion', 'addressCountry' => 'GE'],
+            'deliveryTime' => [
+                '@type' => 'ShippingDeliveryTime',
+                'handlingTime' => ['@type' => 'QuantitativeValue', 'minValue' => 0, 'maxValue' => 1, 'unitCode' => 'DAY'],
+                'transitTime' => ['@type' => 'QuantitativeValue', 'minValue' => 1, 'maxValue' => 7, 'unitCode' => 'DAY'],
+            ],
+        ];
+    }
+
+    public static function returnPolicy(): array
+    {
+        return [
+            '@type' => 'MerchantReturnPolicy',
+            'applicableCountry' => 'GE',
+            'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+            'merchantReturnDays' => self::RETURN_DAYS,
+            'merchantReturnLink' => route('page', ['slug' => 'warranty']),
+        ];
     }
 
     public static function breadcrumbs(array $items): array
