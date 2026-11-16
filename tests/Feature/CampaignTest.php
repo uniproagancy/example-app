@@ -141,6 +141,15 @@ class CampaignTest extends TestCase
         $this->assertStringNotContainsString(Catalog::find($outside->id)['url'].'"', $block);
     }
 
+    public function test_campaigns_without_an_end_date_show_no_validity_label(): void
+    {
+        Campaign::factory()->create(['slug' => 'always', 'ends_at' => null])->products()->sync([$this->product('jbl')->id]);
+
+        $this->get('/ka')->assertOk()->assertSee('/ka/promotions/always', false)->assertDontSee(__('pages.promotions.no_end'));
+        $this->get('/ka/promotions')->assertOk()->assertDontSee(__('pages.promotions.no_end'));
+        $this->get('/ka/promotions/always')->assertOk()->assertDontSee(__('pages.promotions.no_end'));
+    }
+
     public function test_finished_or_unknown_campaign_pages_are_not_found(): void
     {
         Campaign::factory()->expired()->create(['slug' => 'new-year']);

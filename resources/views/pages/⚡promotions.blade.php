@@ -107,7 +107,9 @@ new class extends Component
                             @include('partials.category-icon', ['icon' => $promo['icon'], 'stroke' => 0.8, 'class' => 'pointer-events-none absolute -right-6 -bottom-6 h-[60%] '.$theme['icon']])
                         @endif
                         <div class="relative flex flex-1 flex-col gap-2.5">
-                            <span class="inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-xs font-semibold {{ $theme['chip'] }}">{!! $clockIcon !!} {{ $this->validity($promo['endsAt']) }}</span>
+                            @if ($promo['endsAt'])
+                                <span class="inline-flex items-center gap-1.5 self-start rounded-full px-3 py-1 text-xs font-semibold {{ $theme['chip'] }}">{!! $clockIcon !!} {{ $this->validity($promo['endsAt']) }}</span>
+                            @endif
                             @if ($promo['badge'])
                                 <span class="mt-2 font-display text-[44px] leading-none font-extrabold {{ $theme['badge'] }}">{{ $promo['badge'] }}</span>
                             @endif
@@ -144,7 +146,9 @@ new class extends Component
                             @endif
                         </a>
                         <div class="flex min-w-0 flex-col justify-center gap-2">
-                            <span class="inline-flex items-center gap-1.5 self-start rounded-full bg-sale/10 px-3 py-1 text-xs font-semibold text-sale">{!! $clockIcon !!} {{ $this->validity($deal['deal']['endsAt']) }}</span>
+                            @if ($deal['deal']['endsAt'])
+                                <span class="inline-flex items-center gap-1.5 self-start rounded-full bg-sale/10 px-3 py-1 text-xs font-semibold text-sale">{!! $clockIcon !!} {{ $this->validity($deal['deal']['endsAt']) }}</span>
+                            @endif
                             <a href="{{ $deal['url'] }}" wire:navigate class="line-clamp-2 text-base font-bold text-navy hover:text-brand">{{ $deal['name'] }}</a>
                             @if ($deal['deal']['text'])
                                 <p class="m-0 line-clamp-2 text-[13px] text-muted">{{ $deal['deal']['text'] }}</p>
