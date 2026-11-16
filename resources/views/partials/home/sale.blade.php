@@ -11,7 +11,7 @@
             </div>
             <div class="flex flex-col gap-6 sm:gap-8">
                 @foreach ($campaigns as $campaign)
-                    <div wire:key="home-campaign-{{ $campaign['id'] }}" x-data="carousel" class="relative isolate grid grid-cols-1 gap-5 overflow-hidden rounded-3xl p-5 text-white sm:p-7 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)] lg:gap-7 {{ $campaign['background'] }}">
+                    <div wire:key="home-campaign-{{ $campaign['id'] }}" x-data="carousel" class="relative isolate grid grid-cols-1 gap-5 overflow-hidden rounded-3xl p-5 text-white sm:p-7 lg:grid-cols-[minmax(0,230px)_minmax(0,1fr)] lg:gap-7 {{ $campaign['background'] }}">
                         @if ($campaign['image'])
                             <img src="{{ $campaign['image'] }}" alt="" loading="lazy" class="absolute inset-0 -z-10 size-full object-cover">
                             <div class="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(10,22,51,.92)_0%,rgba(10,22,51,.75)_100%)]"></div>
@@ -51,7 +51,7 @@
 
                         @if ($campaign['products']->isNotEmpty())
                             <div class="relative min-w-0 text-navy">
-                                <div x-ref="track" class="carousel auto-cols-[calc((100%-10px)/2)] gap-2.5 sm:auto-cols-[calc((100%-24px)/3)] sm:gap-3 xl:auto-cols-[calc((100%-36px)/4)] 2xl:auto-cols-[calc((100%-48px)/5)]">
+                                <div x-ref="track" class="carousel auto-cols-[calc((100%-10px)/2)] gap-2.5 sm:auto-cols-[calc((100%-24px)/3)] sm:gap-3 md:auto-cols-[calc((100%-36px)/4)] lg:auto-cols-[calc((100%-48px)/5)] xl:auto-cols-[calc((100%-60px)/6)]">
                                     @foreach ($campaign['products'] as $product)
                                         @include('partials.product-card', ['product' => $product])
                                     @endforeach
