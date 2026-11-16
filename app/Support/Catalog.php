@@ -85,7 +85,7 @@ class Catalog
                 'url' => CategoryTree::url($node),
             ])
             ->filter(fn (array $category) => $category['count'] > 0)
-            ->sortBy([['count', 'desc'], ['depth', 'asc']])
+            ->sortBy('depth')
             ->values();
     }
 

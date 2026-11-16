@@ -283,7 +283,6 @@ new class extends Component
     {
         return Catalog::categories()
             ->filter(fn (array $category) => $category['count'] > 0)
-            ->sortByDesc('count')
             ->values();
     }
 

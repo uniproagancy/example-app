@@ -55,7 +55,7 @@ class CatalogTest extends TestCase
     {
         $this->refreshApplicationWithLocale('ka');
 
-        $tiles = Catalog::categories()->filter(fn (array $category) => $category['count'] > 0)->sortByDesc('count')->values();
+        $tiles = Catalog::categories()->filter(fn (array $category) => $category['count'] > 0)->values();
 
         $response = $this->get('/ka/catalog')
             ->assertOk()
@@ -67,6 +67,29 @@ class CatalogTest extends TestCase
             ->assertDontSee(__('catalog.load_more', [], 'ka'));
 
         $this->assertSame($tiles->count(), substr_count($response->getContent(), 'wire:key="catalog-tile-'));
+    }
+
+    public function test_category_tiles_and_search_categories_follow_the_admin_order(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        $roots = Catalog::categories()->values();
+        $this->assertGreaterThan(1, $roots->count());
+
+        $roots->reverse()->values()->each(fn (array $root, int $position) => Category::query()->whereKey($root['key'])->update(['position' => $position]));
+        CategoryTree::flush();
+        Catalog::flush();
+
+        $html = $this->get('/ka/catalog')->assertOk()->getContent();
+        $positions = $roots->reverse()->values()->map(fn (array $root) => strpos($html, 'wire:key="catalog-tile-'.$root['key'].'"'));
+
+        $this->assertNotContains(false, $positions->all());
+        $this->assertSame($positions->sort()->values()->all(), $positions->all());
+
+        $this->assertSame(
+            $roots->reverse()->pluck('url')->values()->all(),
+            Catalog::searchableCategories()->where('depth', 0)->pluck('url')->values()->all(),
+        );
     }
 
     public function test_typing_in_catalog_search_replaces_tiles_with_matching_products(): void
