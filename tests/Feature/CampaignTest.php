@@ -127,6 +127,20 @@ class CampaignTest extends TestCase
         $this->get('/ka')->assertOk()->assertDontSee('id="home-campaigns"', false);
     }
 
+    public function test_home_page_campaign_block_lists_the_products_of_that_campaign(): void
+    {
+        $speaker = $this->product('jbl');
+        $outside = Product::query()->whereKeyNot($speaker->id)->firstOrFail();
+        Campaign::factory()->create(['slug' => 'new-year'])->products()->sync([$speaker->id]);
+
+        $html = $this->get('/ka')->assertOk()->getContent();
+        $block = substr($html, strpos($html, 'id="home-campaigns"'));
+        $block = substr($block, 0, strpos($block, '</section>'));
+
+        $this->assertStringContainsString(Catalog::find($speaker->id)['url'], $block);
+        $this->assertStringNotContainsString(Catalog::find($outside->id)['url'].'"', $block);
+    }
+
     public function test_finished_or_unknown_campaign_pages_are_not_found(): void
     {
         Campaign::factory()->expired()->create(['slug' => 'new-year']);
