@@ -1,4 +1,5 @@
 @php
+    use App\Models\Invoice;
     use App\Support\Catalog;
     use App\Support\Company;
 
@@ -7,6 +8,7 @@
     $note = Company::invoiceNote();
     $stamp = Company::stampUrl();
     $single = $orders->count() === 1;
+    $prefill = $single && $orders->first() instanceof Invoice ? $orders->first() : null;
 @endphp
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
@@ -72,8 +74,8 @@
 <body>
     <div class="toolbar">
         @if ($single)
-            <input type="text" data-buyer-input="company" placeholder="{{ __('invoice.buyer_company') }}" maxlength="120" aria-label="{{ __('invoice.buyer_company') }}">
-            <input type="text" data-buyer-input="code" placeholder="{{ __('invoice.buyer_code') }}" maxlength="20" aria-label="{{ __('invoice.buyer_code') }}">
+            <input type="text" data-buyer-input="company" value="{{ $prefill?->buyer_company }}" placeholder="{{ __('invoice.buyer_company') }}" maxlength="120" aria-label="{{ __('invoice.buyer_company') }}">
+            <input type="text" data-buyer-input="code" value="{{ $prefill?->buyer_code }}" placeholder="{{ __('invoice.buyer_code') }}" maxlength="20" aria-label="{{ __('invoice.buyer_code') }}">
         @endif
         <button type="button" onclick="window.print()">{{ __('invoice.print') }}</button>
         @if ($staff)
@@ -86,7 +88,12 @@
 
     @foreach ($orders as $order)
         @php
-            $address = collect([$order->city ? __("checkout.cities.{$order->city}") : null, $order->address, $order->apartment])->filter()->implode(', ');
+            $manual = $order instanceof Invoice;
+            $address = $manual ? $order->address : collect([$order->city ? __("checkout.cities.{$order->city}") : null, $order->address, $order->apartment])->filter()->implode(', ');
+            $lines = $manual ? $order->items() : $order->items;
+            $subtotal = $manual ? $order->subtotal() : $order->subtotal;
+            $total = $manual ? $order->total() : $order->total;
+            $warranty = ! $manual && $order->warrantyIssued();
         @endphp
         <section class="sheet">
             <div class="head">
@@ -97,7 +104,7 @@
                 <div class="number">
                     <span class="muted">{{ __('invoice.number') }}</span>
                     <strong>{{ $order->invoiceNumber() }}</strong>
-                    <span class="muted">{{ __('invoice.date') }}: {{ $order->created_at->format('d.m.Y') }} · {{ __('invoice.order') }} #{{ $order->number }}</span>
+                    <span class="muted">{{ __('invoice.date') }}: {{ ($manual ? $order->issued_on : $order->created_at)->format('d.m.Y') }}@unless ($manual) · {{ __('invoice.order') }} #{{ $order->number }}@endunless</span>
                 </div>
             </div>
 
@@ -117,10 +124,12 @@
                 </div>
                 <div class="box">
                     <h3>{{ __('invoice.buyer') }}</h3>
-                    <p><strong data-buyer="company"></strong></p>
-                    <p data-buyer-line="code" hidden>{{ __('invoice.code') }}: <span data-buyer="code"></span></p>
-                    <p><strong>{{ trim($order->first_name.' '.$order->last_name) }}</strong></p>
-                    <p>{{ __('invoice.phone') }}: {{ $order->phone }}</p>
+                    <p><strong data-buyer="company">{{ $manual ? $order->buyer_company : '' }}</strong></p>
+                    <p data-buyer-line="code" @if (! $manual || blank($order->buyer_code)) hidden @endif>{{ __('invoice.code') }}: <span data-buyer="code">{{ $manual ? $order->buyer_code : '' }}</span></p>
+                    <p><strong>{{ $manual ? $order->buyer_name : trim($order->first_name.' '.$order->last_name) }}</strong></p>
+                    @if ($order->phone)
+                        <p>{{ __('invoice.phone') }}: {{ $order->phone }}</p>
+                    @endif
                     @if ($order->email)
                         <p class="muted">{{ $order->email }}</p>
                     @endif
@@ -142,7 +151,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($order->items as $item)
+                        @foreach ($lines as $item)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
@@ -150,7 +159,7 @@
                                     @if ($item->options)
                                         <div class="muted">{{ implode(' · ', (array) $item->options) }}</div>
                                     @endif
-                                    @if ($order->warrantyIssued())
+                                    @if ($warranty)
                                         <div class="muted">{{ __('warranty.open') }}: {{ $item->warrantyLabel() }}@if ($item->serial_number) · {{ $item->serial_number }}@endif</div>
                                     @endif
                                 </td>
@@ -164,12 +173,14 @@
             </div>
 
             <div class="totals">
-                <div><span>{{ __('invoice.subtotal') }}</span><span>{{ Catalog::money($order->subtotal) }}</span></div>
+                <div><span>{{ __('invoice.subtotal') }}</span><span>{{ Catalog::money($subtotal) }}</span></div>
                 @if ((float) $order->discount > 0)
-                    <div><span>{{ __('invoice.discount') }}@if ($order->promo_code) ({{ $order->promo_code }})@endif</span><span>−{{ Catalog::money($order->discount) }}</span></div>
+                    <div><span>{{ __('invoice.discount') }}@if (! $manual && $order->promo_code) ({{ $order->promo_code }})@endif</span><span>−{{ Catalog::money($order->discount) }}</span></div>
                 @endif
-                <div><span>{{ __('invoice.shipping') }}</span><span>{{ (float) $order->shipping > 0 ? Catalog::money($order->shipping) : __('invoice.free') }}</span></div>
-                <div class="total"><span>{{ __('invoice.total') }}</span><span>{{ Catalog::money($order->total) }}</span></div>
+                @if (! $manual || (float) $order->shipping > 0)
+                    <div><span>{{ __('invoice.shipping') }}</span><span>{{ (float) $order->shipping > 0 ? Catalog::money($order->shipping) : __('invoice.free') }}</span></div>
+                @endif
+                <div class="total"><span>{{ __('invoice.total') }}</span><span>{{ Catalog::money($total) }}</span></div>
             </div>
             <div @class(['state', 'paid' => $order->isPaid(), 'unpaid' => ! $order->isPaid()])>
                 {{ $order->isPaid() ? __('invoice.paid').($order->paid_at ? ' · '.$order->paid_at->format('d.m.Y') : '') : __('invoice.unpaid') }}
@@ -200,6 +211,10 @@
                     </table>
                     <p class="muted" style="margin: 8px 0 0">{{ __('invoice.purpose') }}: <strong>{{ __('invoice.purpose_text', ['number' => $order->invoiceNumber()]) }}</strong></p>
                 </div>
+            @endif
+
+            @if ($manual && filled($order->note))
+                <div class="note">{{ $order->note }}</div>
             @endif
 
             @if ($note)

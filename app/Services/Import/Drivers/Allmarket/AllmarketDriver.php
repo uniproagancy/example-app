@@ -2,7 +2,9 @@
 
 namespace App\Services\Import\Drivers\Allmarket;
 
+use App\Models\ProductOffer;
 use App\Models\Supplier;
+use App\Models\SupplierStock;
 use App\Services\Import\ProductPayload;
 use App\Services\Import\SupplierDriver;
 use App\Support\Figure;
@@ -22,10 +24,60 @@ class AllmarketDriver implements SupplierDriver
 
     public function ids(): iterable
     {
-
         $this->client->forget();
 
-        return array_keys($this->client->feed());
+        $feed = $this->client->feed();
+
+        $this->syncStock($feed);
+
+        return array_map('strval', array_keys($feed));
+    }
+
+    protected function syncStock(array $feed): void
+    {
+        if ($feed === []) {
+            return;
+        }
+
+        $now = now();
+        $codes = array_map('strval', array_keys($feed));
+        $rows = [];
+
+        foreach ($feed as $code => $product) {
+            $rows[] = [
+                'supplier_id' => $this->supplier->id,
+                'external_id' => (string) $code,
+                'quantity' => max(0, (int) ($product['quantity'] ?? 0)),
+                'synced_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        $missing = ProductOffer::where('supplier_id', $this->supplier->id)
+            ->whereNotIn('external_id', $codes)
+            ->pluck('external_id')
+            ->unique();
+
+        foreach ($missing as $code) {
+            $rows[] = [
+                'supplier_id' => $this->supplier->id,
+                'external_id' => (string) $code,
+                'quantity' => 0,
+                'synced_at' => $now,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }
+
+        foreach (array_chunk($rows, 500) as $chunk) {
+            SupplierStock::upsert($chunk, ['supplier_id', 'external_id'], ['quantity', 'synced_at', 'updated_at']);
+        }
+
+        SupplierStock::where('supplier_id', $this->supplier->id)
+            ->whereNotIn('external_id', $codes)
+            ->where('quantity', '>', 0)
+            ->update(['quantity' => 0, 'synced_at' => $now]);
     }
 
     public function fetch(string $externalId): ?ProductPayload

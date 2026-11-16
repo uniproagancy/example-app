@@ -22,6 +22,7 @@ Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap
 
 Route::get('/admin-print/orders', OrderPrintController::class)->name('orders.print');
 Route::get('/admin-print/invoices', [InvoiceController::class, 'admin'])->name('orders.invoices');
+Route::get('/admin-print/manual-invoices/{invoice}', [InvoiceController::class, 'manual'])->whereNumber('invoice')->name('invoices.print');
 
 Route::get('/cart/restore/{token}', CartRestoreController::class)->middleware(['signed', 'throttle:30,1'])->name('cart.restore');
 

@@ -197,6 +197,49 @@ class ImportPipelineTest extends TestCase
         @unlink($path);
     }
 
+    public function test_allmarket_products_missing_from_the_feed_go_out_of_stock_and_return_when_back(): void
+    {
+        config(['services.allmarket.url' => 'https://allmarket.test/products']);
+
+        $supplier = Supplier::query()->where('code', 'allmarket')->sole();
+        $supplier->update(['is_active' => true]);
+
+        $item = fn (string $code, int $quantity) => [
+            'productCode' => $code,
+            'title' => 'Allmarket product '.$code,
+            'quantity' => $quantity,
+            'rrp' => ['original' => 120, 'discounted' => 0],
+            'brand' => ['title' => 'Acme'],
+        ];
+        $feeds = [
+            [$item('A1', 3), $item('A2', 4)],
+            [$item('A1', 3)],
+            [$item('A1', 3), $item('A2', 6)],
+        ];
+        $round = 0;
+
+        Http::fake(['allmarket.test/*' => function () use (&$feeds, &$round) {
+            return Http::response(['succeeded' => true, 'data' => ['products' => $feeds[$round]]]);
+        }]);
+
+        app(ImportManager::class)->run($supplier->fresh());
+
+        $missing = Product::query()->where('sku', 'allmarket-A2')->sole();
+        $this->assertSame(4, $missing->stock);
+
+        $round = 1;
+        app(ImportManager::class)->run($supplier->fresh());
+
+        $this->assertSame(0, $missing->fresh()->stock);
+        $this->assertSame(0, ProductOffer::query()->where('supplier_id', $supplier->id)->where('external_id', 'A2')->value('stock'));
+        $this->assertSame(3, Product::query()->where('sku', 'allmarket-A1')->sole()->stock);
+
+        $round = 2;
+        app(ImportManager::class)->run($supplier->fresh());
+
+        $this->assertSame(6, $missing->fresh()->stock);
+    }
+
     public function test_elite_client_talks_to_its_own_api_and_reports_refusals(): void
     {
         config(['services.elite.api_url' => null]);

@@ -3,13 +3,18 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\ManageSettings;
+use App\Filament\Resources\Invoices\Pages\ManageInvoices;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
 use App\Http\Controllers\InvoiceController;
+use App\Models\Invoice;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Catalog;
 use App\Support\Company;
+use Filament\Actions\CreateAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -113,6 +118,76 @@ class InvoiceTest extends TestCase
         Livewire::test(ListOrders::class)
             ->callTableBulkAction('invoices', [$order])
             ->assertHasNoTableBulkActionErrors();
+    }
+
+    public function test_admin_creates_an_invoice_without_an_order_and_prints_it(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+        $this->companyDetails();
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin);
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        $product = Catalog::find(Product::query()->where('sku', 'jbl')->value('id'));
+        $orders = Order::query()->count();
+
+        Livewire::test(ManageInvoices::class)
+            ->mountAction(CreateAction::class)
+            ->fillForm([
+                'buyer_name' => 'გიორგი მაისურაძე',
+                'buyer_company' => 'შპს ბილდერი',
+                'buyer_code' => '400111222',
+                'phone' => '599 00 00 00',
+                'lines' => [
+                    ['product_id' => (string) $product['id'], 'quantity' => 2],
+                    ['name' => 'მონტაჟი', 'quantity' => 3, 'unit_price' => 50],
+                ],
+                'discount' => 20,
+                'shipping' => 10,
+                'note' => 'გადახდა 5 დღეში',
+            ])
+            ->assertSchemaStateSet(fn (array $state) => $this->assertSame($product['name'], collect($state['lines'])->first()['name']))
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $invoice = Invoice::query()->sole();
+
+        $this->assertSame($orders, Order::query()->count());
+        $this->assertSame($admin->id, $invoice->user_id);
+        $this->assertEquals($product['price'] * 2 + 150, $invoice->subtotal());
+        $this->assertEquals($product['price'] * 2 + 140, $invoice->total());
+        $this->assertFalse($invoice->isPaid());
+
+        $this->get(InvoiceController::manualUrl($invoice))
+            ->assertOk()
+            ->assertSee($invoice->invoiceNumber())
+            ->assertSee('შპს ბილდერი')
+            ->assertSee('400111222')
+            ->assertSee('გიორგი მაისურაძე')
+            ->assertSee($product['name'])
+            ->assertSee('მონტაჟი')
+            ->assertSee(Catalog::money($invoice->total()))
+            ->assertSee('გადახდა 5 დღეში')
+            ->assertSee('შპს ელიო')
+            ->assertSee(__('invoice.unpaid'))
+            ->assertDontSee(__('invoice.order').' #');
+
+        Livewire::test(ManageInvoices::class)
+            ->assertCanSeeTableRecords([$invoice])
+            ->assertTableActionHasUrl('print', InvoiceController::manualUrl($invoice), $invoice);
+    }
+
+    public function test_manual_invoices_are_printable_only_by_staff(): void
+    {
+        $invoice = Invoice::factory()->paid()->create();
+
+        $this->get(InvoiceController::manualUrl($invoice))->assertForbidden();
+        $this->actingAs(User::factory()->create())->get(InvoiceController::manualUrl($invoice))->assertForbidden();
+
+        $this->actingAs(User::factory()->operator()->create())
+            ->get(InvoiceController::manualUrl($invoice))
+            ->assertOk()
+            ->assertSee(__('invoice.paid'))
+            ->assertSee(Catalog::money(120));
     }
 
     public function test_admin_saves_company_and_bank_accounts_in_settings(): void

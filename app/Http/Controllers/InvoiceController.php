@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Invoice;
 use App\Models\Order;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
@@ -12,6 +13,11 @@ class InvoiceController extends Controller
     public static function adminUrl(array $ids): string
     {
         return route('orders.invoices', ['ids' => implode(',', $ids)]);
+    }
+
+    public static function manualUrl(Invoice $invoice): string
+    {
+        return route('invoices.print', ['invoice' => $invoice->id]);
     }
 
     public function show(Request $request, string $number): View
@@ -46,6 +52,15 @@ class InvoiceController extends Controller
         abort_if($orders->isEmpty(), 404);
 
         return view('orders.invoice', ['orders' => $orders, 'staff' => true]);
+    }
+
+    public function manual(Request $request, int $invoice): View
+    {
+        abort_unless($this->isStaff($request), 403);
+
+        $record = Invoice::withTrashed()->findOrFail($invoice);
+
+        return view('orders.invoice', ['orders' => collect([$record]), 'staff' => true]);
     }
 
     protected function isStaff(Request $request): bool
