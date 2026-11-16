@@ -109,7 +109,7 @@ new class extends Component
                 <span class="text-muted">{{ __('payments.order.payment') }}</span>
                 <span class="flex items-center gap-2 font-bold">
                     @if ($logo = $method?->logoUrl())
-                        <img src="{{ $logo }}" alt="" class="h-5 max-w-[60px] object-contain">
+                        <img src="{{ $logo }}" alt="" loading="lazy" class="h-5 max-w-[60px] object-contain">
                     @endif
                     {{ $order->paymentLabel() }}
                 </span>

@@ -527,7 +527,7 @@ new class extends Component
                                 <div wire:key="checkout-line-{{ $line['key'] }}" class="grid grid-cols-[60px_minmax(0,1fr)_auto] items-center gap-3 border-t border-line-soft py-3">
                                     <a href="{{ $line['url'] }}" wire:navigate class="grid size-[60px] place-items-center overflow-hidden rounded-[14px] bg-[#F3F6FB] text-brand hover:text-brand">
                                         @if ($line['image'])
-                                            <img src="{{ $line['image'] }}" alt="" class="size-full object-contain">
+                                            <img src="{{ $line['image'] }}" alt="" loading="lazy" class="size-full object-contain">
                                         @else
                                             @include('partials.category-icon', ['icon' => $line['icon'], 'stroke' => 1.8, 'class' => 'size-[22px]'])
                                         @endif

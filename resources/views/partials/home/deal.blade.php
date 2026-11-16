@@ -27,7 +27,7 @@
             </div>
             <a href="{{ $deal['url'] }}" wire:navigate class="relative block min-h-[220px] bg-[radial-gradient(circle_at_50%_50%,rgba(20,180,255,.22),transparent_65%)] p-7 sm:min-h-[300px]">
                 @if ($deal['image'])
-                    <img src="{{ $deal['image'] }}" alt="{{ $deal['name'] }}" class="absolute inset-0 m-auto max-h-[80%] max-w-[80%] object-contain">
+                    <img src="{{ $deal['image'] }}" alt="{{ $deal['name'] }}" loading="lazy" class="absolute inset-0 m-auto max-h-[80%] max-w-[80%] object-contain">
                 @else
                     @include('partials.category-icon', ['icon' => $deal['cat'], 'stroke' => 0.6, 'class' => 'absolute inset-0 m-auto h-[70%] text-white/20'])
                 @endif

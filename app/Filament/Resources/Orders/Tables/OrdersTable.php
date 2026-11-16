@@ -84,7 +84,7 @@ class OrdersTable
                     ->options(OrderResource::paymentStatusOptions()),
                 SelectFilter::make('payment_method')
                     ->label(__('admin.orders.payment_method'))
-                    ->options(fn (): array => PaymentMethod::query()->orderBy('sort_order')->get()->mapWithKeys(fn (PaymentMethod $method) => [$method->code => $method->name ?? $method->code])->all()),
+                    ->options(fn (): array => PaymentMethod::query()->withTranslation()->orderBy('sort_order')->get()->mapWithKeys(fn (PaymentMethod $method) => [$method->code => $method->name ?? $method->code])->all()),
                 SelectFilter::make('city')
                     ->label(__('admin.orders.city'))
                     ->options(collect(Order::CITIES)->mapWithKeys(fn (string $city) => [$city => __("checkout.cities.$city")])->all()),

@@ -97,4 +97,26 @@ class AbandonedCartTest extends TestCase
         $this->assertNotNull($open->fresh()->contacted_at);
         $this->assertNotNull($open->fresh()->reminded_at);
     }
+
+    public function test_recovered_carts_list_their_orders_without_lazy_loading(): void
+    {
+        $carts = collect(['EL-222221', 'EL-222222'])->map(function (string $number) {
+            $cart = AbandonedCart::factory()->create();
+            $cart->forceFill(['order_id' => Order::query()->create([
+                'number' => $number, 'status' => 'new', 'first_name' => 'ა', 'phone' => '555000000', 'payment_method' => 'cash',
+                'payment_status' => 'pending', 'subtotal' => 1, 'discount' => 0, 'shipping' => 0, 'total' => 1, 'locale' => 'ka',
+            ])->id])->save();
+
+            return $cart;
+        });
+
+        $this->actingAs(User::factory()->operator()->create());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        Livewire::test(ManageAbandonedCarts::class)
+            ->filterTable('state', 'recovered')
+            ->assertCanSeeTableRecords($carts)
+            ->assertSee('#EL-222221')
+            ->assertSee('#EL-222222');
+    }
 }

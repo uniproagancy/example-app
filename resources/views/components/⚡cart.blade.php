@@ -135,7 +135,7 @@ new class extends Component
                         <div wire:key="cart-line-{{ $line['key'] }}" class="grid grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-3.5 border-b border-line-soft py-3.5">
                             <a href="{{ $line['url'] }}" wire:navigate x-on:click="$store.ui.cart = false" class="grid size-16 place-items-center overflow-hidden rounded-xl bg-[#F1F5FC] font-display text-lg font-extrabold text-brand hover:text-brand">
                                 @if ($line['image'])
-                                    <img src="{{ $line['image'] }}" alt="" class="size-full object-contain">
+                                    <img src="{{ $line['image'] }}" alt="" loading="lazy" class="size-full object-contain">
                                 @else
                                     {{ $line['initial'] }}
                                 @endif
