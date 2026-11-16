@@ -566,7 +566,7 @@ class Catalog
                 ->where('products.is_active', true)
                 ->whereNull('products.deleted_at')
                 ->orderBy('products.position')
-                ->orderBy('products.id')
+                ->orderByDesc('products.id')
                 ->get([
                     'products.id', 'products.category_id', 'products.sku', 'products.supplier_sku', 'products.price', 'products.old_price',
                     'products.stock', 'products.is_new', 'products.variant_group', 'products.updated_at', 'brands.name as brand_name',

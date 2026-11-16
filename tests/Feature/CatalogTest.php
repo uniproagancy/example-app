@@ -35,6 +35,22 @@ class CatalogTest extends TestCase
         $this->assertSame(12, substr_count($response->getContent(), 'wire:key="category-product-'));
     }
 
+    public function test_home_sections_list_newest_products_first_unless_a_position_is_set(): void
+    {
+        Product::query()->update(['position' => 0]);
+        Catalog::flush();
+
+        $section = Catalog::sections()->first(fn (array $section) => $section['products']->count() >= 3);
+        [$newest, $older, $oldest] = $section['products']->pluck('id')->sortDesc()->take(3)->values()->all();
+
+        $this->assertSame([$newest, $older, $oldest], $section['products']->pluck('id')->take(3)->all());
+
+        Product::query()->whereKey($oldest)->update(['position' => -1]);
+        Catalog::flush();
+
+        $this->assertSame($oldest, Catalog::sections()->firstWhere('id', $section['id'])['products']->first()['id']);
+    }
+
     public function test_catalog_opens_on_category_tiles_without_products(): void
     {
         $this->refreshApplicationWithLocale('ka');
