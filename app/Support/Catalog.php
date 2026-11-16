@@ -19,6 +19,10 @@ class Catalog
 
     public const SECTION_CHIPS = 4;
 
+    public const SECTION_PRODUCTS = 12;
+
+    public const SECTION_CHIP_PRODUCTS = 6;
+
     public const SHIPPING_PRICE = 5;
 
     public const INSTALLMENT_MONTHS = 24;
@@ -171,11 +175,15 @@ class Catalog
             ->values()
             ->map(function (array $root) use ($products) {
                 $items = static::productsIn($root, $products);
+                $chips = $items->pluck('sub')->filter()->countBy()->sortDesc()->keys()->take(self::SECTION_CHIPS)->map(fn ($sub) => (string) $sub)->values()->all();
+                $shown = $items->take(self::SECTION_PRODUCTS)->pluck('id')
+                    ->merge(collect($chips)->flatMap(fn (string $chip) => $items->filter(fn (array $product) => (string) $product['sub'] === $chip)->take(self::SECTION_CHIP_PRODUCTS)->pluck('id')))
+                    ->flip();
 
                 return [
                     ...static::presentCategory($root, $products),
-                    'products' => $items,
-                    'chips' => $items->pluck('sub')->filter()->countBy()->sortDesc()->keys()->take(self::SECTION_CHIPS)->map(fn ($sub) => (string) $sub)->values()->all(),
+                    'products' => $items->filter(fn (array $product) => $shown->has($product['id']))->values(),
+                    'chips' => $chips,
                 ];
             })
             ->filter(fn (array $section) => $section['products']->isNotEmpty())

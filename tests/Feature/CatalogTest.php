@@ -51,6 +51,34 @@ class CatalogTest extends TestCase
         $this->assertSame($oldest, Catalog::sections()->firstWhere('id', $section['id'])['products']->first()['id']);
     }
 
+    public function test_home_sections_render_a_limited_number_of_products_per_category(): void
+    {
+        $section = Catalog::sections()->first();
+        $source = Product::query()->findOrFail($section['products']->first()['id']);
+
+        foreach (range(1, 40) as $number) {
+            $copy = $source->replicate()->fill(['sku' => 'bulk-'.$number]);
+            $copy->save();
+            $copy->saveTranslations([
+                'ka' => ['name' => 'დამატებითი '.$number, 'slug' => 'bulk-ka-'.$number],
+                'en' => ['name' => 'Extra '.$number, 'slug' => 'bulk-en-'.$number],
+            ]);
+        }
+
+        Catalog::flush();
+
+        $all = Catalog::productsIn(CategoryTree::roots()->firstWhere('id', $section['key']));
+        $section = Catalog::sections()->firstWhere('id', $section['id']);
+
+        $this->assertGreaterThan(Catalog::SECTION_PRODUCTS + Catalog::SECTION_CHIP_PRODUCTS * Catalog::SECTION_CHIPS, $all->count());
+        $this->assertLessThanOrEqual(Catalog::SECTION_PRODUCTS + Catalog::SECTION_CHIP_PRODUCTS * Catalog::SECTION_CHIPS, $section['products']->count());
+        $this->assertSame($all->take(Catalog::SECTION_PRODUCTS)->pluck('id')->all(), $section['products']->take(Catalog::SECTION_PRODUCTS)->pluck('id')->all());
+
+        foreach ($section['chips'] as $chip) {
+            $this->assertTrue($section['products']->contains(fn (array $product) => (string) $product['sub'] === $chip));
+        }
+    }
+
     public function test_catalog_opens_on_category_tiles_without_products(): void
     {
         $this->refreshApplicationWithLocale('ka');
