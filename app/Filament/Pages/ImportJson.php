@@ -4,20 +4,20 @@ namespace App\Filament\Pages;
 
 use App\Filament\Resources\Products\ProductResource;
 use App\Filament\Support\AdminOnlyPage;
+use App\Http\Controllers\JsonUploadController;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Services\Import\Drivers\Alta\AltaJson;
 use App\Services\Import\Drivers\Alta\AltaJsonAssets;
 use App\Services\Import\Drivers\Alta\AltaPaste;
+use App\Services\Import\JsonObjectStream;
 use App\Services\Import\ProductImporter;
 use App\Services\Import\ProductPayload;
 use App\Support\Catalog;
 use App\Support\Figure;
 use App\Support\Redact;
 use BackedEnum;
-use Closure;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -31,15 +31,15 @@ use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\EmbeddedSchema;
 use Filament\Schemas\Components\Form;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use SplFileObject;
 use Throwable;
 use UnitEnum;
 
@@ -91,6 +91,12 @@ class ImportJson extends Page
     #[Locked]
     public array $results = [];
 
+    #[Locked]
+    public ?string $upload = null;
+
+    #[Locked]
+    public ?string $uploadName = null;
+
     public static function getNavigationGroup(): string|UnitEnum|null
     {
         return __('admin.groups.import');
@@ -139,18 +145,7 @@ class ImportJson extends Page
                             ->extraInputAttributes(['class' => 'font-mono text-xs'])
                             ->live(onBlur: true)
                             ->afterStateUpdated(fn () => $this->forget()),
-                        FileUpload::make('file')
-                            ->label(__('admin.json.file'))
-                            ->helperText(__('admin.json.file_help', ['mb' => self::MAX_UPLOAD_KB / 1024]))
-                            ->storeFiles(false)
-                            ->maxSize(self::MAX_UPLOAD_KB)
-                            ->live()
-                            ->afterStateUpdated(fn () => $this->forget())
-                            ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
-                                if ($value instanceof TemporaryUploadedFile && ! in_array(strtolower($value->getClientOriginalExtension()), ['json', 'txt'], true)) {
-                                    $fail(__('admin.json.wrong_file'));
-                                }
-                            }),
+                        View::make('filament.pages.import-json-upload'),
                     ]),
                 Section::make(__('admin.json.corrections'))
                     ->description(__('admin.json.corrections_help'))
@@ -275,43 +270,82 @@ class ImportJson extends Page
             ->action(fn () => $this->startSaving());
     }
 
+    public function uploaded(?string $upload, ?string $name): void
+    {
+        $this->forget();
+
+        if ($upload === null) {
+            $this->upload = null;
+            $this->uploadName = null;
+
+            return;
+        }
+
+        if (! Str::isUuid($upload) || ! Storage::disk('local')->exists(JsonUploadController::path((int) auth()->id(), $upload))) {
+            throw ValidationException::withMessages(['data.file' => __('admin.json.upload_failed')]);
+        }
+
+        if (! in_array(strtolower(pathinfo((string) $name, PATHINFO_EXTENSION)), ['json', 'txt'], true)) {
+            throw ValidationException::withMessages(['data.file' => __('admin.json.wrong_file')]);
+        }
+
+        $this->upload = $upload;
+        $this->uploadName = Str::limit((string) $name, 120);
+    }
+
     public function look(): void
     {
         ini_set('memory_limit', self::MEMORY_LIMIT);
+        set_time_limit(0);
         $this->forget();
         $state = $this->form->getState();
         $supplier = Supplier::query()->findOrFail($state['supplier_id']);
-        $answers = AltaPaste::split($this->source($state));
-
-        if ($answers === []) {
-            throw ValidationException::withMessages(['data.json' => __('admin.import.json_not_json')]);
-        }
-
         $reader = new AltaJson($supplier);
         $known = [];
+        $this->sourceKey = (string) Str::uuid();
+        $disk = Storage::disk('local');
+        $disk->makeDirectory('json-imports');
+        $output = fopen($disk->path($this->path()), 'wb');
 
-        foreach ($answers as $index => $answer) {
-            $read = $this->read($reader, $answer);
-            $this->total++;
-            $this->valid += $read['payload'] ? 1 : 0;
+        try {
+            $this->answers($state, function (string $answer) use ($output, $reader, $supplier, &$known): void {
+                fwrite($output, str_replace(["\r", "\n"], ' ', $answer)."\n");
+                $read = $this->read($reader, $answer);
+                $this->total++;
+                $this->valid += $read['payload'] ? 1 : 0;
 
-            foreach ($read['errors'] as $error) {
-                $this->problem($index + 1, $error);
-            }
+                foreach ($read['errors'] as $error) {
+                    $this->problem($this->total, $error);
+                }
 
-            if ($read['seen'] && count($this->preview) < 50) {
-                $known[] = $supplier->code.'-'.$read['seen']['code'];
-                $this->preview[] = [
-                    'code' => (string) $read['seen']['code'],
-                    'name' => (string) $read['seen']['name'],
-                    'category' => $read['seen']['category'] ?? null,
-                    'price' => Catalog::money($read['seen']['price']),
-                    'raw_price' => (float) $read['seen']['price'],
-                    'stock' => (int) $read['seen']['stock'],
-                    'images' => count($read['seen']['images'] ?? []),
-                    'state' => $read['payload'] ? 'new' : 'invalid',
-                ];
-            }
+                if ($read['seen'] && count($this->preview) < 50) {
+                    $known[] = $supplier->code.'-'.$read['seen']['code'];
+                    $this->preview[] = [
+                        'code' => (string) $read['seen']['code'],
+                        'name' => (string) $read['seen']['name'],
+                        'category' => $read['seen']['category'] ?? null,
+                        'price' => Catalog::money($read['seen']['price']),
+                        'raw_price' => (float) $read['seen']['price'],
+                        'stock' => (int) $read['seen']['stock'],
+                        'images' => count($read['seen']['images'] ?? []),
+                        'state' => $read['payload'] ? 'new' : 'invalid',
+                    ];
+                }
+            });
+        } catch (Throwable $e) {
+            fclose($output);
+            $this->forget();
+
+            throw $e;
+        }
+
+        fclose($output);
+
+        if ($this->total === 0) {
+            $field = $this->upload ? 'data.file' : 'data.json';
+            $this->forget();
+
+            throw ValidationException::withMessages([$field => __('admin.import.json_not_json')]);
         }
 
         $existing = Product::query()->whereIn('sku', $known)->pluck('sku')->all();
@@ -322,9 +356,7 @@ class ImportJson extends Page
             }
         }
 
-        $this->sourceKey = (string) Str::uuid();
         $this->supplierId = $supplier->id;
-        Storage::disk('local')->put($this->path(), json_encode($answers, JSON_UNESCAPED_UNICODE));
 
         if ($this->alone()) {
             $this->data['price'] = (string) $this->preview[0]['raw_price'];
@@ -364,17 +396,23 @@ class ImportJson extends Page
 
         ini_set('memory_limit', self::MEMORY_LIMIT);
 
-        $answers = json_decode((string) Storage::disk('local')->get($this->path()), true) ?: [];
         $supplier = Supplier::query()->findOrFail($this->supplierId);
         $reader = new AltaJson($supplier);
         $assets = app(AltaJsonAssets::class);
+        $file = new SplFileObject(Storage::disk('local')->path($this->path()));
+        $file->seek($this->cursor);
+        $last = min($this->total, $this->cursor + self::BATCH);
 
-        foreach (array_slice($answers, $this->cursor, self::BATCH, true) as $index => $answer) {
-            $this->saveOne($importer, $supplier, $reader, $assets, (string) $answer, $index + 1, count($answers) === 1);
-            $this->cursor = $index + 1;
+        while ($this->cursor < $last && ! $file->eof()) {
+            $answer = rtrim((string) $file->current(), "\r\n");
+            $file->next();
+            $this->saveOne($importer, $supplier, $reader, $assets, $answer, $this->cursor + 1, $this->total === 1);
+            $this->cursor++;
         }
 
-        if ($this->cursor < count($answers)) {
+        $file = null;
+
+        if ($this->cursor < $this->total) {
             $this->js('$wire.saveNext()');
 
             return;
@@ -385,7 +423,13 @@ class ImportJson extends Page
         $this->sourceKey = null;
         $this->preview = [];
         $this->data['json'] = null;
-        $this->data['file'] = null;
+
+        if ($this->upload) {
+            Storage::disk('local')->delete(JsonUploadController::path((int) auth()->id(), $this->upload));
+        }
+
+        $this->upload = null;
+        $this->uploadName = null;
         Catalog::flush();
 
         Notification::make()
@@ -479,23 +523,41 @@ class ImportJson extends Page
         );
     }
 
-    protected function source(array $state): string
+    /**
+     * @param  callable(string): void  $emit
+     */
+    protected function answers(array $state, callable $emit): void
     {
-        $file = collect(Arr::wrap($this->data['file'] ?? null))->first(fn ($item) => $item instanceof TemporaryUploadedFile);
         $pasted = trim((string) ($state['json'] ?? ''));
 
-        if ($file && $pasted !== '') {
+        if ($this->upload && $pasted !== '') {
             throw ValidationException::withMessages(['data.file' => __('admin.json.one_source')]);
         }
 
-        $source = $file ? (string) file_get_contents($file->getRealPath()) : $pasted;
-        $source = (string) preg_replace('/^\xEF\xBB\xBF/', '', $source);
+        if ($this->upload) {
+            $path = JsonUploadController::path((int) auth()->id(), $this->upload);
 
-        if (strlen(trim($source)) < 20) {
-            throw ValidationException::withMessages([$file ? 'data.file' : 'data.json' => __('admin.import.json_not_json')]);
+            if (! Storage::disk('local')->exists($path)) {
+                $this->upload = null;
+                $this->uploadName = null;
+
+                throw ValidationException::withMessages(['data.file' => __('admin.json.upload_failed')]);
+            }
+
+            (new JsonObjectStream)->each(Storage::disk('local')->path($path), $emit);
+
+            return;
         }
 
-        return $source;
+        $source = (string) preg_replace('/^\xEF\xBB\xBF/', '', $pasted);
+
+        if (strlen(trim($source)) < 20) {
+            throw ValidationException::withMessages(['data.json' => __('admin.import.json_not_json')]);
+        }
+
+        foreach (AltaPaste::split($source) as $answer) {
+            $emit($answer);
+        }
     }
 
     public function alone(): bool

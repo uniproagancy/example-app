@@ -3,14 +3,15 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\ImportJson;
+use App\Http\Controllers\JsonUploadController;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -28,6 +29,15 @@ class ImportJsonTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Http::preventStrayRequests();
         Http::fake();
+        Storage::fake('local');
+    }
+
+    protected function upload(string $content): string
+    {
+        $upload = (string) Str::uuid();
+        Storage::disk('local')->put(JsonUploadController::path((int) auth()->id(), $upload), $content);
+
+        return $upload;
     }
 
     protected function answer(int $id, array $overrides = []): array
@@ -73,7 +83,7 @@ class ImportJsonTest extends TestCase
         $answers = collect(range(1, 7))->map(fn (int $id) => $this->answer($id))->all();
 
         $page = Livewire::test(ImportJson::class)
-            ->set('data.file', [UploadedFile::fake()->createWithContent('alta.json', json_encode($answers))])
+            ->call('uploaded', $this->upload(json_encode($answers)), 'alta.json')
             ->call('look')
             ->assertSet('valid', 7)
             ->call('startSaving')
@@ -116,24 +126,52 @@ class ImportJsonTest extends TestCase
         $this->assertSame('150.00', $product->price);
     }
 
-    public function test_files_larger_than_the_old_ten_megabyte_limit_are_accepted(): void
+    public function test_a_large_file_arrives_in_pieces_and_is_read_one_product_at_a_time(): void
     {
-        $content = json_encode([$this->answer(1), $this->answer(2)]).str_repeat(' ', 15 * 1024 * 1024);
+        $content = "\u{FEFF}[\n".json_encode($this->answer(1), JSON_PRETTY_PRINT).",\n".json_encode($this->answer(2, ['product' => ['name' => 'Brace } and "quote" {']])).']'.str_repeat(' ', 12 * 1024 * 1024);
+        $upload = (string) Str::uuid();
+        $offset = 0;
+
+        foreach (str_split($content, JsonUploadController::CHUNK_BYTES) as $chunk) {
+            $this->call('POST', route('json-upload', ['upload' => $upload]), [], [], [], ['HTTP_X_UPLOAD_OFFSET' => (string) $offset, 'CONTENT_TYPE' => 'application/octet-stream', 'HTTP_ACCEPT' => 'application/json'], $chunk)
+                ->assertOk()
+                ->assertJsonPath('size', $offset + strlen($chunk));
+            $offset += strlen($chunk);
+        }
+
+        $this->assertSame(strlen($content), Storage::disk('local')->size(JsonUploadController::path((int) auth()->id(), $upload)));
 
         Livewire::test(ImportJson::class)
-            ->set('data.file', [UploadedFile::fake()->createWithContent('alta.json', $content)])
+            ->call('uploaded', $upload, 'alta.json')
             ->call('look')
             ->assertHasNoErrors()
-            ->assertSet('valid', 2);
+            ->assertSet('total', 2)
+            ->assertSet('valid', 2)
+            ->assertSet('preview.1.name', 'Brace } and "quote" {')
+            ->call('startSaving')
+            ->assertSet('saved', 2);
 
-        $this->assertSame(['required', 'file', 'max:512000'], config('livewire.temporary_file_upload.rules'));
+        Storage::disk('local')->assertMissing(JsonUploadController::path((int) auth()->id(), $upload));
+    }
+
+    public function test_upload_pieces_must_arrive_in_order_and_only_from_admins(): void
+    {
+        $upload = (string) Str::uuid();
+        $send = fn (int $offset, string $chunk) => $this->call('POST', route('json-upload', ['upload' => $upload]), [], [], [], ['HTTP_X_UPLOAD_OFFSET' => (string) $offset, 'CONTENT_TYPE' => 'application/octet-stream', 'HTTP_ACCEPT' => 'application/json'], $chunk);
+
+        $send(0, 'abc')->assertOk()->assertJsonPath('size', 3);
+        $send(10, 'def')->assertStatus(409)->assertJsonPath('size', 3);
+        $send(3, 'def')->assertOk()->assertJsonPath('size', 6);
+
+        $this->actingAs(User::factory()->operator()->create());
+        $send(0, 'abc')->assertForbidden();
     }
 
     public function test_paste_and_file_together_or_garbage_are_refused(): void
     {
         Livewire::test(ImportJson::class)
             ->set('data.json', json_encode($this->answer(1)))
-            ->set('data.file', [UploadedFile::fake()->createWithContent('alta.json', json_encode($this->answer(2)))])
+            ->call('uploaded', $this->upload(json_encode($this->answer(2))), 'alta.json')
             ->call('look')
             ->assertHasErrors(['data.file']);
 
