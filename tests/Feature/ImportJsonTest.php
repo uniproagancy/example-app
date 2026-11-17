@@ -116,6 +116,19 @@ class ImportJsonTest extends TestCase
         $this->assertSame('150.00', $product->price);
     }
 
+    public function test_files_larger_than_the_old_ten_megabyte_limit_are_accepted(): void
+    {
+        $content = json_encode([$this->answer(1), $this->answer(2)]).str_repeat(' ', 15 * 1024 * 1024);
+
+        Livewire::test(ImportJson::class)
+            ->set('data.file', [UploadedFile::fake()->createWithContent('alta.json', $content)])
+            ->call('look')
+            ->assertHasNoErrors()
+            ->assertSet('valid', 2);
+
+        $this->assertSame(['required', 'file', 'max:512000'], config('livewire.temporary_file_upload.rules'));
+    }
+
     public function test_paste_and_file_together_or_garbage_are_refused(): void
     {
         Livewire::test(ImportJson::class)

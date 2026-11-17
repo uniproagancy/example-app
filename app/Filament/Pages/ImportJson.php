@@ -47,7 +47,9 @@ class ImportJson extends Page
 {
     use AdminOnlyPage;
 
-    public const MAX_UPLOAD_KB = 10240;
+    public const MAX_UPLOAD_KB = 512000;
+
+    public const MEMORY_LIMIT = '-1';
 
     public const BATCH = 5;
 
@@ -275,6 +277,7 @@ class ImportJson extends Page
 
     public function look(): void
     {
+        ini_set('memory_limit', self::MEMORY_LIMIT);
         $this->forget();
         $state = $this->form->getState();
         $supplier = Supplier::query()->findOrFail($state['supplier_id']);
@@ -358,6 +361,8 @@ class ImportJson extends Page
         if (! $this->saving || ! $this->sourceKey || ! Storage::disk('local')->exists($this->path())) {
             return;
         }
+
+        ini_set('memory_limit', self::MEMORY_LIMIT);
 
         $answers = json_decode((string) Storage::disk('local')->get($this->path()), true) ?: [];
         $supplier = Supplier::query()->findOrFail($this->supplierId);

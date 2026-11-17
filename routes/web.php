@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AltaBrowserController;
 use App\Http\Controllers\CartRestoreController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\InvoiceController;
@@ -23,6 +24,8 @@ Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('seo.sitemap
 Route::get('/admin-print/orders', OrderPrintController::class)->name('orders.print');
 Route::get('/admin-print/invoices', [InvoiceController::class, 'admin'])->name('orders.invoices');
 Route::get('/admin-print/manual-invoices/{invoice}', [InvoiceController::class, 'manual'])->whereNumber('invoice')->name('invoices.print');
+
+Route::get('/admin/alta-browser/feed', [AltaBrowserController::class, 'feed'])->middleware('throttle:6,1')->name('alta-browser.feed');
 
 Route::get('/cart/restore/{token}', CartRestoreController::class)->middleware(['signed', 'throttle:30,1'])->name('cart.restore');
 
