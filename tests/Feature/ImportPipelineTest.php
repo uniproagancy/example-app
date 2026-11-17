@@ -263,9 +263,42 @@ class ImportPipelineTest extends TestCase
             $this->assertStringContainsString('HTTP 403', $e->getMessage());
         }
 
-        Http::assertSent(fn ($request) => $request->hasHeader('Authorization', 'Bearer secret')
+        Http::assertSent(fn ($request) => $request['token'] === 'secret'
             && str_starts_with($request->header('User-Agent')[0], 'ELIO.GE importer'));
         Http::assertSentCount(2);
+    }
+
+    public function test_elite_client_asks_the_proxy_for_a_product_and_routes_photos_through_it(): void
+    {
+        config(['services.elite.api_url' => 'https://proxy.elite.test/', 'services.elite.token' => 'secret']);
+        Http::fake([
+            'proxy.elite.test*' => fn ($request) => $request['productId'] === '1000'
+                ? Http::response(['product' => ['name' => 'UGREEN cable', 'barCode' => 'I63913']])
+                : Http::response(['product' => null]),
+        ]);
+
+        $client = new EliteClient;
+
+        $this->assertSame('I63913', $client->product('1000')['product']['barCode']);
+        $this->assertNull($client->product('21'));
+        Http::assertSent(fn ($request) => $request['type'] === 'product' && $request['productId'] === '1000' && $request['token'] === 'secret');
+
+        $photo = $client->imageUrl('https://elite.ge/images/a b.jpg');
+        parse_str((string) parse_url($photo, PHP_URL_QUERY), $query);
+
+        $this->assertStringStartsWith('https://proxy.elite.test?', $photo);
+        $this->assertSame(['type' => 'image', 'url' => 'https://elite.ge/images/a b.jpg', 'token' => 'secret'], $query);
+    }
+
+    public function test_elite_client_explains_a_proxy_complaint(): void
+    {
+        config(['services.elite.api_url' => 'https://proxy.elite.test', 'services.elite.token' => 'secret']);
+        Http::fake(['proxy.elite.test*' => Http::response(['error' => 'type must be: product or image'], 400)]);
+
+        $this->expectException(BlockedByElite::class);
+        $this->expectExceptionMessage('type must be: product or image');
+
+        (new EliteClient)->product('5');
     }
 
     public function test_import_commands_run(): void
