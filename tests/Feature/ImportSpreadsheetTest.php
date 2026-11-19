@@ -135,6 +135,30 @@ class ImportSpreadsheetTest extends TestCase
         Queue::assertPushed(ImportProductJob::class, fn (ImportProductJob $job) => $job->externalId === 'X2');
     }
 
+    public function test_workbook_prices_are_read_as_the_numbers_excel_holds(): void
+    {
+        $supplier = $this->supplier();
+
+        foreach (['Xlsx' => 'xlsx', 'Xls' => 'xls'] as $writer => $extension) {
+            $book = new Spreadsheet;
+            $sheet = $book->getActiveSheet();
+            $sheet->fromArray([['code', 'name', 'cost', 'stock'], ['P1', 'Small', 5.135, 1], ['P2', 'Grouped', 2499, 1], ['P3', 'Dated', 46126, 1], ['P4', 'Plain', 1250.5, 1]]);
+            $sheet->getStyle('C3')->getNumberFormat()->setFormatCode('#,##0.00');
+            $sheet->getStyle('C4')->getNumberFormat()->setFormatCode('dd.mm');
+
+            $path = tempnam(sys_get_temp_dir(), 'xl').'.'.$extension;
+            IOFactory::createWriter($book, $writer)->save($path);
+
+            app(SupplierActions::class)->loadPriceList($supplier, $path);
+
+            $costs = SupplierStock::query()->where('supplier_id', $supplier->id)->pluck('cost_price', 'external_id')->all();
+
+            $this->assertSame(['P1' => '5.14', 'P2' => '2499.00', 'P3' => null, 'P4' => '1250.50'], $costs, $writer);
+
+            @unlink($path);
+        }
+    }
+
     public function test_old_excel_workbooks_are_read_with_links_and_leading_zeros(): void
     {
         $supplier = $this->supplier();

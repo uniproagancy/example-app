@@ -15,6 +15,10 @@ class XlsxReader
 
     protected array $padding = [];
 
+    protected array $dates = [];
+
+    protected const DATE_FORMATS = [14, 15, 16, 17, 18, 19, 20, 21, 22, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 45, 46, 47, 50, 51, 52, 53, 54, 55, 56, 57, 58];
+
     public function __construct(protected string $path)
     {
         if (! is_file($path)) {
@@ -34,6 +38,7 @@ class XlsxReader
 
         $this->shared = $this->sharedStrings($archive, $entries);
         $this->padding = $this->padding($archive, $entries);
+        $this->dates = $this->dateStyles($archive, $entries);
 
         $name = "xl/worksheets/sheet{$sheet}.xml";
 
@@ -50,12 +55,22 @@ class XlsxReader
             $cells = [];
             $rowLinks = [];
             $numbers = [];
+            $figures = [];
+            $dates = [];
 
             foreach ($row->c as $cell) {
                 $reference = (string) $cell['r'];
                 $column = rtrim($reference, '0123456789');
 
                 $cells[$column] = $this->value($cell);
+
+                if ($this->isNumber($cell)) {
+                    if (isset($this->dates[(int) $cell['s']])) {
+                        $dates[$column] = true;
+                    } else {
+                        $figures[$column] = trim((string) $cell->v);
+                    }
+                }
 
                 if ($this->bareNumber($cell)) {
                     $numbers[$column] = true;
@@ -72,6 +87,14 @@ class XlsxReader
 
             if ($numbers) {
                 $cells['_numbers'] = $numbers;
+            }
+
+            if ($figures) {
+                $cells['_figures'] = $figures;
+            }
+
+            if ($dates) {
+                $cells['_dates'] = $dates;
             }
 
             if (array_filter($cells, fn ($v) => $v !== '' && $v !== [])) {
@@ -113,11 +136,49 @@ class XlsxReader
 
     protected function bareNumber(SimpleXMLElement $cell): bool
     {
+        return $this->isNumber($cell)
+            && ! isset($this->padding[(int) $cell['s']])
+            && ! isset($this->dates[(int) $cell['s']]);
+    }
+
+    protected function isNumber(SimpleXMLElement $cell): bool
+    {
         $type = (string) $cell['t'];
 
-        return ($type === '' || $type === 'n')
-            && (string) $cell->v !== ''
-            && ! isset($this->padding[(int) $cell['s']]);
+        return ($type === '' || $type === 'n') && is_numeric((string) $cell->v);
+    }
+
+    protected function dateStyles(string $archive, array $entries): array
+    {
+        if (! isset($entries['xl/styles.xml'])) {
+            return [];
+        }
+
+        $styles = new SimpleXMLElement($this->extract($archive, $entries['xl/styles.xml']));
+        $formats = array_fill_keys(self::DATE_FORMATS, true);
+
+        foreach ($styles->numFmts?->numFmt ?? [] as $format) {
+            $code = (string) preg_replace(['/"[^"]*"/', '/\[[^\]]*\]/', '/\\./'], '', (string) $format['formatCode']);
+
+            if (preg_match('/[dmyhs]/i', $code) && ! preg_match('/^[#0.,\s%E+-]*$/i', $code)) {
+                $formats[(int) $format['numFmtId']] = true;
+            } else {
+                unset($formats[(int) $format['numFmtId']]);
+            }
+        }
+
+        $dates = [];
+        $index = 0;
+
+        foreach ($styles->cellXfs?->xf ?? [] as $xf) {
+            if (isset($formats[(int) $xf['numFmtId']])) {
+                $dates[$index] = true;
+            }
+
+            $index++;
+        }
+
+        return $dates;
     }
 
     protected function padding(string $archive, array $entries): array

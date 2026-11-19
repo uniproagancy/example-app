@@ -252,10 +252,12 @@ class ProductImporter
     public function refreshFromOffers(Product $product): void
     {
         $offers = $product->offers()->with('supplier')->get();
+        $priced = $offers->filter(fn (ProductOffer $offer) => (float) $offer->cost_price > 0);
+        $selling = $priced->filter(fn (ProductOffer $offer) => $offer->stock > 0);
 
-        $best = $offers->sortBy([
-            ['cost_price', 'asc'],
-            fn ($a, $b) => $a->supplier->priority <=> $b->supplier->priority,
+        $best = ($selling->isNotEmpty() ? $selling : $priced)->sortBy([
+            fn (ProductOffer $a, ProductOffer $b) => (float) $a->cost_price <=> (float) $b->cost_price,
+            fn (ProductOffer $a, ProductOffer $b) => ($a->supplier?->priority ?? PHP_INT_MAX) <=> ($b->supplier?->priority ?? PHP_INT_MAX),
         ])->first();
 
         $product->stock = (int) $offers->sum('stock');

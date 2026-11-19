@@ -149,6 +149,23 @@ class ImportPipelineTest extends TestCase
         $this->assertSame('100.00', $product->cost_price);
     }
 
+    public function test_an_offer_out_of_stock_does_not_set_the_price(): void
+    {
+        $stocked = $this->supplier('first');
+        $empty = $this->supplier('second');
+
+        $this->import($stocked, [FakeSupplierDriver::payload('1', ['sku' => 'SKU-1', 'costPrice' => 300.0, 'stock' => 2])]);
+        $this->import($empty, [FakeSupplierDriver::payload('77', ['sku' => 'SKU-1', 'costPrice' => 250.0, 'stock' => 0])]);
+
+        $product = Product::query()->where('sku', 'SKU-1')->sole();
+        $this->assertSame('300.00', $product->price);
+        $this->assertSame('300.00', $product->cost_price);
+
+        $this->import($stocked, [FakeSupplierDriver::payload('1', ['sku' => 'SKU-1', 'costPrice' => 300.0, 'stock' => 0])]);
+
+        $this->assertSame('250.00', $product->fresh()->price, 'With nothing in stock anywhere, the cheapest offer still names the price.');
+    }
+
     public function test_images_are_downloaded_checked_and_deduplicated(): void
     {
         Http::fake([

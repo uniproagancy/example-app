@@ -13,6 +13,8 @@ class MagiToysDriver implements SupplierDriver
 {
     use RecordsSkips;
 
+    public const PRICE_DRIFT = 2.0;
+
     protected MagiToysClient $client;
 
     public function __construct(public Supplier $supplier)
@@ -118,8 +120,21 @@ class MagiToysDriver implements SupplierDriver
     protected function cost(SupplierStock $row, array $page): float
     {
         $cost = (float) $row->cost_price;
+        $shown = (float) ($page['price'] ?? 0);
 
-        return $cost > 0 ? $cost : (float) ($page['price'] ?? 0);
+        if ($cost <= 0) {
+            return $shown;
+        }
+
+        if ($shown > 0 && max($cost, $shown) / min($cost, $shown) >= self::PRICE_DRIFT) {
+            Log::channel('import')->warning('magitoys sheet price disagrees with its page; the page price is used', [
+                'code' => $row->external_id, 'sheet' => $cost, 'page' => $shown,
+            ]);
+
+            return $shown;
+        }
+
+        return $cost;
     }
 
     protected function stockFor(SupplierStock $row, array $page): int

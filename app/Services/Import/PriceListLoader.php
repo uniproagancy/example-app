@@ -9,6 +9,7 @@ use App\Support\XlsxReader;
 use Generator;
 use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 use RuntimeException;
 use Throwable;
 
@@ -151,7 +152,7 @@ class PriceListLoader
             yield [
                 'external_id' => $key,
                 'quantity' => $this->quantity($cells, $map),
-                'cost_price' => $this->money($cells[$map['cost'] ?? ''] ?? null, $supplier),
+                'cost_price' => $this->figure($cells, $map['cost'] ?? null, $supplier),
                 'data' => $this->pick($cells, $map, $supplier),
             ];
         }
@@ -225,6 +226,8 @@ class PriceListLoader
             $cells = [];
             $links = [];
             $numbers = [];
+            $figures = [];
+            $dates = [];
             $iterator = $row->getCellIterator();
             $iterator->setIterateOnlyExistingCells(true);
 
@@ -239,6 +242,24 @@ class PriceListLoader
                 if ($cell->getDataType() === DataType::TYPE_NUMERIC && $cell->getStyle()->getNumberFormat()->getFormatCode() === 'General') {
                     $numbers[$column] = true;
                 }
+
+                if (in_array($cell->getDataType(), [DataType::TYPE_NUMERIC, DataType::TYPE_FORMULA], true)) {
+                    $number = $this->numberIn($cell);
+
+                    if ($number !== null && Date::isDateTime($cell)) {
+                        $dates[$column] = true;
+                    } elseif ($number !== null) {
+                        $figures[$column] = $number;
+                    }
+                }
+            }
+
+            if ($figures) {
+                $cells['_figures'] = $figures;
+            }
+
+            if ($dates) {
+                $cells['_dates'] = $dates;
             }
 
             if ($links) {
@@ -337,7 +358,7 @@ class PriceListLoader
             }
 
             $picked[$role] = in_array($role, self::FIGURES, true)
-                ? $this->money($value, $supplier)
+                ? $this->figure($cells, $column, $supplier)
                 : $value;
         }
 
@@ -372,5 +393,31 @@ class PriceListLoader
     protected function money(?string $text, ?Supplier $supplier = null): ?float
     {
         return Figure::money($text, $supplier?->config['decimal'] ?? null);
+    }
+
+    protected function figure(array $cells, ?string $column, ?Supplier $supplier = null): ?float
+    {
+        if ($column === null || $column === '' || isset($cells['_dates'][$column])) {
+            return null;
+        }
+
+        if (isset($cells['_figures'][$column])) {
+            $number = Figure::money($cells['_figures'][$column], Figure::DOT);
+
+            return $number === null ? null : round($number, 2);
+        }
+
+        return $this->money($cells[$column] ?? null, $supplier);
+    }
+
+    protected function numberIn(mixed $cell): ?string
+    {
+        try {
+            $value = $cell->getCalculatedValue();
+        } catch (Throwable) {
+            return null;
+        }
+
+        return is_int($value) || is_float($value) ? (string) $value : null;
     }
 }
