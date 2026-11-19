@@ -19,6 +19,7 @@ return [
     'close' => 'დახურვა',
     'back' => 'უკან',
     'to_top' => 'ზემოთ',
+    'messenger' => 'მოგვწერეთ Messenger-ში',
     'all' => 'ყველა',
     'all_arrow' => 'ყველა →',
     'details' => 'დეტალურად',

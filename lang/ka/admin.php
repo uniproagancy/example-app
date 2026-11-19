@@ -789,6 +789,8 @@ return [
             'youtube' => 'YouTube',
             'linkedin' => 'LinkedIn',
         ],
+        'messenger' => 'Messenger-ის ბმული',
+        'messenger_help' => 'ცარიელი თუ დარჩა, ღილაკი Facebook-ის გვერდიდან აიწყობა (m.me/...). თუ არც Facebook არის მითითებული, ღილაკი არ ჩანს.',
         'save' => 'შენახვა',
         'order_notifications' => 'შეკვეთის შეტყობინებები',
         'order_notifications_help' => 'მყიდველს შეკვეთისას და გადახდისას მიუვა წერილი და SMS, თქვენ — ახალი შეკვეთის შეტყობინება.',

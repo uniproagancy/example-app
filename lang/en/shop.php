@@ -19,6 +19,7 @@ return [
     'close' => 'Close',
     'back' => 'Back',
     'to_top' => 'Back to top',
+    'messenger' => 'Message us on Messenger',
     'all' => 'All',
     'all_arrow' => 'All →',
     'details' => 'Learn more',

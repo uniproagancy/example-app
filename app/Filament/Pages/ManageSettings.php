@@ -36,7 +36,7 @@ class ManageSettings extends Page
 {
     use AdminOnlyPage;
 
-    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms', 'ga4_id', 'facebook_pixel_id', Warranty::SETTING, ...Company::KEYS];
+    public const KEYS = ['logo', 'logo_with_name', 'site_name', 'phone', 'hotline', 'email', 'hours_week', 'hours_sunday', ...Site::SOCIAL_NETWORKS, 'messenger', 'seo_image', 'google_site_verification', 'order_alert_emails', 'order_alert_phone', 'notify_buyer_mail', 'notify_buyer_sms', 'ga4_id', 'facebook_pixel_id', Warranty::SETTING, ...Company::KEYS];
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
@@ -302,6 +302,13 @@ class ManageSettings extends Page
                         ->startsWith(['https://'])
                         ->placeholder("https://www.$network.com/elio.ge")
                         ->prefixIcon(Heroicon::OutlinedLink)
+                        ->maxLength(255))->push(TextInput::make('messenger')
+                        ->label(__('admin.settings.messenger'))
+                        ->helperText(__('admin.settings.messenger_help'))
+                        ->url()
+                        ->startsWith(['https://'])
+                        ->placeholder('https://m.me/elivo.ge')
+                        ->prefixIcon(Heroicon::OutlinedChatBubbleOvalLeft)
                         ->maxLength(255))->all())
                     ->columnSpanFull(),
             ]);

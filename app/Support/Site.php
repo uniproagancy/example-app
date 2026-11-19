@@ -81,6 +81,39 @@ class Site
             ->all();
     }
 
+    public static function messenger(): ?string
+    {
+        $own = trim((string) Setting::get('messenger'));
+
+        if ($own !== '') {
+            return str_starts_with($own, 'https://') ? $own : null;
+        }
+
+        $page = static::socials()['facebook'] ?? null;
+
+        if (! $page) {
+            return null;
+        }
+
+        $parts = parse_url($page);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        if (! in_array($host, ['facebook.com', 'www.facebook.com', 'm.facebook.com', 'fb.com', 'www.fb.com'], true)) {
+            return null;
+        }
+
+        parse_str((string) ($parts['query'] ?? ''), $query);
+        $path = trim((string) ($parts['path'] ?? ''), '/');
+
+        $name = match (true) {
+            $path === 'profile.php' => (string) ($query['id'] ?? ''),
+            (bool) preg_match('~^people/[^/]+/(\d+)$~', $path, $people) => $people[1],
+            default => $path,
+        };
+
+        return preg_match('/^[A-Za-z0-9.\-]{2,100}$/', $name) ? 'https://m.me/'.$name : null;
+    }
+
     public static function hours(): array
     {
         return [
