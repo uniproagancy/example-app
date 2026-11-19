@@ -72,6 +72,11 @@ find_npm() {
 }
 
 build_assets() {
+    if git ls-files --error-unmatch public/build/manifest.json >/dev/null 2>&1; then
+        log "Using the frontend build committed with $(git log -1 --format='%h' -- public/build)"
+        return
+    fi
+
     local npm
     npm=$(find_npm)
 

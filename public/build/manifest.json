@@ -1,0 +1,61 @@
+{
+  "_bpgninomtavruli-100-900-normal-CBPe0BB-.ttf": {
+    "file": "assets/bpgninomtavruli-100-900-normal-CBPe0BB-.ttf",
+    "src": "_bpgninomtavruli-100-900-normal-CBPe0BB-.ttf"
+  },
+  "_fonts-B5Uo3bvY.css": {
+    "file": "assets/fonts-B5Uo3bvY.css",
+    "src": "_fonts-B5Uo3bvY.css"
+  },
+  "_helveticageocaps-100-900-normal-IOcAdZCO.ttf": {
+    "file": "assets/helveticageocaps-100-900-normal-IOcAdZCO.ttf",
+    "src": "_helveticageocaps-100-900-normal-IOcAdZCO.ttf"
+  },
+  "_helveticaregular-100-500-normal-Smd4donx.ttf": {
+    "file": "assets/helveticaregular-100-500-normal-Smd4donx.ttf",
+    "src": "_helveticaregular-100-500-normal-Smd4donx.ttf"
+  },
+  "_helveticaregular-600-900-normal-vOAOUu0O.ttf": {
+    "file": "assets/helveticaregular-600-900-normal-vOAOUu0O.ttf",
+    "src": "_helveticaregular-600-900-normal-vOAOUu0O.ttf"
+  },
+  "_manrope-variable-normal-B6Sd7_ZV.woff2": {
+    "file": "assets/manrope-variable-normal-B6Sd7_ZV.woff2",
+    "src": "_manrope-variable-normal-B6Sd7_ZV.woff2"
+  },
+  "_montserrat-variable-normal-l_AIctKy.woff2": {
+    "file": "assets/montserrat-variable-normal-l_AIctKy.woff2",
+    "src": "_montserrat-variable-normal-l_AIctKy.woff2"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-CDHVVYIK.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/filament/admin/theme.css": {
+    "file": "assets/theme-DZ3r23LG.css",
+    "name": "theme",
+    "names": [
+      "theme.css"
+    ],
+    "src": "resources/css/filament/admin/theme.css",
+    "isEntry": true
+  },
+  "resources/images/elio-mark.png": {
+    "file": "assets/elio-mark-D5D7tvtI.png",
+    "src": "resources/images/elio-mark.png"
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-CI0IY9BN.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "assets": [
+      "assets/elio-mark-D5D7tvtI.png"
+    ]
+  }
+}
