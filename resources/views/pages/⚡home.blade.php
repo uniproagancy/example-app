@@ -38,6 +38,10 @@ new class extends Component
 
     @include('partials.home.hero')
 
+    @php($promoGroups = App\Support\HomeContent::promoGroups($promos))
+    @php($promosBetweenSections = $blocks->contains('key', 'categories') && $sections->isNotEmpty())
+    @php($promoSlots = intdiv($sections->count(), App\Support\HomeContent::PROMO_EVERY))
+
     <main class="mx-auto max-w-[1480px] px-4 sm:px-6 lg:px-8">
         @foreach ($blocks as $block)
             @switch($block['key'])
@@ -59,12 +63,20 @@ new class extends Component
                 @case('categories')
                     @foreach ($sections as $section)
                         @include('partials.home.category-section', ['section' => $section, 'loop' => $loop])
+                        @if ($loop->iteration % App\Support\HomeContent::PROMO_EVERY === 0 && $promoGroups->has(intdiv($loop->iteration, App\Support\HomeContent::PROMO_EVERY) - 1))
+                            @include('partials.home.promo-banners', ['group' => $promoGroups->get(intdiv($loop->iteration, App\Support\HomeContent::PROMO_EVERY) - 1)])
+                        @endif
+                    @endforeach
+                    @foreach ($promoGroups->slice($promoSlots) as $group)
+                        @include('partials.home.promo-banners', ['group' => $group])
                     @endforeach
                     @break
                 @case('promos')
-                    @if ($promos->isNotEmpty())
-                        @include('partials.home.promo-banners')
-                    @endif
+                    @unless ($promosBetweenSections)
+                        @foreach ($promoGroups as $group)
+                            @include('partials.home.promo-banners', ['group' => $group])
+                        @endforeach
+                    @endunless
                     @break
                 @case('brands')
                     @if ($brands->isNotEmpty())

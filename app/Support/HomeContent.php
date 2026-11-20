@@ -15,6 +15,8 @@ class HomeContent
 {
     public const CACHE_KEY = 'home.content';
 
+    public const PROMO_EVERY = 2;
+
     public static function flush(): void
     {
         Cache::forget(self::CACHE_KEY);
@@ -63,6 +65,24 @@ class HomeContent
                 'endsAt' => $row['ends_at'] ? Carbon::parse($row['ends_at'])->toIso8601String() : null,
             ])
             ->values();
+    }
+
+    /**
+     * @return Collection<int, Collection<int, array<string, mixed>>>
+     */
+    public static function promoGroups(Collection $promos): Collection
+    {
+        $promos = $promos->values();
+        $groups = collect();
+        $offset = 0;
+
+        while ($offset < $promos->count()) {
+            $size = $groups->count() % 2 === 0 ? 1 : 2;
+            $groups->push($promos->slice($offset, $size)->values());
+            $offset += $size;
+        }
+
+        return $groups;
     }
 
     public static function isLive(?string $startsAt, ?string $endsAt): bool

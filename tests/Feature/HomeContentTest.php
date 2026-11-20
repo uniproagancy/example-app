@@ -40,6 +40,46 @@ class HomeContentTest extends TestCase
             ->assertDontSee('09 ·');
     }
 
+    public function test_promo_banners_sit_between_category_sections(): void
+    {
+        $this->refreshApplicationWithLocale('en');
+        Promo::query()->where('is_active', true)->get()->slice(2)->each->delete();
+
+        while (Promo::query()->where('is_active', true)->count() < 3) {
+            Promo::query()->create(['title' => ['ka' => 'ჭკვიანი სახლი', 'en' => 'Smart home week'], 'theme' => 'field', 'icon' => 'home', 'position' => 99, 'is_active' => true]);
+        }
+
+        $html = $this->get('/en')->assertOk()->getContent();
+        $sections = $this->positions($html, 'wire:key="section-');
+        $banners = $this->positions($html, 'data-promo-group');
+
+        $this->assertGreaterThanOrEqual(4, count($sections));
+        $this->assertCount(2, $banners, 'One wide banner, then a pair.');
+        $this->assertTrue($sections[1] < $banners[0] && $banners[0] < $sections[2], 'The first banner follows the second category.');
+        $this->assertTrue($sections[3] < $banners[1] && (! isset($sections[4]) || $banners[1] < $sections[4]), 'The pair follows the fourth category.');
+        $this->assertSame(1, substr_count($html, 'Audio week'));
+
+        HomeBlock::query()->where('key', 'categories')->update(['is_active' => false]);
+
+        $this->assertCount(2, $this->positions($this->get('/en')->assertOk()->getContent(), 'data-promo-group'), 'Without categories the banners keep their own place.');
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    protected function positions(string $html, string $needle): array
+    {
+        $found = [];
+        $offset = 0;
+
+        while (($at = strpos($html, $needle, $offset)) !== false) {
+            $found[] = $at;
+            $offset = $at + 1;
+        }
+
+        return $found;
+    }
+
     public function test_blocks_follow_database_order_and_visibility(): void
     {
         $this->refreshApplicationWithLocale('en');
