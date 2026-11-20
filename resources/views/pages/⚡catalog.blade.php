@@ -205,12 +205,15 @@ new class extends Component
             $products = $products->filter(fn (array $product) => $this->matchesFlag($product, $flag));
         }
 
+        $treeOrder = CategoryTree::order();
+
         $sorted = match ($this->sort) {
             'price_asc' => $products->sortBy([['inStock', 'desc'], ['price', 'asc']]),
             'price_desc' => $products->sortBy([['inStock', 'desc'], ['price', 'desc']]),
             'newest' => $products->sortBy([['inStock', 'desc'], ['isNew', 'desc'], ['id', 'desc']]),
             default => $products->sortBy([
                 ['inStock', 'desc'],
+                fn (array $a, array $b) => $this->categoryId ? ($treeOrder[$a['categoryId']] ?? PHP_INT_MAX) <=> ($treeOrder[$b['categoryId']] ?? PHP_INT_MAX) : 0,
                 ['sold', 'desc'],
                 fn (array $a, array $b) => filled($b['image']) <=> filled($a['image']),
                 fn (array $a, array $b) => ($b['old'] !== null) <=> ($a['old'] !== null),

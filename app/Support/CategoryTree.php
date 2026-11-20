@@ -63,6 +63,14 @@ class CategoryTree
         });
     }
 
+    /**
+     * @return array<int, int>
+     */
+    public static function order(): array
+    {
+        return once(fn () => static::roots()->flatMap(fn (array $root) => $root['subtree'])->values()->flip()->all());
+    }
+
     public static function roots(): Collection
     {
         return static::nodes()->whereNull('parent_id')->values();

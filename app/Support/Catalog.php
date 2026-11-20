@@ -166,6 +166,16 @@ class Catalog
             ->values();
     }
 
+    public static function byTreeOrder(Collection $products): Collection
+    {
+        $order = CategoryTree::order();
+
+        return $products->sortBy([
+            fn (array $a, array $b) => ($a['position'] ?? 0) <=> ($b['position'] ?? 0),
+            fn (array $a, array $b) => ($order[$a['categoryId']] ?? PHP_INT_MAX) <=> ($order[$b['categoryId']] ?? PHP_INT_MAX),
+        ])->values();
+    }
+
     public static function sections(): Collection
     {
         $products = static::products();
@@ -174,7 +184,7 @@ class Catalog
             ->where('show_on_main', true)
             ->values()
             ->map(function (array $root) use ($products) {
-                $items = static::productsIn($root, $products);
+                $items = static::byTreeOrder(static::productsIn($root, $products));
                 $chips = $items->pluck('sub')->filter()->countBy()->sortDesc()->keys()->take(self::SECTION_CHIPS)->map(fn ($sub) => (string) $sub)->values()->all();
                 $shown = $items->take(self::SECTION_PRODUCTS)->pluck('id')
                     ->merge(collect($chips)->flatMap(fn (string $chip) => $items->filter(fn (array $product) => (string) $product['sub'] === $chip)->take(self::SECTION_CHIP_PRODUCTS)->pluck('id')))
@@ -462,6 +472,7 @@ class Catalog
 
         return [
             'id' => (int) $row['id'],
+            'position' => (int) ($row['position'] ?? 0),
             'sku' => $row['sku'],
             'slug' => $translation['slug'],
             'slugs' => $slugs,
@@ -577,7 +588,7 @@ class Catalog
                 ->orderByDesc('products.id')
                 ->get([
                     'products.id', 'products.category_id', 'products.sku', 'products.supplier_sku', 'products.price', 'products.old_price',
-                    'products.stock', 'products.is_new', 'products.variant_group', 'products.updated_at', 'brands.name as brand_name',
+                    'products.stock', 'products.is_new', 'products.variant_group', 'products.position', 'products.updated_at', 'brands.name as brand_name',
                 ])
                 ->map(fn ($row) => (array) $row)
                 ->all(),

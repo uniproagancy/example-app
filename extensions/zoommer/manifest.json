@@ -1,0 +1,26 @@
+{
+    "manifest_version": 3,
+    "name": "ELIO · Zoommer",
+    "description": "ზუმერის პროდუქტების შეგროვება ID-ების დიაპაზონით და JSON ფაილის მომზადება elivo.ge-ს ადმინისთვის.",
+    "version": "1.0.0",
+    "minimum_chrome_version": "120",
+    "permissions": [
+        "scripting",
+        "storage",
+        "unlimitedStorage"
+    ],
+    "host_permissions": [
+        "https://zoommer.ge/*",
+        "https://s3.zoommer.ge/*"
+    ],
+    "background": {
+        "service_worker": "background.js",
+        "type": "module"
+    },
+    "action": {
+        "default_title": "ELIO · Zoommer"
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'none'"
+    }
+}

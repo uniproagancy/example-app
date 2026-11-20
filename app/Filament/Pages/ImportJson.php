@@ -10,6 +10,9 @@ use App\Models\Supplier;
 use App\Services\Import\Drivers\Alta\AltaJson;
 use App\Services\Import\Drivers\Alta\AltaJsonAssets;
 use App\Services\Import\Drivers\Alta\AltaPaste;
+use App\Services\Import\Drivers\Zoommer\ZoommerDriver;
+use App\Services\Import\Drivers\Zoommer\ZoommerJson;
+use App\Services\Import\ImageDownloader;
 use App\Services\Import\JsonObjectStream;
 use App\Services\Import\ProductImporter;
 use App\Services\Import\ProductPayload;
@@ -300,7 +303,7 @@ class ImportJson extends Page
         $this->forget();
         $state = $this->form->getState();
         $supplier = Supplier::query()->findOrFail($state['supplier_id']);
-        $reader = new AltaJson($supplier);
+        $reader = $this->reader($supplier);
         $known = [];
         $this->sourceKey = (string) Str::uuid();
         $disk = Storage::disk('local');
@@ -319,8 +322,10 @@ class ImportJson extends Page
                 }
 
                 if ($read['seen'] && count($this->preview) < 50) {
-                    $known[] = $supplier->code.'-'.$read['seen']['code'];
+                    $sku = (string) ($read['seen']['sku'] ?? $supplier->code.'-'.$read['seen']['code']);
+                    $known[] = $sku;
                     $this->preview[] = [
+                        'sku' => $sku,
                         'code' => (string) $read['seen']['code'],
                         'name' => (string) $read['seen']['name'],
                         'category' => $read['seen']['category'] ?? null,
@@ -351,7 +356,7 @@ class ImportJson extends Page
         $existing = Product::query()->whereIn('sku', $known)->pluck('sku')->all();
 
         foreach ($this->preview as $i => $row) {
-            if ($row['state'] === 'new' && in_array($supplier->code.'-'.$row['code'], $existing, true)) {
+            if ($row['state'] === 'new' && in_array($row['sku'], $existing, true)) {
                 $this->preview[$i]['state'] = 'update';
             }
         }
@@ -397,7 +402,7 @@ class ImportJson extends Page
         ini_set('memory_limit', self::MEMORY_LIMIT);
 
         $supplier = Supplier::query()->findOrFail($this->supplierId);
-        $reader = new AltaJson($supplier);
+        $reader = $this->reader($supplier);
         $assets = app(AltaJsonAssets::class);
         $file = new SplFileObject(Storage::disk('local')->path($this->path()));
         $file->seek($this->cursor);
@@ -438,7 +443,7 @@ class ImportJson extends Page
             ->send();
     }
 
-    protected function saveOne(ProductImporter $importer, Supplier $supplier, AltaJson $reader, AltaJsonAssets $assets, string $answer, int $number, bool $alone): void
+    protected function saveOne(ProductImporter $importer, Supplier $supplier, AltaJson|ZoommerJson $reader, AltaJsonAssets $assets, string $answer, int $number, bool $alone): void
     {
         $read = $this->read($reader, $answer);
 
@@ -457,7 +462,8 @@ class ImportJson extends Page
                 $assets->store($supplier, $read['assets']);
             }
 
-            $product = $importer->import($supplier, $payload, insist: true);
+            $import = fn () => $importer->import($supplier, $payload, insist: true);
+            $product = $read['given'] !== null ? ImageDownloader::using($read['given'], $import) : $import();
         } catch (Throwable $e) {
             Log::channel('import')->warning('pasted json could not be saved', [
                 'supplier' => $supplier->code,
@@ -487,10 +493,27 @@ class ImportJson extends Page
         $this->results = array_slice($this->results, -50);
     }
 
-    protected function read(AltaJson $reader, string $answer): array
+    protected function reader(Supplier $supplier): AltaJson|ZoommerJson
+    {
+        return $supplier->driver === ZoommerDriver::class ? new ZoommerJson($supplier) : new AltaJson($supplier);
+    }
+
+    protected function read(AltaJson|ZoommerJson $reader, string $answer): array
     {
         $read = $reader->read($answer);
         $read['assets'] = null;
+        $read['given'] = null;
+
+        if ($reader instanceof ZoommerJson) {
+            try {
+                $read['given'] = $read['payload'] ? $reader->assets($answer, $read['payload']->images) : null;
+            } catch (ValidationException) {
+                $read['errors'][] = __('admin.import.zoommer_invalid_export');
+                $read['payload'] = null;
+            }
+
+            return $read;
+        }
 
         try {
             $read['assets'] = app(AltaJsonAssets::class)->validate($answer, $read['payload']?->images ?? []);

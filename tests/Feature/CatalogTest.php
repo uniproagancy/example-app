@@ -41,9 +41,16 @@ class CatalogTest extends TestCase
         Catalog::flush();
 
         $section = Catalog::sections()->first(fn (array $section) => $section['products']->count() >= 3);
-        [$newest, $older, $oldest] = $section['products']->pluck('id')->sortDesc()->take(3)->values()->all();
+        $order = CategoryTree::order();
+        $products = $section['products'];
 
-        $this->assertSame([$newest, $older, $oldest], $section['products']->pluck('id')->take(3)->all());
+        $this->assertSame($products->pluck('categoryId')->sortBy(fn (int $id) => $order[$id] ?? PHP_INT_MAX)->values()->all(), $products->pluck('categoryId')->all());
+
+        foreach ($products->groupBy('categoryId') as $sameCategory) {
+            $this->assertSame($sameCategory->pluck('id')->sortDesc()->values()->all(), $sameCategory->pluck('id')->all());
+        }
+
+        $oldest = $products->pluck('id')->min();
 
         Product::query()->whereKey($oldest)->update(['position' => -1]);
         Catalog::flush();
@@ -241,6 +248,31 @@ class CatalogTest extends TestCase
             ], false);
 
         $this->assertSame(3, substr_count($response->getContent(), 'wire:key="category-product-'));
+    }
+
+    public function test_listings_follow_the_category_order_set_in_admin(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        $consoles = Category::query()->where('code', 'consoles')->sole();
+        $controllers = Category::query()->where('code', 'controllers')->sole();
+        $subOf = fn ($results) => $results->map(fn (array $product) => $product['categoryId'] === $controllers->id ? 'controllers' : 'consoles')->unique()->values()->all();
+
+        Product::query()->update(['position' => 0]);
+        $controllers->update(['position' => 0]);
+        $consoles->update(['position' => 1]);
+        Category::query()->where('code', 'gaming')->update(['show_on_main' => true]);
+        CategoryTree::flush();
+        Catalog::flush();
+
+        $this->assertSame(['controllers', 'consoles'], $subOf(Livewire::test('pages::catalog', ['slug' => 'gaming'])->get('results')));
+        $this->assertSame($controllers->id, Catalog::sections()->firstWhere('id', 'gaming')['products']->first()['categoryId']);
+
+        $controllers->update(['position' => 2]);
+        CategoryTree::flush();
+        Catalog::flush();
+
+        $this->assertSame(['consoles', 'controllers'], $subOf(Livewire::test('pages::catalog', ['slug' => 'gaming'])->get('results')));
     }
 
     public function test_category_listing_scopes_products_and_shows_sub_navigation(): void

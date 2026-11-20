@@ -106,6 +106,76 @@ class ImportJsonTest extends TestCase
             ->assertSet('preview.0.state', 'update');
     }
 
+    protected function zoommerAnswer(int $id, array $product = [], ?array $assets = null): array
+    {
+        $answer = ['product' => array_replace([
+            'id' => $id,
+            'barCode' => '88-'.$id,
+            'name' => 'Zoommer phone '.$id,
+            'price' => 900,
+            'previousPrice' => 1000,
+            'brandName' => 'Samsung',
+            'categoryName' => 'Phones',
+            'subCategoryName' => 'Smartphones',
+            'isInStock' => true,
+            'imageUrl' => "https://s3.zoommer.ge/site/{$id}.jpeg",
+            'images' => [],
+            'specificationGroup' => [],
+        ], $product), 'availabilityInStores' => [['city' => 'თბილისი', 'inStock' => true]]];
+
+        if ($assets !== null) {
+            $answer['iapiAssets'] = $assets;
+        }
+
+        return $answer;
+    }
+
+    protected function png(): string
+    {
+        $image = imagecreatetruecolor(4, 4);
+        ob_start();
+        imagepng($image);
+
+        return (string) ob_get_clean();
+    }
+
+    public function test_a_zoommer_extension_file_saves_products_with_the_photos_inside_it(): void
+    {
+        Storage::fake('public');
+        $zoommer = Supplier::query()->where('code', 'zoommer')->sole();
+        $photo = ['url' => 'https://s3.zoommer.ge/site/41.jpeg', 'base64' => base64_encode($this->png())];
+
+        $answers = [
+            $this->zoommerAnswer(41, [], [$photo]),
+            $this->zoommerAnswer(42, ['name' => '']),
+            $this->zoommerAnswer(43, [], [['url' => 'https://s3.zoommer.ge/site/43.jpeg', 'base64' => 'not base64 !!']]),
+        ];
+
+        Livewire::test(ImportJson::class)
+            ->set('data.supplier_id', $zoommer->id)
+            ->call('uploaded', $this->upload(json_encode($answers)), 'zoommer.json')
+            ->call('look')
+            ->assertSet('total', 3)
+            ->assertSet('valid', 1)
+            ->assertSet('preview.0.code', '41')
+            ->assertSet('preview.0.state', 'new')
+            ->assertSet('preview.2.state', 'invalid')
+            ->call('startSaving')
+            ->assertSet('saved', 1);
+
+        $product = Product::query()->where('sku', 'ZOOM-8841')->with('kaTranslation')->sole();
+        $this->assertSame('Zoommer phone 41', $product->kaTranslation->name);
+        $this->assertSame('900.00', $product->cost_price);
+        $this->assertSame(1, $product->images()->count());
+        Http::assertNothingSent();
+
+        Livewire::test(ImportJson::class)
+            ->set('data.supplier_id', $zoommer->id)
+            ->set('data.json', json_encode($this->zoommerAnswer(41)))
+            ->call('look')
+            ->assertSet('preview.0.state', 'update');
+    }
+
     public function test_a_single_answer_can_have_cost_and_stock_corrected(): void
     {
         $alta = Supplier::query()->where('code', 'alta')->sole();

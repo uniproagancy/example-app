@@ -37,6 +37,11 @@ class ZoommerDriver implements SupplierDriver
         return $byLocale ? $this->toPayload($externalId, $byLocale) : null;
     }
 
+    public function payloadFromAnswer(array $data): ProductPayload
+    {
+        return $this->toPayload((string) $data['product']['id'], ['ka' => $data]);
+    }
+
     protected function toPayload(string $externalId, array $byLocale): ?ProductPayload
     {
         $base = $byLocale[array_key_first($byLocale)];

@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ka">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ELIO · Zoommer</title>
+    <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<main>
+    <h1>ELIO · Zoommer</h1>
+
+    <section>
+        <h2>1. რა შევაგროვო</h2>
+        <fieldset id="options">
+            <label class="inline">ID საიდან <input id="from" type="number" min="1" value="1"> სადამდე <input id="to" type="number" min="1" value="1000"></label>
+            <label class="inline">მინიმალური ფასი <input id="min-price" type="number" min="0" step="1" value="0"> ₾ <span class="hint">ამაზე იაფი პროდუქტი ფაილში არ ჩაიწერება</span></label>
+            <label class="inline">რაოდენობა <input id="limit" type="number" min="0" value="0"> <span class="hint">0 = ყველა; საცდელად ჩაწერე 3</span></label>
+            <label class="inline">პაუზა მოთხოვნებს შორის <input id="interval" type="number" min="400" step="100" value="1000"> მწ</label>
+            <label><input id="in-stock" type="checkbox"> მხოლოდ მარაგში მყოფი პროდუქტები</label>
+            <label><input id="photos" type="checkbox" checked> ფოტოებით <span class="hint">(მოხსნა ფაილს ძალიან ამცირებს — მაშინ ფოტოებს საიტი თვითონ სცდის)</span></label>
+        </fieldset>
+
+        <div class="buttons">
+            <button id="start" type="button">დაწყება</button>
+            <button id="pause" type="button" hidden>პაუზა</button>
+            <button id="resume" type="button" hidden>გაგრძელება</button>
+            <button id="retry" type="button" class="secondary" hidden>შეცდომების თავიდან ცდა</button>
+        </div>
+
+        <p id="alert" class="alert" hidden></p>
+        <p id="job" class="hint info"></p>
+        <p id="state" class="info"></p>
+        <progress id="progress" value="0" max="1"></progress>
+        <ul id="counts" class="counts"></ul>
+    </section>
+
+    <section>
+        <h2>2. ჩამოტვირთვა</h2>
+        <p class="hint">ფაილი აიტვირთება elivo.ge-ს ადმინში: JSON იმპორტი, მომწოდებელი „Zoommer“.</p>
+        <p id="size" class="info"></p>
+        <p id="parts-hint" class="hint" hidden></p>
+        <div id="downloads" class="buttons"></div>
+        <p id="download-info" class="info"></p>
+    </section>
+
+    <section>
+        <details>
+            <summary>პრობლემები <span id="problem-count"></span></summary>
+            <ul id="problems" class="problems"></ul>
+        </details>
+    </section>
+</main>
+<script type="module" src="panel.js"></script>
+</body>
+</html>
