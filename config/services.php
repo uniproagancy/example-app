@@ -31,7 +31,12 @@ return [
 
     'zoommer' => [
         'api_url' => env('ZOOMMER_API_URL', 'https://zoommer.ge/api/proxy/'),
+        'site' => env('ZOOMMER_SITE', 'https://zoommer.ge/'),
+        'user_agent' => env('ZOOMMER_USER_AGENT'),
+        'sec_ch_ua' => env('ZOOMMER_SEC_CH_UA'),
         'access_token' => env('ZOOMMER_ACCESS_TOKEN'),
+        'cf_clearance' => env('ZOOMMER_CF_CLEARANCE'),
+        'worker_url' => env('ZOOMMER_WORKER_URL'),
     ],
 
     'elite' => [

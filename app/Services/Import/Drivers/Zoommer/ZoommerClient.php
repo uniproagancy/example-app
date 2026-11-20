@@ -23,15 +23,28 @@ class ZoommerClient
             'http_errors' => false,
             'force_ip_resolve' => 'v4',
             'headers' => $this->headers(),
+            'curl' => [
+                CURLOPT_DNS_CACHE_TIMEOUT => 300,
+            ],
         ]);
     }
 
     protected function headers(): array
     {
         return array_filter([
-            'Accept' => 'application/json',
-            'User-Agent' => (string) config('import.user_agent'),
+            'Accept' => 'application/json, text/plain, */*',
+            'Accept-Encoding' => 'gzip, deflate',
+            'Referer' => config('services.zoommer.site'),
+            'User-Agent' => config('services.zoommer.user_agent') ?: (string) config('import.user_agent'),
+            'os' => 'web',
+            'sec-ch-ua' => config('services.zoommer.sec_ch_ua'),
+            'sec-ch-ua-mobile' => '?0',
+            'sec-ch-ua-platform' => '"Windows"',
+            'sec-fetch-dest' => 'empty',
+            'sec-fetch-mode' => 'cors',
+            'sec-fetch-site' => 'same-origin',
             'Cookie' => static::cookie(),
+            'X-Proxy-Cookie' => static::workerUrl() ? static::cookie() : null,
         ]);
     }
 
@@ -47,11 +60,19 @@ class ZoommerClient
         return preg_match('/%[0-9A-Fa-f]{2}/', $token) ? $token : rawurlencode($token);
     }
 
+    public static function workerUrl(): ?string
+    {
+        $url = trim((string) config('services.zoommer.worker_url'));
+
+        return $url !== '' ? rtrim($url, '/') : null;
+    }
+
     public static function cookie(): string
     {
         return implode('; ', array_filter([
             'zoommer-cookie_agreed=true',
             ($token = static::accessToken()) ? 'zoommer-access_token='.$token : null,
+            ($clearance = trim((string) config('services.zoommer.cf_clearance'))) !== '' ? 'cf_clearance='.$clearance : null,
         ]));
     }
 
@@ -63,6 +84,7 @@ class ZoommerClient
             'status' => $status,
             'ms' => (int) round((microtime(true) - $startedAt) * 1000),
             'token_sent' => static::accessToken() !== null,
+            'route' => static::workerUrl() ? 'worker' : 'direct',
         ];
 
         if ($status !== 200) {
@@ -74,7 +96,15 @@ class ZoommerClient
 
     protected function endpoint(string $id): string
     {
-        return $this->apiUrl.'v1/Products/details?productId='.rawurlencode($id);
+        if (! $worker = static::workerUrl()) {
+            return $this->apiUrl.'v1/Products/details?productId='.rawurlencode($id);
+        }
+
+        return $worker.'?'.http_build_query(array_filter([
+            'type' => 'product',
+            'productId' => $id,
+            'accessToken' => static::accessToken(),
+        ]));
     }
 
     public function fetch(string $id, array $locales = ['ka', 'en']): array
@@ -89,7 +119,7 @@ class ZoommerClient
             $this->report($id, $locale, $status, $startedAt, $body);
 
             if (in_array($status, self::BLOCKED_STATUSES, true) || $this->isChallenge($body)) {
-                throw new BlockedByZoommer($this->refusal($status));
+                throw new BlockedByZoommer($this->refusal($status, $body));
             }
 
             if ($status !== 200) {
@@ -106,15 +136,20 @@ class ZoommerClient
         return $out;
     }
 
-    protected function refusal(int $status): string
+    protected function refusal(int $status, string $body): string
     {
-        $reason = match ($status) {
-            401 => 'The zoommer-access_token cookie is missing or no longer valid. Copy a fresh one from a signed-in zoommer.ge session into ZOOMMER_ACCESS_TOKEN.',
-            429 => 'Too many requests. Lower IMPORT_RATE_PER_MINUTE or run fewer workers.',
-            default => 'Zoommer does not allow this server to read its catalogue. The importer does not try to get around that: ask Zoommer for API access or to allowlist this server, then run the import again.',
+        $reason = match (true) {
+            $status === 401 => 'The zoommer-access_token cookie is missing or no longer valid. Copy a fresh one from a signed-in zoommer.ge session into ZOOMMER_ACCESS_TOKEN.',
+            $status === 403 || $this->isChallenge($body) => static::workerUrl()
+                ? 'Cloudflare refused the worker as well. Run php artisan import:check-zoommer to see which route answers.'
+                : 'Cloudflare refused this server, not the token. Set ZOOMMER_WORKER_URL and run php artisan config:clear.',
+            $status === 429 => 'Too many requests. Lower IMPORT_RATE_PER_MINUTE or run fewer workers.',
+            default => 'Zoommer is refusing requests for now; this is usually temporary.',
         };
 
-        return "Zoommer refused the request (HTTP {$status}). {$reason}";
+        $route = static::workerUrl() ? 'through the worker' : 'directly';
+
+        return "Zoommer refused the request (HTTP {$status}, asked {$route}). {$reason}";
     }
 
     protected function isChallenge(string $body): bool
