@@ -8,14 +8,18 @@ trait ScansIdRange
 {
     protected const DISCOVER_AHEAD = 1000;
 
+    public ?array $knownIds = null;
+
     protected function idsToScan(int $defaultTo): iterable
     {
         $from = (int) ($this->supplier->config['from'] ?? 1);
         $to = (int) ($this->supplier->config['to'] ?? $defaultTo);
 
-        $known = ProductOffer::where('supplier_id', $this->supplier->id)
-            ->orderBy('external_id')
-            ->pluck('external_id');
+        $known = $this->knownIds !== null
+            ? collect($this->knownIds)->map(fn ($id) => (string) $id)->sort()->values()
+            : ProductOffer::where('supplier_id', $this->supplier->id)
+                ->orderBy('external_id')
+                ->pluck('external_id');
 
         if ($known->isEmpty() || ($this->supplier->config['full_scan'] ?? false)) {
             for ($id = $from; $id <= $to; $id++) {

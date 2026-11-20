@@ -12,6 +12,8 @@ return [
     'publish_on_import' => (bool) env('IMPORT_PUBLISH', false),
     'user_agent' => env('IMPORT_USER_AGENT', 'ELIO.GE importer (+'.env('APP_URL', 'https://elio.ge').')'),
     'max_image_bytes' => (int) env('IMPORT_MAX_IMAGE_BYTES', 8 * 1024 * 1024),
+    'push_token' => env('IMPORT_PUSH_TOKEN'),
+    'push_url' => env('IMPORT_PUSH_URL', 'https://elivo.ge'),
 
     'rules' => [
         'screen_size' => ['categories' => []],

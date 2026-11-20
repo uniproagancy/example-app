@@ -35,6 +35,20 @@ class ImageDownloader
 
     protected static array $failures = [];
 
+    protected static ?array $given = null;
+
+    public static function using(array $bytesByUrl, callable $callback): mixed
+    {
+        $previous = self::$given;
+        self::$given = $bytesByUrl;
+
+        try {
+            return $callback();
+        } finally {
+            self::$given = $previous;
+        }
+    }
+
     public function sync(Product $product, array $urls, int $limit = self::MAX_IMAGES): void
     {
         $deadline = microtime(true) + (int) config('import.image_budget', 120);
@@ -88,6 +102,10 @@ class ImageDownloader
 
     protected function store(Product $product, string $url, int $index): ?array
     {
+        if (self::$given !== null) {
+            return isset(self::$given[$url]) ? $this->storeBytes($product, self::$given[$url], $url, $index) : null;
+        }
+
         if (! $this->isFetchable($url)) {
             Log::channel('import')->warning('image address refused', ['product' => $product->id, 'url' => Redact::secrets($url)]);
 
@@ -109,6 +127,11 @@ class ImageDownloader
             return null;
         }
 
+        return $this->storeBytes($product, $bytes, $url, $index);
+    }
+
+    protected function storeBytes(Product $product, string $bytes, string $url, int $index): ?array
+    {
         $extension = $this->rasterExtension($bytes);
 
         if ($extension === null) {

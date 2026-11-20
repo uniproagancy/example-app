@@ -169,7 +169,7 @@ class ZoommerDriver implements SupplierDriver
     {
         $barcode = trim((string) ($product['barCode'] ?? ''));
 
-        return $barcode !== '' ? $barcode : 'ZOOM-'.$externalId;
+        return $barcode !== '' && ! str_starts_with(strtoupper($barcode), 'ZOOM-') ? $barcode : 'ZOOM-'.$externalId;
     }
 
     protected function prices(array $product): array

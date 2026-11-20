@@ -3,6 +3,7 @@
 use App\Http\Controllers\AltaBrowserController;
 use App\Http\Controllers\CartRestoreController;
 use App\Http\Controllers\FeedController;
+use App\Http\Controllers\ImportPushController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\JsonUploadController;
 use App\Http\Controllers\OrderPrintController;
@@ -28,6 +29,9 @@ Route::get('/admin-print/manual-invoices/{invoice}', [InvoiceController::class, 
 
 Route::post('/admin/json-upload/{upload}', JsonUploadController::class)->middleware('throttle:600,1')->name('json-upload');
 Route::get('/admin/alta-browser/feed', [AltaBrowserController::class, 'feed'])->middleware('throttle:6,1')->name('alta-browser.feed');
+
+Route::get('/import-push/{supplier}', [ImportPushController::class, 'show'])->middleware('throttle:30,1')->name('import-push.show');
+Route::post('/import-push/{supplier}', [ImportPushController::class, 'store'])->middleware('throttle:600,1')->name('import-push.store');
 
 Route::get('/cart/restore/{token}', CartRestoreController::class)->middleware(['signed', 'throttle:30,1'])->name('cart.restore');
 
