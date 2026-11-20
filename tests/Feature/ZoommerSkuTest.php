@@ -25,10 +25,10 @@ class ZoommerSkuTest extends TestCase
         return (fn () => $this->sku($externalId, ['barCode' => $barcode]))->call($driver);
     }
 
-    public function test_the_sku_is_the_digits_of_the_zoommer_barcode(): void
+    public function test_the_sku_is_zoom_and_the_digits_of_the_barcode(): void
     {
-        $this->assertSame('040771', $this->sku('54835', 'ZOOM-040771'));
-        $this->assertSame('8806095467092', $this->sku('1', '8806095467092'));
+        $this->assertSame('ZOOM-040771', $this->sku('54835', 'ZOOM-040771'));
+        $this->assertSame('ZOOM-8806095467092', $this->sku('1', '8806095467092'));
         $this->assertSame('ZOOM-2', $this->sku('2', null));
     }
 
@@ -40,13 +40,13 @@ class ZoommerSkuTest extends TestCase
         $importer = app(ProductImporter::class);
         $payload = fn (string $id, string $sku) => new ProductPayload(...FakeSupplierDriver::payload($id, ['sku' => $sku]));
 
-        $foreign = $importer->import($other, $payload('A1', '040771'));
-        $glacier = $importer->import($zoommer, $payload('54835', '040771'));
-        $silver = $importer->import($zoommer, $payload('54836', '040771'));
+        $foreign = $importer->import($other, $payload('A1', 'ZOOM-040771'));
+        $glacier = $importer->import($zoommer, $payload('54835', 'ZOOM-040771'));
+        $silver = $importer->import($zoommer, $payload('54836', 'ZOOM-040771'));
 
         $this->assertNotSame($foreign->id, $glacier->id);
         $this->assertNotSame($glacier->id, $silver->id);
-        $this->assertSame(['040771', '040771-54835', '040771-54836'], Product::query()->whereIn('id', [$foreign->id, $glacier->id, $silver->id])->orderBy('id')->pluck('sku')->all());
-        $this->assertSame($glacier->id, $importer->import($zoommer, $payload('54835', '040771'))->id);
+        $this->assertSame(['ZOOM-040771', 'ZOOM-040771-54835', 'ZOOM-040771-54836'], Product::query()->whereIn('id', [$foreign->id, $glacier->id, $silver->id])->orderBy('id')->pluck('sku')->all());
+        $this->assertSame($glacier->id, $importer->import($zoommer, $payload('54835', 'ZOOM-040771'))->id);
     }
 }

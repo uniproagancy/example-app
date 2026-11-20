@@ -171,7 +171,7 @@ class ZoommerDriver implements SupplierDriver
     {
         $digits = preg_replace('/\D+/', '', (string) ($product['barCode'] ?? ''));
 
-        return $digits !== '' ? $digits : 'ZOOM-'.$externalId;
+        return 'ZOOM-'.($digits !== '' ? $digits : $externalId);
     }
 
     protected function prices(array $product): array

@@ -277,7 +277,7 @@ class ProductImporter
         $selling = $priced->filter(fn (ProductOffer $offer) => $offer->stock > 0);
 
         $best = ($selling->isNotEmpty() ? $selling : $priced)->sortBy([
-            fn (ProductOffer $a, ProductOffer $b) => (float) $a->cost_price <=> (float) $b->cost_price,
+            fn (ProductOffer $a, ProductOffer $b) => $this->sellingPrice($a, (float) $a->cost_price) <=> $this->sellingPrice($b, (float) $b->cost_price),
             fn (ProductOffer $a, ProductOffer $b) => ($a->supplier?->priority ?? PHP_INT_MAX) <=> ($b->supplier?->priority ?? PHP_INT_MAX),
         ])->first();
 
@@ -287,12 +287,17 @@ class ProductImporter
             $product->cost_price = $best->cost_price;
 
             if (! $product->price_lock) {
-                $product->price = (float) $best->cost_price;
+                $product->price = $this->sellingPrice($best, (float) $best->cost_price);
                 $product->old_price = $this->strikeThrough($best, (float) $product->price);
             }
         }
 
         $product->save();
+    }
+
+    protected function sellingPrice(ProductOffer $offer, float $cost): float
+    {
+        return $offer->supplier ? $offer->supplier->sellingPrice($cost) : $cost;
     }
 
     protected function strikeThrough(ProductOffer $offer, float $price): ?float
@@ -301,7 +306,7 @@ class ProductImporter
             return null;
         }
 
-        $was = (float) $offer->old_cost_price;
+        $was = $this->sellingPrice($offer, (float) $offer->old_cost_price);
 
         return $was > $price ? $was : null;
     }
