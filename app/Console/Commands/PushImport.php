@@ -21,6 +21,7 @@ class PushImport extends Command
         {--only=* : import only these external ids}
         {--from= : first id to scan}
         {--to= : last id to scan}
+        {--full : scan the whole from-to range, not only known ids and the next ones}
         {--limit=0 : stop after this many saved products}
         {--pause=300 : milliseconds to wait between products}';
 
@@ -57,6 +58,7 @@ class PushImport extends Command
         $config = array_replace((array) $answer->json('config'), array_filter([
             'from' => $this->option('from'),
             'to' => $this->option('to'),
+            'full_scan' => $this->option('full') ? true : null,
         ], fn ($value) => $value !== null));
 
         $supplier = (new Supplier)->forceFill([
