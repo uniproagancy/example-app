@@ -24,19 +24,16 @@ class AccountTest extends TestCase
         $this->get('/ka/account')->assertRedirect(url('/ka?login=1'));
     }
 
-    public function test_account_page_renders_in_each_language(): void
+    public function test_account_page_renders(): void
     {
         $user = User::factory()->create(['name' => 'ნინო ბერიძე']);
+        $this->refreshApplicationWithLocale('ka');
 
-        foreach (['ka' => '/ka/account', 'en' => '/en/account'] as $locale => $uri) {
-            $this->refreshApplicationWithLocale($locale);
-
-            $this->actingAs($user)
-                ->get($uri)
-                ->assertOk()
-                ->assertSee(__('account.hello', ['name' => 'ნინო'], $locale))
-                ->assertSee($user->email);
-        }
+        $this->actingAs($user)
+            ->get('/ka/account')
+            ->assertOk()
+            ->assertSee(__('account.hello', ['name' => 'ნინო'], 'ka'))
+            ->assertSee($user->email);
     }
 
     public function test_orders_tab_shows_each_ordered_product_with_its_photo_and_link(): void

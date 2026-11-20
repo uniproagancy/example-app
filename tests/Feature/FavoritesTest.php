@@ -63,16 +63,16 @@ class FavoritesTest extends TestCase
 
     public function test_layout_exposes_favorites_and_account_lists_them(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $user = User::factory()->create();
         $product = Product::query()->where('sku', 'ip16')->first();
         Favorite::factory()->for($user)->create(['product_id' => $product->id]);
 
-        $this->get('/en')->assertSee('window.elioFavorites = null', false);
+        $this->get('/ka')->assertSee('window.elioFavorites = null', false);
 
         $this->actingAs($user)
-            ->get('/en')
+            ->get('/ka')
             ->assertSee('window.elioFavorites = '.Js::from([$product->id]), false);
 
         $wishProducts = Livewire::actingAs($user)

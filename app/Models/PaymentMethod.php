@@ -41,11 +41,6 @@ class PaymentMethod extends Model
         return $this->hasOne(PaymentMethodTranslation::class)->where('locale', 'ka');
     }
 
-    public function enTranslation(): HasOne
-    {
-        return $this->hasOne(PaymentMethodTranslation::class)->where('locale', 'en');
-    }
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true)->orderBy('sort_order')->orderBy('id');

@@ -18,7 +18,7 @@ class ContactPageTest extends TestCase
     {
         $this->refreshApplicationWithLocale('ka');
 
-        Faq::query()->first()->update(['question' => ['ka' => 'სად არის ჩემი ამანათი?', 'en' => 'Where is my parcel?']]);
+        Faq::query()->first()->update(['question' => ['ka' => 'სად არის ჩემი ამანათი?']]);
 
         $this->get('/ka/contact')
             ->assertOk()
@@ -27,7 +27,7 @@ class ContactPageTest extends TestCase
             ->assertSee('info@elio.ge')
             ->assertSee('10:00–20:00')
             ->assertSee('სად არის ჩემი ამანათი?')
-            ->assertSee('hreflang="en" href="'.url('/en/contact').'"', false);
+            ->assertDontSee('hreflang="en"', false);
     }
 
     public function test_message_is_saved_with_order_number_for_order_topics(): void
@@ -64,15 +64,15 @@ class ContactPageTest extends TestCase
 
     public function test_about_page_and_navigation_links(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
-        $this->get('/en/about')
+        $this->get('/ka/about')
             ->assertOk()
-            ->assertSee('Tech you can trust')
-            ->assertSee('Why we built ELIO.GE')
-            ->assertSee('Official warranty')
-            ->assertSee(url('/en/contact'), false);
+            ->assertSee(__('pages.about.heading', [], 'ka'))
+            ->assertSee(__('pages.about.story_title', ['name' => 'ELIO.GE'], 'ka'))
+            ->assertSee(__('pages.about.features.warranty.title', [], 'ka'))
+            ->assertSee(url('/ka/contact'), false);
 
-        $this->get('/en')->assertSee('href="'.url('/en/contact').'"', false);
+        $this->get('/ka')->assertSee('href="'.url('/ka/contact').'"', false);
     }
 }

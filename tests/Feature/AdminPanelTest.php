@@ -118,7 +118,6 @@ class AdminPanelTest extends TestCase
         Livewire::test(CreateProduct::class)
             ->fillForm([
                 'kaTranslation' => ['name' => 'სატესტო კონსოლი', 'subtitle' => 'ახალი თაობა', 'description' => 'აღწერა'],
-                'enTranslation' => ['name' => 'Test Console'],
                 'price' => 1299,
                 'old_price' => 1499,
                 'stock' => 4,
@@ -135,14 +134,14 @@ class AdminPanelTest extends TestCase
         $this->assertNotNull($product);
         $this->assertSame('სატესტო კონსოლი', $product->kaTranslation->name);
         $this->assertSame('satesto-konsoli', $product->kaTranslation->slug);
-        $this->assertSame('test-console', $product->enTranslation->slug);
+        $this->assertFalse($product->translations()->where('locale', 'en')->exists());
 
-        $catalogProduct = Catalog::products('en')->firstWhere('sku', 'test-console');
-        $this->assertSame('Test Console', $catalogProduct['name']);
+        $catalogProduct = Catalog::products('ka')->firstWhere('sku', 'test-console');
+        $this->assertSame('სატესტო კონსოლი', $catalogProduct['name']);
         $this->assertSame(1299.0, $catalogProduct['price']);
     }
 
-    public function test_english_translation_is_optional_and_old_price_must_exceed_price(): void
+    public function test_old_price_must_exceed_price(): void
     {
         $this->actingAs($this->admin);
 

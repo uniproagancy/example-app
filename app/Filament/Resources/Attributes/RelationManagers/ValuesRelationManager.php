@@ -39,9 +39,6 @@ class ValuesRelationManager extends RelationManager
                     ->label(__('admin.attributes.label_field').' · '.__('admin.locales.ka'))
                     ->required()
                     ->maxLength(255),
-                TextInput::make('label_en')
-                    ->label(__('admin.attributes.label_field').' · '.__('admin.locales.en'))
-                    ->maxLength(255),
                 TextInput::make('code')
                     ->label(__('admin.attributes.code'))
                     ->helperText(__('admin.common.slug_help'))
@@ -60,14 +57,13 @@ class ValuesRelationManager extends RelationManager
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
             ->modifyQueryUsing(fn (Builder $query) => $query
-                ->with(['kaTranslation', 'enTranslation'])
+                ->with(['kaTranslation'])
                 ->addSelect(['products_count' => DB::table('attribute_value_product')
                     ->selectRaw('count(*)')
                     ->whereColumn('attribute_value_product.attribute_value_id', 'attribute_values.id')]))
             ->columns([
                 TextColumn::make('kaTranslation.label')
                     ->label(__('admin.attributes.label_field'))
-                    ->description(fn (AttributeValue $record) => $record->enTranslation?->label)
                     ->searchable(query: fn (Builder $query, string $search) => $query->whereHas('translations', fn (Builder $query) => $query->where('label', 'like', "%{$search}%"))),
                 TextColumn::make('code')
                     ->label(__('admin.attributes.code'))
@@ -87,7 +83,6 @@ class ValuesRelationManager extends RelationManager
                 EditAction::make()
                     ->fillForm(fn (AttributeValue $record) => [
                         'label_ka' => $record->translations()->where('locale', 'ka')->value('label'),
-                        'label_en' => $record->translations()->where('locale', 'en')->value('label'),
                         'code' => $record->code,
                         'color_hex' => $record->color_hex,
                     ])
@@ -116,12 +111,7 @@ class ValuesRelationManager extends RelationManager
         $value->save();
         $value->saveTranslations([
             'ka' => ['label' => $data['label_ka']],
-            'en' => ['label' => $data['label_en'] ?? null],
         ]);
-
-        if (blank($data['label_en'] ?? null)) {
-            $value->translations()->where('locale', 'en')->delete();
-        }
 
         return $value;
     }

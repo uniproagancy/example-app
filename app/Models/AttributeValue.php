@@ -35,11 +35,6 @@ class AttributeValue extends Model
         return $this->hasOne(AttributeValueTranslation::class)->where('locale', 'ka');
     }
 
-    public function enTranslation(): HasOne
-    {
-        return $this->hasOne(AttributeValueTranslation::class)->where('locale', 'en');
-    }
-
     public function attribute(): BelongsTo
     {
         return $this->belongsTo(Attribute::class)->withTrashed();

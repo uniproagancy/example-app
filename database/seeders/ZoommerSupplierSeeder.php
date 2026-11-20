@@ -18,7 +18,7 @@ class ZoommerSupplierSeeder extends Seeder
             'config' => [
                 'from' => 1,
                 'to' => 1000,
-                'locales' => ['ka', 'en'],
+                'locales' => ['ka'],
                 'stock_cities' => ['თბილისი', 'Tbilisi'],
                 'stock_units' => 5,
 

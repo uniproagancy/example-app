@@ -108,7 +108,7 @@ class Seo
                 'telephone' => Site::phone(),
                 'contactType' => 'customer service',
                 'areaServed' => 'GE',
-                'availableLanguage' => ['ka', 'en'],
+                'availableLanguage' => Locales::codes(),
             ] : null,
         ]);
     }

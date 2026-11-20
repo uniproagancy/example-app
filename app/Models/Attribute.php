@@ -48,11 +48,6 @@ class Attribute extends Model
         return $this->hasOne(AttributeTranslation::class)->where('locale', 'ka');
     }
 
-    public function enTranslation(): HasOne
-    {
-        return $this->hasOne(AttributeTranslation::class)->where('locale', 'en');
-    }
-
     public function values(): HasMany
     {
         return $this->hasMany(AttributeValue::class)->orderBy('sort_order')->orderBy('id');

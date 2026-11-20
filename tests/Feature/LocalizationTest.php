@@ -15,25 +15,29 @@ class LocalizationTest extends TestCase
     public static function localizedPages(): array
     {
         return [
-            'ka home' => ['ka', '/ka', 'მთავარი'],
-            'en home' => ['en', '/en', 'Home'],
-            'ka about' => ['ka', '/ka/about', 'ჩვენ შესახებ'],
-            'en about' => ['en', '/en/about', 'About us'],
+            'home' => ['/ka', 'მთავარი'],
+            'about' => ['/ka/about', 'ჩვენ შესახებ'],
         ];
     }
 
     #[DataProvider('localizedPages')]
-    public function test_localized_pages_render_in_their_language(string $locale, string $uri, string $expectedText): void
+    public function test_pages_render_in_georgian_only(string $uri, string $expectedText): void
     {
-        $this->refreshApplicationWithLocale($locale);
+        $this->refreshApplicationWithLocale('ka');
 
         $this->get($uri)
             ->assertOk()
-            ->assertSee('<html lang="'.$locale.'"', false)
+            ->assertSee('<html lang="ka"', false)
             ->assertSee($expectedText)
-            ->assertSee('hreflang="ka"', false)
-            ->assertSee('hreflang="en"', false)
-            ->assertDontSee('hreflang="ru"', false);
+            ->assertDontSee('hreflang="en"', false)
+            ->assertDontSee('hreflang="ru"', false)
+            ->assertDontSee('>ENG<', false);
+    }
+
+    public function test_english_addresses_move_to_the_georgian_page(): void
+    {
+        $this->get('/en')->assertRedirect(url('/ka'))->assertStatus(301);
+        $this->get('/en/about?ref=1')->assertRedirect(url('/ka/about?ref=1'))->assertStatus(301);
     }
 
     public function test_russian_is_no_longer_available(): void
@@ -49,20 +53,11 @@ class LocalizationTest extends TestCase
         $this->get('/')->assertRedirect(url('/ka'));
     }
 
-    public function test_language_switcher_links_to_translated_urls(): void
-    {
-        $this->refreshApplicationWithLocale('en');
-
-        $this->get('/en/about')
-            ->assertOk()
-            ->assertSee(url('/ka/about'), false);
-    }
-
     public function test_livewire_update_route_is_localized(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
-        $this->assertSame('/en', substr(route('livewire.update', absolute: false), 0, 3));
+        $this->assertSame('/ka', substr(route('livewire.update', absolute: false), 0, 3));
     }
 
     public function test_home_page_renders_store_sections(): void

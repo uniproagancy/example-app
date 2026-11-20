@@ -67,6 +67,7 @@ trait HasTranslations
     public function saveTranslations(array $byLocale): void
     {
         $allowed = array_flip($this->translatableAttributes());
+        $byLocale = array_intersect_key($byLocale, array_flip(Locales::codes()));
 
         foreach ($byLocale as $locale => $fields) {
             $fields = Text::utf8All(array_intersect_key((array) $fields, $allowed));

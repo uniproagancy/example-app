@@ -70,7 +70,7 @@ class ProductResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['sku', 'supplier_sku', 'kaTranslation.name', 'enTranslation.name'];
+        return ['sku', 'supplier_sku', 'kaTranslation.name'];
     }
 
     public static function getRelations(): array

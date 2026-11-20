@@ -22,35 +22,29 @@ class SlideTest extends TestCase
             ->assertSee('იყიდე ახლავე')
             ->assertSee('href="'.url('/ka/categories/gaming').'"', false);
 
-        $this->refreshApplicationWithLocale('en');
-
-        $this->get('/en')
-            ->assertOk()
-            ->assertSee('Play more, wait less')
-            ->assertSee('href="'.url('/en/categories/gaming').'"', false);
     }
 
     public function test_inactive_and_scheduled_slides_are_hidden(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         Slide::query()->where('position', 2)->update(['is_active' => false]);
         Slide::query()->where('position', 3)->update(['starts_at' => now()->addDay()]);
 
         Slide::query()->create([
-            'title' => ['ka' => 'ვადაგასული', 'en' => 'Expired promo'],
+            'title' => ['ka' => 'ვადაგასული'],
             'ends_at' => now()->subMinute(),
             'position' => 9,
         ]);
 
         cache()->forget(Slide::CACHE_KEY);
 
-        $this->get('/en')
+        $this->get('/ka')
             ->assertOk()
-            ->assertSee('iPhone 17 Pro — the next level')
-            ->assertDontSee('Play more, wait less')
-            ->assertDontSee('Big screens, small prices')
-            ->assertDontSee('Expired promo');
+            ->assertSee('iPhone 17 Pro — შემდეგი დონე')
+            ->assertDontSee('ითამაშე მეტი, დაელოდე ნაკლები')
+            ->assertDontSee('დიდი ეკრანები, მცირე ფასად')
+            ->assertDontSee('ვადაგასული');
     }
 
     public function test_slide_with_custom_url_and_image(): void
@@ -76,11 +70,11 @@ class SlideTest extends TestCase
 
     public function test_home_page_works_without_slides(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         Slide::query()->delete();
 
-        $this->get('/en')
+        $this->get('/ka')
             ->assertOk()
             ->assertDontSee('x-data="heroSlider', false)
             ->assertSee('id="sec-mobile"', false);

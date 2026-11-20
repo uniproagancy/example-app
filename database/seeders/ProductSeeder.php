@@ -8,6 +8,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Services\Import\TaxonomyResolver;
 use App\Support\Catalog;
+use App\Support\Locales;
 use App\Support\Slug;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -44,7 +45,7 @@ class ProductSeeder extends Seeder
             $slug = isset($usedSlugs[$slug]) ? $slug.'-'.$product->id : $slug;
             $usedSlugs[$slug] = true;
 
-            foreach (['ka', 'en'] as $locale) {
+            foreach (Locales::codes() as $locale) {
                 $name = is_array($data['name']) ? $data['name'][$locale] : $data['name'];
 
                 $product->translations()->create([

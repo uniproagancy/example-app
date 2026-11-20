@@ -48,11 +48,8 @@ class RedirectsTest extends TestCase
         $this->refreshApplicationWithLocale('ka');
 
         $product = Product::query()->where('sku', 'ip16')->sole();
-        $product->translations()->where('locale', 'en')->sole()->update(['slug' => 'apple-iphone-16-pro-en']);
         $translation = $product->translations()->where('locale', 'ka')->sole();
         $translation->update(['slug' => 'iphone-16-pro-axali']);
-
-        $this->get('/en/product/apple-iphone-16-pro')->assertStatus(301)->assertRedirect(url('/en/product/apple-iphone-16-pro-en'));
 
         $this->get('/ka/product/apple-iphone-16-pro')->assertStatus(301)->assertRedirect(url('/ka/product/iphone-16-pro-axali'));
         $this->get('/ka/product/iphone-16-pro-axali')->assertOk();
@@ -76,7 +73,7 @@ class RedirectsTest extends TestCase
         $this->get(RedirectResource::getUrl())->assertOk();
 
         Livewire::test(ManageRedirects::class)
-            ->callAction('create', ['from_path' => '/ka', 'to_url' => '/en'])
+            ->callAction('create', ['from_path' => '/ka', 'to_url' => '/ka'])
             ->assertHasActionErrors(['from_path']);
 
         Livewire::test(ManageRedirects::class)

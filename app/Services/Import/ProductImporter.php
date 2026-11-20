@@ -11,6 +11,7 @@ use App\Models\ProductSpecTranslation;
 use App\Models\Supplier;
 use App\Services\Feeds\PrimaryFeatureFormatter;
 use App\Services\Import\Drivers\Alta\AltaDriver;
+use App\Services\Import\Drivers\Zoommer\ZoommerDriver;
 use App\Support\Catalog;
 use App\Support\Locales;
 use App\Support\SsdCapacity;
@@ -70,6 +71,8 @@ class ProductImporter
 
     protected function repair(ProductPayload $payload): ProductPayload
     {
+        $locales = Locales::codes();
+
         return new ProductPayload(
             externalId: $payload->externalId,
             sku: $payload->sku,
@@ -78,8 +81,8 @@ class ProductImporter
             stock: $payload->stock,
             brandName: Text::utf8($payload->brandName),
             categoryName: Text::utf8($payload->categoryName),
-            translations: Text::utf8All($payload->translations),
-            specs: Text::utf8All($payload->specs),
+            translations: Text::utf8All(array_intersect_key($payload->translations, array_flip($locales))),
+            specs: Text::utf8All(array_values(array_filter($payload->specs, fn (array $spec) => in_array($spec['locale'] ?? Locales::default(), $locales, true)))),
             images: $payload->images,
             weight: $payload->weight,
             variantGroup: $payload->variantGroup,
@@ -168,7 +171,7 @@ class ProductImporter
             }
 
             $product ??= new Product([
-                'sku' => $payload->sku,
+                'sku' => $this->freeSku($payload),
                 'is_active' => false,
                 'price' => $payload->costPrice,
                 'stock' => $payload->stock,
@@ -227,9 +230,23 @@ class ProductImporter
     {
         return Product::onlyTrashed()
             ->where(fn ($query) => $query
-                ->where('sku', $payload->sku)
+                ->when($this->matchesBySku($supplier), fn ($query) => $query->where('sku', $payload->sku))
                 ->orWhereIn('id', ProductOffer::where('supplier_id', $supplier->id)->where('external_id', $payload->externalId)->select('product_id')))
             ->exists();
+    }
+
+    protected function matchesBySku(Supplier $supplier): bool
+    {
+        return $supplier->driver !== ZoommerDriver::class;
+    }
+
+    protected function freeSku(ProductPayload $payload): string
+    {
+        if (! Product::withTrashed()->where('sku', $payload->sku)->exists()) {
+            return $payload->sku;
+        }
+
+        return $payload->sku.'-'.$payload->externalId;
     }
 
     protected function find(Supplier $supplier, ProductPayload $payload): ?Product
@@ -240,6 +257,10 @@ class ProductImporter
 
         if ($offer?->product) {
             return $offer->product;
+        }
+
+        if (! $this->matchesBySku($supplier)) {
+            return null;
         }
 
         return Product::where('sku', $payload->sku)

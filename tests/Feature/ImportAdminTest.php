@@ -156,12 +156,12 @@ class ImportAdminTest extends TestCase
         $attribute->saveTranslations(['ka' => ['name' => 'მეხსიერება'], 'en' => ['name' => 'Storage']]);
 
         Livewire::test(ValuesRelationManager::class, ['ownerRecord' => $attribute, 'pageClass' => EditAttribute::class])
-            ->callTableAction('create', data: ['label_ka' => '512 გბ', 'label_en' => '512 GB'])
+            ->callTableAction('create', data: ['label_ka' => '512 გბ'])
             ->assertHasNoTableActionErrors();
 
         $value = AttributeValue::query()->where('attribute_id', $attribute->id)->sole();
         $this->assertSame('512-gb', $value->code);
-        $this->assertSame('512 GB', $value->translate('en')->label);
+        $this->assertSame('512 გბ', $value->translate('ka')->label);
 
         $product = Product::query()->where('sku', 'ip16')->sole();
 
@@ -176,7 +176,7 @@ class ImportAdminTest extends TestCase
 
     public function test_catalog_filters_by_attribute_values(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $attribute = Attribute::query()->create(['code' => 'mekhsiereba', 'type' => 'select', 'is_filterable' => true]);
         $attribute->saveTranslations(['ka' => ['name' => 'მეხსიერება'], 'en' => ['name' => 'Storage']]);
@@ -189,7 +189,7 @@ class ImportAdminTest extends TestCase
         Product::query()->where('sku', 's25')->sole()->attributeValues()->sync([$small->id]);
         Catalog::flush();
 
-        $this->get('/en/catalog?all=1')->assertOk()->assertSee('Storage')->assertSee('512 GB');
+        $this->get('/ka/catalog?all=1')->assertOk()->assertSee('მეხსიერება')->assertSee('512 გბ');
 
         $component = Livewire::test('pages::catalog')
             ->call('toggleAttribute', 'mekhsiereba', '512-gb');
@@ -199,7 +199,7 @@ class ImportAdminTest extends TestCase
         $component->call('toggleAttribute', 'mekhsiereba', '128-gb');
         $this->assertEqualsCanonicalizing(['ip16', 's25'], $component->get('results')->pluck('sku')->all());
 
-        $this->get('/en/catalog?f[mekhsiereba][0]=128-gb&f[bogus][0]=x')->assertOk()->assertSee('128 GB');
+        $this->get('/ka/catalog?f[mekhsiereba][0]=128-gb&f[bogus][0]=x')->assertOk()->assertSee('128 GB');
 
         $laptops = Category::query()->where('code', 'laptops')->sole();
         $attribute->categories()->sync([$laptops->id]);
@@ -210,7 +210,7 @@ class ImportAdminTest extends TestCase
 
     public function test_switching_a_filter_off_in_admin_removes_it_from_the_catalog(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $attribute = Attribute::query()->create(['code' => 'bluetooth', 'type' => 'select', 'is_filterable' => true]);
         $attribute->saveTranslations(['ka' => ['name' => 'Bluetooth'], 'en' => ['name' => 'Bluetooth']]);
@@ -219,12 +219,12 @@ class ImportAdminTest extends TestCase
         Product::query()->where('sku', 'ip16')->sole()->attributeValues()->sync([$value->id]);
         Catalog::flush();
 
-        $this->get('/en/catalog?all=1')->assertSee('wire:key="facet-bluetooth"', false);
+        $this->get('/ka/catalog?all=1')->assertSee('wire:key="facet-bluetooth"', false);
 
         Livewire::test(ListAttributes::class)
             ->call('updateTableColumnState', 'is_filterable', (string) $attribute->getKey(), false);
 
         $this->assertFalse($attribute->fresh()->is_filterable);
-        $this->get('/en/catalog?all=1')->assertDontSee('wire:key="facet-bluetooth"', false);
+        $this->get('/ka/catalog?all=1')->assertDontSee('wire:key="facet-bluetooth"', false);
     }
 }

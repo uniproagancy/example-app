@@ -102,11 +102,6 @@ class Product extends Model
         return $this->hasOne(ProductTranslation::class)->where('locale', 'ka');
     }
 
-    public function enTranslation(): HasOne
-    {
-        return $this->hasOne(ProductTranslation::class)->where('locale', 'en');
-    }
-
     public function translations(): HasMany
     {
         return $this->hasMany(ProductTranslation::class);

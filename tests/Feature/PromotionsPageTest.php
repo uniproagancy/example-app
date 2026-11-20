@@ -46,13 +46,13 @@ class PromotionsPageTest extends TestCase
 
     public function test_shows_an_empty_state_without_promotions(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         Promo::query()->get()->each->delete();
         Deal::query()->get()->each->delete();
         Product::query()->update(['old_price' => null]);
 
-        $this->get('/en/promotions')
+        $this->get('/ka/promotions')
             ->assertOk()
             ->assertSee(__('pages.promotions.empty'))
             ->assertDontSee(__('pages.promotions.campaigns').'</h2>', false);

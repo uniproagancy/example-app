@@ -73,8 +73,6 @@ class WarrantyTest extends TestCase
 
         $this->assertSame('3 წელი', Warranty::label(36));
         $this->assertSame('6 თვე', Warranty::label(6));
-        $this->assertSame('18 months', Warranty::label(18, 'en'));
-        $this->assertSame('1 year', Warranty::label(12, 'en'));
     }
 
     protected function issue(Order $order, string $startsAt = '2026-11-15'): Order

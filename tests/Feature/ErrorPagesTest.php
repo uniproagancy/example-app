@@ -30,35 +30,35 @@ class ErrorPagesTest extends TestCase
 
     public function test_404_keeps_the_signed_in_header(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $user = User::factory()->create(['name' => 'Nino Beridze']);
 
         $this->actingAs($user)
-            ->get('/en/does-not-exist')
+            ->get('/ka/does-not-exist')
             ->assertNotFound()
             ->assertSee('title="Nino Beridze"', false);
     }
 
     public function test_unknown_product_and_category_return_404(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
-        $this->get('/en/product/no-such-product')->assertNotFound()->assertSee('Page not found');
-        $this->get('/en/categories/no-such-category')->assertNotFound()->assertSee('Page not found');
+        $this->get('/ka/product/no-such-product')->assertNotFound()->assertSee(__('errors.404.title', [], 'ka'));
+        $this->get('/ka/categories/no-such-category')->assertNotFound()->assertSee(__('errors.404.title', [], 'ka'));
     }
 
     public function test_server_errors_use_the_standalone_error_page(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
-        Route::get('/en/__boom', fn () => throw new \RuntimeException('boom'))->middleware('web');
+        Route::get('/ka/__boom', fn () => throw new \RuntimeException('boom'))->middleware('web');
         config(['app.debug' => false]);
 
-        $this->get('/en/__boom')
+        $this->get('/ka/__boom')
             ->assertStatus(500)
-            ->assertSee('Something went wrong')
-            ->assertSee(__('errors.reload', [], 'en'))
+            ->assertSee(__('errors.500.title', [], 'ka'))
+            ->assertSee(__('errors.reload', [], 'ka'))
             ->assertDontSee('boom');
     }
 

@@ -18,7 +18,7 @@ class SupplierTextTest extends TestCase
 
     protected bool $seed = true;
 
-    public function test_english_spec_names_get_a_georgian_name_and_keep_the_english_one(): void
+    public function test_english_spec_names_get_a_georgian_name(): void
     {
         $this->assertSame(['ka' => 'ფერი', 'en' => 'Color'], SpecNames::translate('Color:'));
         $this->assertSame(['ka' => 'მაქსიმალური დატვირთვა', 'en' => 'Load of Weight'], SpecNames::translate('Load of Weight'));
@@ -31,7 +31,7 @@ class SupplierTextTest extends TestCase
 
         $this->assertSame('modeli', $attribute->code);
         $this->assertSame('მოდელი', $attribute->translate('ka')->name);
-        $this->assertSame('Model', $attribute->translate('en')->name);
+        $this->assertSame(['ka'], $attribute->translations->pluck('locale')->all());
     }
 
     public function test_attributes_already_imported_in_english_are_translated_by_command(): void
@@ -48,7 +48,7 @@ class SupplierTextTest extends TestCase
 
         $attribute = $attribute->fresh('translations');
         $this->assertSame('მაქსიმალური დატვირთვა', $attribute->translate('ka')->name);
-        $this->assertSame('Load of Weight', $attribute->translate('en')->name);
+        $this->assertSame(['ka'], $attribute->translations->pluck('locale')->all());
         $this->assertSame('Flux capacitor', $unknown->fresh()->translate('ka')->name);
     }
 

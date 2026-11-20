@@ -44,11 +44,6 @@ class Page extends Model
         return $this->hasOne(PageTranslation::class)->where('locale', 'ka');
     }
 
-    public function enTranslation(): HasOne
-    {
-        return $this->hasOne(PageTranslation::class)->where('locale', 'en');
-    }
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true)->orderBy('position')->orderBy('id');

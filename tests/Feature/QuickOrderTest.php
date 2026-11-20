@@ -106,7 +106,7 @@ class QuickOrderTest extends TestCase
 
     public function test_quick_order_prefills_and_links_signed_in_user(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $user = User::factory()->create(['name' => 'გიორგი', 'phone' => '599 00 00 00']);
 
@@ -121,7 +121,7 @@ class QuickOrderTest extends TestCase
         $this->assertSame($user->email, $order->email);
 
         $this->actingAs($user)
-            ->get('/en/account?tab=orders')
+            ->get('/ka/account?tab=orders')
             ->assertOk()
             ->assertSee('#'.$order->number)
             ->assertSee('iPhone 16 Pro');

@@ -57,14 +57,14 @@ class SeoTest extends TestCase
         $this->assertGreaterThan(2, count($schema['BreadcrumbList']['itemListElement']));
     }
 
-    public function test_english_pages_point_x_default_to_the_georgian_version(): void
+    public function test_pages_offer_no_english_alternate(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
-        $this->get('/en/product/apple-iphone-16-pro')
+        $this->get('/ka/product/apple-iphone-16-pro')
             ->assertOk()
-            ->assertSee('hreflang="x-default" href="'.url('/ka/product/apple-iphone-16-pro').'"', false)
-            ->assertDontSee('hreflang="x-default" href="'.url('/en/product/apple-iphone-16-pro').'"', false);
+            ->assertDontSee('hreflang="en"', false)
+            ->assertDontSee(url('/en/'), false);
     }
 
     public function test_discounted_products_show_the_old_price_in_their_schema(): void
@@ -138,11 +138,11 @@ class SeoTest extends TestCase
             ->assertHeader('Content-Type', 'text/plain; charset=utf-8')
             ->assertSee('Disallow: /admin')
             ->assertSee('Disallow: /ka/checkout')
-            ->assertSee('Disallow: /en/account')
+            ->assertDontSee('/en/')
             ->assertSee('Sitemap: '.url('/sitemap.xml'));
     }
 
-    public function test_sitemap_lists_pages_categories_and_products_in_every_language(): void
+    public function test_sitemap_lists_pages_categories_and_products(): void
     {
         $response = $this->get('/sitemap.xml')->assertOk();
 
@@ -152,29 +152,25 @@ class SeoTest extends TestCase
         $locs = collect(iterator_to_array($xml->url, false))->map(fn ($url) => (string) $url->loc);
 
         $this->assertContains(url('/ka'), $locs);
-        $this->assertContains(url('/en/contact'), $locs);
+        $this->assertContains(url('/ka/contact'), $locs);
         $this->assertContains(url('/ka/categories/gaming'), $locs);
-        $this->assertContains(url('/en/categories/gaming'), $locs);
         $this->assertContains(url('/ka/product/apple-iphone-16-pro'), $locs);
         $this->assertContains(url('/ka/info/'.Page::query()->active()->value('slug')), $locs);
         $this->assertFalse($locs->contains(fn (string $loc) => str_contains($loc, 'checkout') || str_contains($loc, 'account')));
         $this->assertSame($locs->count(), $locs->unique()->count());
-        $this->assertStringContainsString('hreflang="x-default"', $response->getContent());
+        $this->assertStringNotContainsString(url('/en'), $response->getContent());
     }
 
-    public function test_sitemap_lists_products_without_an_english_slug_in_english_too_with_lastmod(): void
+    public function test_sitemap_lists_products_with_lastmod(): void
     {
         $product = Product::query()->where('sku', 'jbl')->sole();
         $slug = $product->translations()->where('locale', 'ka')->value('slug');
-        $product->translations()->where('locale', 'en')->delete();
-        Catalog::flush();
 
         $xml = simplexml_load_string($this->get('/sitemap.xml')->assertOk()->getContent());
         $urls = collect(iterator_to_array($xml->url, false))->keyBy(fn ($url) => (string) $url->loc);
 
         $this->assertTrue($urls->has(url('/ka/product/'.$slug)));
-        $this->assertTrue($urls->has(url('/en/product/'.$slug)));
-        $this->assertNotSame('', (string) $urls[url('/en/product/'.$slug)]->lastmod);
+        $this->assertNotSame('', (string) $urls[url('/ka/product/'.$slug)]->lastmod);
     }
 
     public function test_admin_sets_the_default_description_and_search_console_code(): void

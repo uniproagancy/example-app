@@ -73,7 +73,7 @@ class ImportPipelineTest extends TestCase
         $this->assertSame('Acme', $product->brand->name);
         $this->assertSame('მოკლე აღწერა', $product->translate('ka')->subtitle);
         $this->assertSame('satesto-telefoni-1', $product->translate('ka')->slug);
-        $this->assertSame('Test phone 1', $product->translate('en')->name);
+        $this->assertFalse($product->translations->contains('locale', 'en'));
 
         $offer = ProductOffer::query()->sole();
         $this->assertSame('Phones > Smartphones', $offer->external_category);
@@ -86,7 +86,7 @@ class ImportPipelineTest extends TestCase
         $this->assertTrue($memory->is_filterable);
         $this->assertContains('256-gb', $product->attributeValues->pluck('code')->all());
         $this->assertSame(['shida-mekhsiereba' => ['256-gb']], Catalog::filterAttributes()->map(fn (array $attribute) => array_keys($attribute['values']))->all());
-        $this->assertSame('256 GB', $product->specs->firstWhere('attribute_id', $memory->id)->translate('en')->value);
+        $this->assertSame(['ka'], $product->specs->firstWhere('attribute_id', $memory->id)->translations->pluck('locale')->all());
 
         $this->assertNull(Catalog::findBySku('SKU-1'));
     }

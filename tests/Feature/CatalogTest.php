@@ -161,7 +161,7 @@ class CatalogTest extends TestCase
 
     public function test_filters_narrow_results_and_reset_pagination(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $component = Livewire::test('pages::catalog')
             ->call('loadMore')
@@ -178,7 +178,7 @@ class CatalogTest extends TestCase
 
         $component->set('maxPrice', 1);
         $this->assertSame(0, $component->get('results')->count());
-        $component->assertSee(__('catalog.empty_title', [], 'en'));
+        $component->assertSee(__('catalog.empty_title', [], 'ka'));
 
         $component->call('clearFilters');
         $this->assertSame(43, $component->get('results')->count());
@@ -227,13 +227,13 @@ class CatalogTest extends TestCase
 
     public function test_filters_are_read_from_the_query_string(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $ids = Catalog::products()->pluck('id', 'sku');
 
-        $response = $this->get('/en/catalog?brand[]=Apple&min=3000&sort=price_asc')
+        $response = $this->get('/ka/catalog?brand[]=Apple&min=3000&sort=price_asc')
             ->assertOk()
-            ->assertSee(__('catalog.clear', [], 'en'))
+            ->assertSee(__('catalog.clear', [], 'ka'))
             ->assertSeeInOrder([
                 'wire:key="category-product-'.$ids['mba'].'"',
                 'wire:key="category-product-'.$ids['ip16'].'"',
@@ -245,21 +245,21 @@ class CatalogTest extends TestCase
 
     public function test_category_listing_scopes_products_and_shows_sub_navigation(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $gaming = Category::query()->where('code', 'gaming')->first();
 
         $component = Livewire::test('pages::catalog', ['slug' => 'gaming'])
             ->assertSet('categoryId', $gaming->id)
-            ->assertSee('Consoles')
-            ->assertSee(url('/en/catalog'), false);
+            ->assertSee('კონსოლები')
+            ->assertSee(url('/ka/catalog'), false);
 
         $this->assertTrue($component->get('results')->every(fn (array $product) => $product['cat'] === 'gaming'));
 
-        $this->get('/en/categories/consoles')
+        $this->get('/ka/categories/consoles')
             ->assertOk()
-            ->assertSee(url('/en/categories/gaming'), false)
-            ->assertSee('Controllers');
+            ->assertSee(url('/ka/categories/gaming'), false)
+            ->assertSee('ჯოისტიკები');
     }
 
     public function test_menu_and_drawer_link_to_catalog_pages(): void

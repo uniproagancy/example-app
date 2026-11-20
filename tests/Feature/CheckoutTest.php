@@ -200,7 +200,7 @@ class CheckoutTest extends TestCase
 
     public function test_signed_in_user_is_prefilled_and_sees_order_in_account(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
         $this->fillCart();
 
         $user = User::factory()->create(['name' => 'Giorgi Beridze', 'phone' => '599 00 00 00']);
@@ -219,9 +219,9 @@ class CheckoutTest extends TestCase
         $this->assertSame('new', $order->status);
 
         $this->actingAs($user)
-            ->get('/en/account?tab=orders')
+            ->get('/ka/account?tab=orders')
             ->assertOk()
             ->assertSee('#'.$order->number)
-            ->assertSee('New order');
+            ->assertSee(__('account.orders.statuses.new', [], 'ka'));
     }
 }

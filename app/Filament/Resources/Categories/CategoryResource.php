@@ -255,16 +255,12 @@ class CategoryResource extends Resource
                     ->required()
                     ->maxLength(255)
                     ->autofocus(),
-                TextInput::make('title_en')
-                    ->label(__('admin.categories.title_en'))
-                    ->helperText(__('admin.categories.title_en_help'))
-                    ->maxLength(255),
                 Toggle::make('is_active')
                     ->label(__('admin.common.is_active'))
                     ->default(true),
             ])
             ->action(function (Category $record, array $data, array $arguments, Action $action, Schema $schema): void {
-                $child = Category::createUnder($record->getKey(), $data['title'], $data['title_en'] ?? null, ['is_active' => (bool) ($data['is_active'] ?? true)]);
+                $child = Category::createUnder($record->getKey(), $data['title'], ['is_active' => (bool) ($data['is_active'] ?? true)]);
 
                 static::flushTree();
 

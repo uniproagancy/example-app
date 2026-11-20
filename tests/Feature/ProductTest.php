@@ -49,50 +49,50 @@ class ProductTest extends TestCase
             ->assertSee(url('/ka/categories/apple-iphone'), false)
             ->assertSee(url('/ka/categories/mobile-phones-and-accessories'), false)
             ->assertSee('iPhone 16e, 128 GB, White')
-            ->assertSee('hreflang="en" href="'.url('/en/product/apple-iphone-16-pro').'"', false);
+            ->assertDontSee('hreflang="en"', false);
     }
 
     public function test_product_page_is_translated_and_redirects_foreign_slugs(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
-        $this->get('/en/product/dell-ultrasharp-27-4k-usbc-monitor')
+        $this->get('/ka/product/dell-ultrasharp-27-4k-usbc-monitor')
             ->assertOk()
-            ->assertSee('UltraSharp 27″ 4K USB‑C Monitor')
-            ->assertSee('Specifications');
+            ->assertSee('UltraSharp 27″ 4K USB‑C მონიტორი')
+            ->assertSee(__('product.tabs.specs', [], 'ka'));
 
-        $this->get('/en/product/dell-ultrasharp-27-4k-usbc-monitor')
+        $this->get('/ka/product/dell-ultrasharp-27-4k-usbc-monitor')
             ->assertSee('hreflang="ka" href="'.url('/ka/product/dell-ultrasharp-27-4k-usbc-monitor').'"', false);
 
         $this->get('/ka/produkti/dell-ultrasharp-27-4k-usbc-monitor')->assertNotFound();
 
-        $this->get('/en/product/does-not-exist')->assertNotFound();
+        $this->get('/ka/product/does-not-exist')->assertNotFound();
     }
 
     public function test_inactive_products_are_hidden_everywhere(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         Product::query()->where('sku', 'xsx')->first()->update(['is_active' => false]);
 
         $this->assertNull(Catalog::findBySku('xsx'));
 
-        $this->get('/en/product/microsoft-xbox-series-x-1-tb')->assertNotFound();
-        $this->get('/en')->assertOk()->assertDontSee('Xbox Series X, 1 TB');
+        $this->get('/ka/product/microsoft-xbox-series-x-1-tb')->assertNotFound();
+        $this->get('/ka')->assertOk()->assertDontSee('Xbox Series X, 1 TB');
     }
 
     public function test_price_changes_in_database_show_on_the_site(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         Product::query()->where('sku', 'ds')->first()->update(['price' => 555, 'old_price' => 700, 'stock' => 0]);
 
-        $this->get('/en/product/sony-dualsense-edge-wireless-controller')
+        $this->get('/ka/product/sony-dualsense-edge-wireless-controller')
             ->assertOk()
             ->assertSee('555 ₾')
             ->assertSee('700 ₾')
-            ->assertSee('Out of stock')
-            ->assertSee('Temporarily unavailable');
+            ->assertSee(__('product.out_of_stock', [], 'ka'))
+            ->assertSee(__('product.unavailable', [], 'ka'));
     }
 
     public function test_product_cards_link_to_product_pages(): void

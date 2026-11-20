@@ -8,6 +8,7 @@ use App\Services\Import\ProductPayload;
 use App\Services\Import\SupplierDriver;
 use App\Services\Import\TaxonomyResolver;
 use App\Support\Figure;
+use App\Support\Locales;
 
 class ZoommerDriver implements SupplierDriver
 {
@@ -30,7 +31,8 @@ class ZoommerDriver implements SupplierDriver
 
     public function fetch(string $externalId): ?ProductPayload
     {
-        $byLocale = $this->client->fetch($externalId, $this->supplier->config['locales'] ?? ['ka', 'en']);
+        $locales = array_values(array_intersect((array) ($this->supplier->config['locales'] ?? Locales::codes()), Locales::codes())) ?: Locales::codes();
+        $byLocale = $this->client->fetch($externalId, $locales);
 
         return $byLocale ? $this->toPayload($externalId, $byLocale) : null;
     }
@@ -167,9 +169,9 @@ class ZoommerDriver implements SupplierDriver
 
     protected function sku(string $externalId, array $product): string
     {
-        $barcode = trim((string) ($product['barCode'] ?? ''));
+        $digits = preg_replace('/\D+/', '', (string) ($product['barCode'] ?? ''));
 
-        return $barcode !== '' && ! str_starts_with(strtoupper($barcode), 'ZOOM-') ? $barcode : 'ZOOM-'.$externalId;
+        return $digits !== '' ? $digits : 'ZOOM-'.$externalId;
     }
 
     protected function prices(array $product): array

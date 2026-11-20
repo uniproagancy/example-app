@@ -9,31 +9,31 @@ class CategoryOptions
 {
     protected static ?array $memo = null;
 
-    protected static ?array $englishMemo = null;
+    protected static ?array $aliasMemo = null;
 
     public static function flush(): void
     {
         static::$memo = null;
-        static::$englishMemo = null;
+        static::$aliasMemo = null;
     }
 
-    public static function englishTitles(): array
+    public static function aliases(): array
     {
-        return static::$englishMemo ??= Category::query()
-            ->with('enTranslation')
-            ->get()
-            ->mapWithKeys(fn (Category $category) => [$category->id => (string) $category->enTranslation?->title])
+        return static::$aliasMemo ??= Category::query()
+            ->whereNotNull('code')
+            ->pluck('code', 'id')
+            ->map(fn (string $code) => str_replace(['-', '_'], ' ', $code))
             ->all();
     }
 
     public static function suggest(?string $name): array
     {
-        return OptionSearch::suggest(static::paths(), $name, aliases: static::englishTitles());
+        return OptionSearch::suggest(static::paths(), $name, aliases: static::aliases());
     }
 
     public static function search(?string $search): array
     {
-        return OptionSearch::search(static::paths(), $search, aliases: static::englishTitles());
+        return OptionSearch::search(static::paths(), $search, aliases: static::aliases());
     }
 
     public static function paths(?int $excludeSubtreeOf = null): array

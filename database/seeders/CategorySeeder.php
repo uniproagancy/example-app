@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Support\CategoryTree;
+use App\Support\Locales;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -43,7 +44,7 @@ class CategorySeeder extends Seeder
         $slug = $this->uniqueSlug('en', $englishTitle, $parentSlugs['en'] ?? null);
         $slugs = ['ka' => $slug, 'en' => $slug];
 
-        foreach (['ka', 'en'] as $locale) {
+        foreach (Locales::codes() as $locale) {
             [$title, $short] = array_pad((array) $node[$locale], 2, null);
 
             $category->translations()->create([

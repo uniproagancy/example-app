@@ -107,7 +107,7 @@ class ZoommerClient
         ]));
     }
 
-    public function fetch(string $id, array $locales = ['ka', 'en']): array
+    public function fetch(string $id, array $locales = ['ka']): array
     {
         $out = [];
 

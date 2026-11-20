@@ -94,7 +94,7 @@ class ProductForm
                         ->schema([
                             Repeater::make('specs')
                                 ->hiddenLabel()
-                                ->relationship(modifyQueryUsing: fn (Builder $query) => $query->with(['kaTranslation', 'enTranslation']))
+                                ->relationship(modifyQueryUsing: fn (Builder $query) => $query->with(['kaTranslation']))
                                 ->orderColumn('position')
                                 ->reorderableWithDragAndDrop()
                                 ->defaultItems(0)
@@ -121,13 +121,6 @@ class ProductForm
                                     ])
                                         ->relationship('kaTranslation')
                                         ->mutateRelationshipDataBeforeCreateUsing(fn (array $data): array => [...$data, 'locale' => 'ka']),
-                                    Group::make([
-                                        TextInput::make('value')
-                                            ->label(__('admin.products.spec_value').' · '.__('admin.locales.en'))
-                                            ->maxLength(255),
-                                    ])
-                                        ->relationship('enTranslation', condition: fn (?array $state): bool => filled($state['value'] ?? null))
-                                        ->mutateRelationshipDataBeforeCreateUsing(fn (array $data): array => [...$data, 'locale' => 'en']),
                                     Toggle::make('is_key')
                                         ->label(__('admin.product_import.is_key')),
                                 ]),
@@ -211,8 +204,6 @@ class ProductForm
                                     TextInput::make('label.ka')
                                         ->label(__('admin.products.option_label').' · '.__('admin.locales.ka'))
                                         ->required(),
-                                    TextInput::make('label.en')
-                                        ->label(__('admin.products.option_label').' · '.__('admin.locales.en')),
                                     ColorPicker::make('hex')
                                         ->label(__('admin.products.hex'))
                                         ->visible(fn (Get $get): bool => $get('type') === 'color'),

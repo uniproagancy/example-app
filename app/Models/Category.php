@@ -45,9 +45,9 @@ class Category extends Model
         static::deleted(fn () => CategoryTree::flush());
     }
 
-    public static function createUnder(?int $parentId, string $title, ?string $englishTitle = null, array $attributes = []): self
+    public static function createUnder(?int $parentId, string $title, array $attributes = []): self
     {
-        return DB::transaction(function () use ($parentId, $title, $englishTitle, $attributes): self {
+        return DB::transaction(function () use ($parentId, $title, $attributes): self {
             $category = static::query()->create([
                 'parent_id' => $parentId,
                 'is_active' => true,
@@ -56,11 +56,8 @@ class Category extends Model
                 ...$attributes,
             ]);
 
-            $english = filled($englishTitle) ? $englishTitle : $title;
-
             $category->saveTranslations([
                 'ka' => ['title' => $title, 'slug' => Slug::make($title)],
-                'en' => ['title' => $english, 'slug' => Slug::make($english)],
             ]);
 
             return $category;
@@ -104,11 +101,6 @@ class Category extends Model
     public function kaTranslation(): HasOne
     {
         return $this->hasOne(CategoryTranslation::class)->where('locale', 'ka');
-    }
-
-    public function enTranslation(): HasOne
-    {
-        return $this->hasOne(CategoryTranslation::class)->where('locale', 'en');
     }
 
     public function translations(): HasMany

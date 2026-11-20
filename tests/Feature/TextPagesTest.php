@@ -41,7 +41,7 @@ class TextPagesTest extends TestCase
 
     public function test_legal_pages_migration_replaces_old_texts_and_keeps_other_pages(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         Page::query()->where('slug', 'privacy')->sole()->saveTranslations(['ka' => ['title' => 'ძველი', 'body' => '<p>ძველი ტექსტი</p>']]);
         Page::query()->where('slug', 'installments')->sole()->saveTranslations(['ka' => ['title' => 'ჩემი განვადება']]);
@@ -52,9 +52,9 @@ class TextPagesTest extends TestCase
         $this->assertSame('კონფიდენციალურობის პოლიტიკა', Page::query()->where('slug', 'privacy')->sole()->translate('ka')->title);
         $this->assertSame('ჩემი განვადება', Page::query()->where('slug', 'installments')->sole()->translate('ka')->title);
 
-        $this->get('/en/info/terms')->assertOk()->assertSee('Terms and conditions')->assertSee('<h3>5. Payment</h3>', false);
-        $this->get('/en/info/warranty')->assertOk()->assertSee('Warranty and returns')->assertSee('Items costing 30 ₾ or less');
-        $this->get('/en/info/privacy')->assertOk()->assertSee('Privacy policy')->assertSee('Personal Data Protection Service');
+        $this->get('/ka/info/terms')->assertOk()->assertSee('წესები და პირობები')->assertSee('<h3>5. გადახდა</h3>', false);
+        $this->get('/ka/info/warranty')->assertOk()->assertSee('გარანტია და დაბრუნება')->assertSee('ნივთი, რომლის ფასი 30 ₾-ს არ აღემატება');
+        $this->get('/ka/info/privacy')->assertOk()->assertSee('კონფიდენციალურობის პოლიტიკა')->assertSee('პერსონალურ მონაცემთა დაცვის სამსახურს');
         $this->assertStringNotContainsString('ძველი ტექსტი', Page::query()->where('slug', 'privacy')->sole()->translate('ka')->body);
     }
 

@@ -71,14 +71,14 @@ class PasswordResetTest extends TestCase
 
     public function test_user_can_set_a_new_password_and_is_signed_in(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $user = User::factory()->create(['email' => 'nino@example.com']);
         $token = Password::createToken($user);
 
-        $this->get('/en/reset-password/'.$token.'?email=nino@example.com')
+        $this->get('/ka/reset-password/'.$token.'?email=nino@example.com')
             ->assertOk()
-            ->assertSee(__('shop.auth.reset.title', [], 'en'));
+            ->assertSee(__('shop.auth.reset.title', [], 'ka'));
 
         Livewire::withQueryParams(['email' => 'nino@example.com'])
             ->test('pages::reset-password', ['token' => $token])
@@ -87,11 +87,11 @@ class PasswordResetTest extends TestCase
             ->set('password_confirmation', 'brand-new-secret')
             ->call('resetPassword')
             ->assertHasNoErrors()
-            ->assertRedirect(url('/en/account'));
+            ->assertRedirect(url('/ka/account'));
 
         $this->assertTrue(Hash::check('brand-new-secret', $user->fresh()->password));
         $this->assertAuthenticatedAs($user);
-        $this->assertSame(__('shop.auth.reset.done', [], 'en'), session('toast'));
+        $this->assertSame(__('shop.auth.reset.done', [], 'ka'), session('toast'));
     }
 
     public function test_invalid_token_and_mismatched_passwords_are_rejected(): void

@@ -75,7 +75,7 @@ class CategoryTreeAdminTest extends TestCase
             ->callTableAction('addChild', $parent, ['title' => 'ქეისები'])
             ->assertHasNoTableActionErrors()
             ->assertNotified()
-            ->callTableAction('addChild', $parent, ['title' => 'დამცავი მინები', 'title_en' => 'Screen protectors', 'is_active' => false], ['another' => true])
+            ->callTableAction('addChild', $parent, ['title' => 'დამცავი მინები', 'is_active' => false], ['another' => true])
             ->assertHasNoTableActionErrors()
             ->assertSet('mountedActions.0.name', 'addChild')
             ->assertSet('mountedActions.0.data.title', null);
@@ -86,13 +86,13 @@ class CategoryTreeAdminTest extends TestCase
         $this->assertSame($parent->id, $cases->parent_id);
         $this->assertSame($lastPosition + 1, $cases->position);
         $this->assertTrue($cases->is_active);
-        $this->assertSame('ქეისები', $cases->translate('en')->title);
+        $this->assertFalse($cases->translations()->where('locale', 'en')->exists());
         $this->assertSame('keisebi', $cases->translate('ka')->slug);
 
         $this->assertSame($parent->id, $glass->parent_id);
         $this->assertSame($lastPosition + 2, $glass->position);
         $this->assertFalse($glass->is_active);
-        $this->assertSame('Screen protectors', $glass->translate('en')->title);
+        $this->assertSame('დამცავი მინები', $glass->translate('ka')->title);
 
         Livewire::test(ListCategories::class)
             ->callTableAction('addChild', $parent, ['title' => ''])

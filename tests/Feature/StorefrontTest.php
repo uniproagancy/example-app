@@ -18,11 +18,11 @@ class StorefrontTest extends TestCase
 
     public function test_header_navigation_comes_from_database(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         MenuItem::query()->create([
             'location' => 'header',
-            'title' => ['ka' => 'ბლოგი', 'en' => 'Blog'],
+            'title' => ['ka' => 'ბლოგი'],
             'url' => '/blog',
             'position' => 99,
         ]);
@@ -30,12 +30,12 @@ class StorefrontTest extends TestCase
         MenuItem::query()->where('route_name', 'about')->update(['is_active' => false]);
         cache()->forget(MenuItem::CACHE_KEY);
 
-        $response = $this->get('/en')
+        $response = $this->get('/ka')
             ->assertOk()
-            ->assertSee('Blog')
-            ->assertSee(url('/en/blog'), false);
+            ->assertSee('ბლოგი')
+            ->assertSee(url('/ka/blog'), false);
 
-        $this->assertSame(1, substr_count($response->getContent(), 'href="'.url('/en/about').'"'));
+        $this->assertSame(1, substr_count($response->getContent(), 'href="'.url('/ka/about').'"'));
     }
 
     public function test_site_name_comes_from_settings(): void

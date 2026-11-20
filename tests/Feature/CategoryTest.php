@@ -21,14 +21,12 @@ class CategoryTest extends TestCase
         $this->assertSame(8, Category::query()->roots()->count());
         $this->assertTrue(Category::query()->whereHas('parent', fn ($query) => $query->whereNotNull('parent_id'))->exists());
 
-        foreach (['ka', 'en'] as $locale) {
-            $slugs = CategoryTranslation::query()->where('locale', $locale)->pluck('slug');
-            $this->assertSame($slugs->count(), $slugs->unique()->count());
-        }
+        $slugs = CategoryTranslation::query()->where('locale', 'ka')->pluck('slug');
+        $this->assertSame($slugs->count(), $slugs->unique()->count());
+        $this->assertFalse(CategoryTranslation::query()->where('locale', 'en')->exists());
 
         $gaming = Category::query()->where('code', 'gaming')->first();
         $this->assertSame('gaming', $gaming->translation('ka')->slug);
-        $this->assertSame('gaming', $gaming->translation('en')->slug);
     }
 
     public function test_home_page_lists_only_root_categories_with_products(): void
@@ -54,16 +52,16 @@ class CategoryTest extends TestCase
 
     public function test_category_changes_in_database_show_on_the_site(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $gaming = Category::query()->where('code', 'gaming')->first();
-        $gaming->translations()->where('locale', 'en')->first()->update(['title' => 'Video gaming zone']);
+        $gaming->translations()->where('locale', 'ka')->first()->update(['title' => 'გეიმინგის ზონა']);
 
         Category::query()->where('code', 'photo')->first()->update(['is_active' => false]);
 
-        $this->get('/en')
+        $this->get('/ka')
             ->assertOk()
-            ->assertSee('Video gaming zone')
+            ->assertSee('გეიმინგის ზონა')
             ->assertDontSee('id="sec-photo"', false);
     }
 
@@ -77,28 +75,28 @@ class CategoryTest extends TestCase
             ->assertSee('კონსოლები')
             ->assertSee('ჯოისტიკები')
             ->assertSee('Xbox Series X, 1 TB')
-            ->assertSee('hreflang="en" href="'.url('/en/categories/gaming').'"', false);
+            ->assertDontSee('hreflang="en"', false);
     }
 
     public function test_subcategory_page_shows_breadcrumb_and_filtered_products(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
         $ids = Product::query()->whereIn('sku', ['xsx', 'ds'])->pluck('id', 'sku');
 
-        $this->get('/en/categories/consoles')
+        $this->get('/ka/categories/consoles')
             ->assertOk()
-            ->assertSee(url('/en/categories/gaming'), false)
+            ->assertSee(url('/ka/categories/gaming'), false)
             ->assertSee('wire:key="category-product-'.$ids['xsx'].'"', false)
             ->assertDontSee('wire:key="category-product-'.$ids['ds'].'"', false);
     }
 
     public function test_slug_from_other_language_redirects_and_unknown_slug_is_404(): void
     {
-        $this->refreshApplicationWithLocale('en');
+        $this->refreshApplicationWithLocale('ka');
 
-        $this->get('/en/categories/gaming')->assertOk();
+        $this->get('/ka/categories/gaming')->assertOk();
         $this->get('/ka/kategoria/geimingi')->assertNotFound();
-        $this->get('/en/categories/does-not-exist')->assertNotFound();
+        $this->get('/ka/categories/does-not-exist')->assertNotFound();
     }
 }

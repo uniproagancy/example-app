@@ -31,7 +31,7 @@ class ProductFeedTest extends TestCase
 
     protected function television(): Product
     {
-        $category = Category::createUnder(null, 'ტელევიზორი', 'Televisions', ['google_category_id' => 404]);
+        $category = Category::createUnder(null, 'ტელევიზორი', ['google_category_id' => 404]);
         $brand = Brand::query()->firstOrCreate(['name' => 'Samsung'], ['slug' => 'samsung']);
         $product = Product::query()->where('sku', 'ip16')->sole()->replicate();
         $product->fill(['sku' => '8806095123456', 'category_id' => $category->id, 'brand_id' => $brand->id, 'price' => 1899, 'old_price' => 2199, 'stock' => 4, 'weight' => 14500, 'variant_group' => null]);

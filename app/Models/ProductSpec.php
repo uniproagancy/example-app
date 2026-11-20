@@ -28,11 +28,6 @@ class ProductSpec extends Model
         return $this->hasOne(ProductSpecTranslation::class)->where('locale', 'ka');
     }
 
-    public function enTranslation(): HasOne
-    {
-        return $this->hasOne(ProductSpecTranslation::class)->where('locale', 'en');
-    }
-
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);

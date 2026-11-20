@@ -4,14 +4,13 @@ return [
 
     'supportedLocales' => [
         'ka' => ['name' => 'Georgian', 'script' => 'Geor', 'native' => 'ქართული', 'regional' => 'ka_GE'],
-        'en' => ['name' => 'English', 'script' => 'Latn', 'native' => 'English', 'regional' => 'en_GB'],
     ],
 
     'useAcceptLanguageHeader' => true,
 
     'hideDefaultLocaleInURL' => false,
 
-    'localesOrder' => ['ka', 'en'],
+    'localesOrder' => ['ka'],
 
     'localesMapping' => [],
 
