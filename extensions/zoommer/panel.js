@@ -1,4 +1,4 @@
-import {detailsUrl, examine, parts, photoUrls} from './lib/core.js';
+import {detailsUrl, examine, photoUrls} from './lib/core.js';
 import {clearRecords, getMeta, getRecord, putRecord, setMeta, sizes} from './lib/db.js';
 import {Blocked, createZoommerReader} from './lib/zoommer.js';
 import {collectPhotos} from './lib/photos.js';
@@ -189,15 +189,13 @@ async function countdown(seconds) {
     }
 }
 
-function signature(part) {
-    return `${part.ids[0]}-${part.ids[part.ids.length - 1]}-${part.ids.length}`;
-}
+// Everything collected goes into one file; the admin takes up to 500 MB in pieces of its own.
+const UPLOAD_MAX = 500 * 1024 * 1024;
 
 async function pendingDownloads(job) {
-    const list = parts(await sizes());
-    const done = new Set(job?.downloaded ?? []);
+    const collected = (await sizes()).length;
 
-    return list.filter(part => !done.has(signature(part))).reduce((sum, part) => sum + part.ids.length, 0);
+    return Math.max(0, collected - (job?.downloadedCount ?? 0));
 }
 
 $('start').addEventListener('click', async () => {
@@ -243,7 +241,7 @@ $('start').addEventListener('click', async () => {
         missing: 0,
         failed: 0,
         stoppedByLimit: false,
-        downloaded: [],
+        downloadedCount: 0,
         state: 'paused',
     });
 
@@ -288,9 +286,10 @@ async function write(ids, put, button) {
     await put(']');
 }
 
-async function download(part, index, total, button) {
+async function download(button) {
     const job = await getMeta('job');
-    const name = `zoommer-${stamp(job.createdAt)}-${job.from}-${job.to}${total > 1 ? `-${index + 1}` : ''}.json`;
+    const ids = (await sizes()).map(row => row.id);
+    const name = `zoommer-${stamp(job.createdAt)}-${job.from}-${job.to}.json`;
 
     button.disabled = true;
 
@@ -307,7 +306,7 @@ async function download(part, index, total, button) {
             const file = await handle.createWritable();
 
             try {
-                await write(part.ids, text => file.write(text), button);
+                await write(ids, text => file.write(text), button);
                 await file.close();
             } catch (error) {
                 await file.abort().catch(() => {});
@@ -315,7 +314,7 @@ async function download(part, index, total, button) {
             }
         } else {
             const pieces = [];
-            await write(part.ids, text => pieces.push(text), button);
+            await write(ids, text => pieces.push(text), button);
             const url = URL.createObjectURL(new Blob(pieces, {type: 'application/json'}));
             const link = document.createElement('a');
             link.href = url;
@@ -324,7 +323,7 @@ async function download(part, index, total, button) {
             setTimeout(() => URL.revokeObjectURL(url), 60_000);
         }
 
-        job.downloaded = [...new Set([...(job.downloaded ?? []), signature(part)])];
+        job.downloadedCount = ids.length;
         await setMeta('job', job);
     } catch {
         alert(T.download_failed);
@@ -381,29 +380,31 @@ function renderCounts(job) {
 
 async function renderDownloads() {
     const job = await getMeta('job');
-    const list = parts(await sizes());
-    const done = new Set(job?.downloaded ?? []);
-    const bytes = list.reduce((sum, part) => sum + part.bytes, 0);
+    const rows = await sizes();
+    const bytes = rows.reduce((sum, row) => sum + row.size, 0);
+    const done = rows.length > 0 && (job?.downloadedCount ?? 0) >= rows.length;
 
     $('downloads').innerHTML = '';
-    $('size').textContent = list.length ? T.size(bytes) : T.parts_none;
-    $('parts-hint').hidden = list.length < 2;
-    $('parts-hint').textContent = T.parts_hint;
-    $('download-info').textContent = running && list.length ? T.download_after_pause : '';
+    $('size').textContent = rows.length ? T.size(bytes) : T.parts_none;
+    $('parts-hint').hidden = bytes <= UPLOAD_MAX;
+    $('parts-hint').textContent = T.too_big;
+    $('download-info').textContent = running && rows.length ? T.download_after_pause : '';
 
-    list.forEach((part, index) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.disabled = running;
-        button.textContent = T.part(index + 1, list.length, part.ids.length, part.bytes) + (done.has(signature(part)) ? ` ${T.downloaded}` : '');
+    if (!rows.length) {
+        return;
+    }
 
-        if (done.has(signature(part))) {
-            button.className = 'secondary';
-        }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.disabled = running;
+    button.textContent = T.download(rows.length, bytes) + (done ? ` ${T.downloaded}` : '');
 
-        button.addEventListener('click', () => download(part, index, list.length, button));
-        $('downloads').append(button);
-    });
+    if (done) {
+        button.className = 'secondary';
+    }
+
+    button.addEventListener('click', () => download(button));
+    $('downloads').append(button);
 }
 
 async function render() {

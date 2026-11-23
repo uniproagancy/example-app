@@ -38,6 +38,17 @@ class Catalog
         return static::productsFor($locale ?? app()->getLocale());
     }
 
+    public static function description(int $id, ?string $locale = null): ?string
+    {
+        $locale ??= app()->getLocale();
+
+        return once(fn () => DB::table('product_translations')
+            ->where('product_id', $id)
+            ->whereIn('locale', array_unique([$locale, (string) config('app.fallback_locale')]))
+            ->orderByRaw('locale = ? desc', [$locale])
+            ->value('description'));
+    }
+
     public static function find(int|string $id): ?array
     {
         return static::products()->firstWhere('id', (int) $id);
@@ -484,7 +495,6 @@ class Catalog
             'brand' => $row['brand_name'] ?? '',
             'name' => $translation['name'],
             'subtitle' => $translation['subtitle'],
-            'description' => $translation['description'],
             'price' => $price,
             'old' => $old,
             'priceLabel' => static::money($price),
@@ -579,6 +589,8 @@ class Catalog
 
     protected static function raw(): array
     {
+        $live = fn () => DB::table('products')->select('id')->where('is_active', true)->whereNull('deleted_at');
+
         return Cache::rememberForever(self::CACHE_KEY, fn () => [
             'products' => DB::table('products')
                 ->leftJoin('brands', fn ($join) => $join->on('brands.id', '=', 'products.brand_id')->whereNull('brands.deleted_at'))
@@ -593,10 +605,12 @@ class Catalog
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'translations' => DB::table('product_translations')
-                ->get(['product_id', 'locale', 'name', 'slug', 'subtitle', 'description'])
+                ->whereIn('product_id', $live())
+                ->get(['product_id', 'locale', 'name', 'slug', 'subtitle'])
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'images' => DB::table('product_images')
+                ->whereIn('product_id', $live())
                 ->orderBy('position')
                 ->get(['product_id', 'path'])
                 ->map(fn ($row) => (array) $row)
@@ -612,6 +626,7 @@ class Catalog
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'filters' => DB::table('attribute_value_product as avp')
+                ->whereIn('avp.product_id', $live())
                 ->join('attribute_values as av', 'av.id', '=', 'avp.attribute_value_id')
                 ->join('attributes as a', 'a.id', '=', 'av.attribute_id')
                 ->whereNull('av.deleted_at')
@@ -678,6 +693,7 @@ class Catalog
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'options' => DB::table('product_options')
+                ->whereIn('product_id', $live())
                 ->orderBy('position')
                 ->orderBy('id')
                 ->get(['id', 'product_id', 'type', 'label', 'hex', 'price', 'old_price', 'is_default'])

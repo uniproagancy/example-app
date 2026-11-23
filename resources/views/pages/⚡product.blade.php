@@ -44,6 +44,11 @@ new class extends Component
     public function render()
     {
         $product = Catalog::find($this->productId);
+
+        if ($product) {
+            $product['description'] = Catalog::description($product['id']);
+        }
+
         $category = $product ? CategoryTree::find($product['categoryId']) : null;
 
         view()->share('alternateUrls', collect($product['slugs'] ?? [])

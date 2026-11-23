@@ -26,10 +26,8 @@ export const T = {
     count_left: 'დარჩა',
 
     size: bytes => `ფაილის ზომა დაახლოებით ${(bytes / 1_000_000).toFixed(1)} MB`,
-    part: (n, total, count, bytes) => total > 1
-        ? `ნაწილი ${n} / ${total} — ${count} პროდუქტი, ${(bytes / 1_000_000).toFixed(1)} MB`
-        : `ჩამოტვირთვა — ${count} პროდუქტი, ${(bytes / 1_000_000).toFixed(1)} MB`,
-    parts_hint: 'ფაილი 90 MB-ზე დიდია, ამიტომ ნაწილებადაა დაყოფილი. ადმინში თითოეული ცალ-ცალკე ატვირთე.',
+    download: (count, bytes) => `ჩამოტვირთვა — ერთი ფაილი, ${count} პროდუქტი, ${(bytes / 1_000_000).toFixed(1)} MB`,
+    too_big: 'ფაილი 500 MB-ზე დიდია — ადმინი მას ვერ მიიღებს. შეამცირე ID-ების დიაპაზონი ან ჩართე „ფოტოების გარეშე“.',
     writing: (done, total) => `იწერება… ${done} / ${total}`,
     downloaded: '✓ ჩამოტვირთულია',
     download_after_pause: 'ჩამოტვირთვა შეგროვების დასრულების ან პაუზის შემდეგ.',

@@ -1,6 +1,5 @@
 export const ZOOMMER = 'https://zoommer.ge';
 export const MAX_PHOTOS = 8;
-export const PART_MAX = 90_000_000;
 
 export function detailsUrl(id) {
     return `${ZOOMMER}/api/proxy/v1/Products/details?productId=${Number(id)}`;
@@ -84,19 +83,3 @@ export function photoUrls(product) {
     return {urls, usable: urls.length > 0 && urls.every(photoUrlAllowed)};
 }
 
-export function parts(sizes) {
-    const out = [];
-    let current = null;
-
-    for (const {id, size} of sizes) {
-        if (!current || (current.bytes + size > PART_MAX && current.ids.length)) {
-            current = {ids: [], bytes: 0};
-            out.push(current);
-        }
-
-        current.ids.push(id);
-        current.bytes += size;
-    }
-
-    return out;
-}
