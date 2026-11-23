@@ -189,8 +189,7 @@ async function countdown(seconds) {
     }
 }
 
-// Everything collected goes into one file; the admin takes up to 500 MB in pieces of its own.
-const UPLOAD_MAX = 500 * 1024 * 1024;
+const UPLOAD_MAX = 5 * 1024 * 1024 * 1024;
 
 async function pendingDownloads(job) {
     const collected = (await sizes()).length;

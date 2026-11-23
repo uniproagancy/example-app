@@ -152,7 +152,7 @@ class TaxonomyResolver
             $value->saveTranslations(
                 collect($rows)
                     ->filter(fn ($r) => filled($r['value'] ?? null) && ! in_array(trim($r['value']), self::EMPTY_VALUES, true))
-                    ->mapWithKeys(fn ($r) => [$r['locale'] => ['label' => trim($r['value'])]])
+                    ->mapWithKeys(fn ($r) => [$r['locale'] => ['label' => self::label($r['value'])]])
                     ->all()
             );
         }
@@ -256,6 +256,13 @@ class TaxonomyResolver
         }
 
         return self::fitTo(Slug::make($raw) ?: Str::slug($raw));
+    }
+
+    public static function label(string $value, int $max = 255): string
+    {
+        $value = trim($value);
+
+        return mb_strlen($value) <= $max ? $value : rtrim(mb_substr($value, 0, $max - 1)).'…';
     }
 
     public static function fitTo(string $slug, int $max = 64): string

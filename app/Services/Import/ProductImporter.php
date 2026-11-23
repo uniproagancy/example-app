@@ -469,7 +469,7 @@ class ProductImporter
                     $translations[] = [
                         'product_spec_id' => $specId,
                         'locale' => $row['locale'],
-                        'value' => $row['value'],
+                        'value' => TaxonomyResolver::label((string) $row['value']),
                     ];
                 }
             }

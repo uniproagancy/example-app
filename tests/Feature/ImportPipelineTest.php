@@ -91,6 +91,25 @@ class ImportPipelineTest extends TestCase
         $this->assertNull(Catalog::findBySku('SKU-1'));
     }
 
+    public function test_a_spec_value_longer_than_the_column_is_shortened_instead_of_failing(): void
+    {
+        $supplier = $this->supplier();
+        $long = str_repeat('Galaxy Note20 series, S20 series, ', 12);
+
+        $this->import($supplier, [FakeSupplierDriver::payload('1', ['specs' => [
+            ['name' => 'თავსებადობა', 'value' => $long, 'locale' => 'ka', 'filterable' => true, 'key' => false],
+        ]])]);
+
+        $product = Product::query()->where('sku', 'SKU-1')->with(['specs.translations', 'attributeValues.translations'])->sole();
+        $label = $product->attributeValues->sole()->translations->sole()->label;
+        $value = $product->specs->sole()->translations->sole()->value;
+
+        $this->assertSame(255, mb_strlen($label));
+        $this->assertStringStartsWith('Galaxy Note20 series', $label);
+        $this->assertStringEndsWith('…', $label);
+        $this->assertSame($label, $value);
+    }
+
     public function test_mapping_a_category_and_relinking_puts_products_on_the_shelf(): void
     {
         $supplier = $this->supplier(config: ['publish_on_import' => true]);

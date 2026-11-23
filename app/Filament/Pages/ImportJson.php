@@ -50,7 +50,7 @@ class ImportJson extends Page
 {
     use AdminOnlyPage;
 
-    public const MAX_UPLOAD_KB = 512000;
+    public const MAX_UPLOAD_KB = 5 * 1024 * 1024;
 
     public const MEMORY_LIMIT = '-1';
 

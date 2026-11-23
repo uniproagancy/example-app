@@ -11,7 +11,7 @@ class JsonUploadController extends Controller
 {
     public const CHUNK_BYTES = 5 * 1024 * 1024;
 
-    public const MAX_BYTES = 500 * 1024 * 1024;
+    public const MAX_BYTES = 5 * 1024 * 1024 * 1024;
 
     public static function path(int $userId, string $upload): string
     {
