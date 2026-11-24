@@ -1,4 +1,6 @@
 import { Livewire, Alpine } from '../../vendor/livewire/livewire/dist/livewire.esm';
+import { animate } from 'motion';
+import 'number-flow';
 window.elioImages = import.meta.glob('../images/**', { eager: true, query: '?url', import: 'default' });
 
 const readFavorites = () => {
@@ -14,6 +16,193 @@ const writeFavorites = (favorites) => {
         localStorage.setItem('elio.favorites', JSON.stringify(favorites));
     } catch {}
 };
+
+const flows = new WeakMap();
+
+const syncFlow = (holder) => {
+    const value = Number(holder.dataset.flow);
+
+    if (!Number.isFinite(value)) {
+        return;
+    }
+
+    let state = flows.get(holder);
+
+    if (!state || !holder.contains(state.flow)) {
+        const flow = document.createElement('number-flow');
+        flow.locales = 'ka-GE';
+        flow.format = { maximumFractionDigits: 0 };
+        flow.numberPrefix = holder.dataset.flowPrefix ?? '';
+        flow.numberSuffix = holder.dataset.flowSuffix ?? ' ₾';
+        const from = state ? state.value : value;
+        holder.replaceChildren(flow);
+        flow.update(from);
+        state = { flow, value: from };
+        flows.set(holder, state);
+    }
+
+    if (state.value !== value) {
+        state.value = value;
+        requestAnimationFrame(() => state.flow.update(value));
+    }
+};
+
+const syncFlowsIn = (root) => {
+    if (root.nodeType !== 1) {
+        return;
+    }
+
+    if (root.matches('[data-flow]')) {
+        syncFlow(root);
+    }
+
+    root.querySelectorAll('[data-flow]').forEach(syncFlow);
+};
+
+new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+        if (mutation.type === 'attributes') {
+            syncFlow(mutation.target);
+            continue;
+        }
+
+        const holder = mutation.target.closest?.('[data-flow]');
+
+        if (holder) {
+            syncFlow(holder);
+        }
+
+        mutation.addedNodes.forEach(syncFlowsIn);
+    }
+}).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-flow'] });
+
+document.addEventListener('DOMContentLoaded', () => syncFlowsIn(document.body));
+
+const projectMomentum = (velocity, deceleration = 0.998) => ((velocity / 1000) * deceleration) / (1 - deceleration);
+
+const rubberband = (overshoot, dimension, constant = 0.55) => (overshoot * dimension * constant) / (dimension + constant * Math.abs(overshoot));
+
+Alpine.directive('swipe-close', (el, { value: side, expression }, { evaluateLater, cleanup }) => {
+    const close = evaluateLater(expression);
+    const sign = side === 'left' ? -1 : 1;
+    const scrim = el.previousElementSibling;
+    let grab = null;
+    let dragging = false;
+    let samples = [];
+    let offset = 0;
+    let motion = null;
+
+    const paint = (x) => {
+        offset = x;
+        el.style.transform = x ? `translateX(${x}px)` : '';
+
+        if (scrim) {
+            scrim.style.opacity = String(Math.max(0, 1 - Math.max(0, x * sign) / el.offsetWidth));
+        }
+    };
+
+    const reset = () => {
+        paint(0);
+
+        if (scrim) {
+            scrim.style.opacity = '';
+        }
+    };
+
+    const down = (event) => {
+        if (event.pointerType === 'mouse' || event.button > 0) {
+            return;
+        }
+
+        motion?.stop();
+        motion = null;
+        grab = { x: event.clientX - offset, y: event.clientY, id: event.pointerId };
+        dragging = false;
+        samples = [{ x: event.clientX, t: event.timeStamp }];
+    };
+
+    const move = (event) => {
+        if (!grab || event.pointerId !== grab.id) {
+            return;
+        }
+
+        const dx = event.clientX - grab.x;
+        const dy = event.clientY - grab.y;
+
+        if (!dragging) {
+            if (Math.abs(dx - offset) < 10 && Math.abs(dy) < 10) {
+                return;
+            }
+
+            if (Math.abs(dy) > Math.abs(dx - offset)) {
+                grab = null;
+
+                return;
+            }
+
+            dragging = true;
+            try {
+                el.setPointerCapture(event.pointerId);
+            } catch {}
+        }
+
+        samples = [...samples.slice(-4), { x: event.clientX, t: event.timeStamp }];
+        paint(dx * sign >= 0 ? dx : sign * -rubberband(Math.abs(dx), el.offsetWidth));
+    };
+
+    const up = (event) => {
+        if (!grab || event.pointerId !== grab.id) {
+            return;
+        }
+
+        grab = null;
+
+        if (!dragging) {
+            return;
+        }
+
+        dragging = false;
+        const first = samples[0];
+        const last = samples[samples.length - 1];
+        const velocity = ((last.x - first.x) / Math.max(1, last.t - first.t)) * 1000;
+        const width = el.offsetWidth;
+        const closing = (offset + projectMomentum(velocity)) * sign > width * 0.4;
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        motion = animate(offset, closing ? sign * width : 0, {
+            type: 'spring',
+            bounce: closing ? 0 : 0.18,
+            duration: reduce ? 0.01 : 0.4,
+            velocity,
+            onUpdate: paint,
+        });
+
+        motion.then(() => {
+            motion = null;
+
+            if (closing) {
+                close();
+                requestAnimationFrame(reset);
+            } else {
+                reset();
+            }
+        });
+    };
+
+    el.style.touchAction = 'pan-y';
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+
+    cleanup(() => {
+        motion?.stop();
+        el.removeEventListener('pointerdown', down);
+        el.removeEventListener('pointermove', move);
+        el.removeEventListener('pointerup', up);
+        el.removeEventListener('pointercancel', up);
+    });
+});
 
 Alpine.store('ui', {
     catalog: false,

@@ -117,14 +117,14 @@ new class extends Component
         </span>
         <span class="hidden flex-col gap-0.5 leading-[1.1] lg:flex">
             <span class="text-[11px] font-bold tracking-[0.4px] text-brand uppercase">{{ __('shop.cart') }}</span>
-            <span class="font-display text-sm font-extrabold">{{ Catalog::money($this->total) }}</span>
+            <span class="font-display text-sm font-extrabold" data-flow="{{ $this->total }}">{{ Catalog::money($this->total) }}</span>
         </span>
     </button>
 
     <template x-teleport="body">
         <div x-show="$store.ui.cart" x-cloak>
             <div x-on:click="$store.ui.cart = false" class="fixed inset-0 z-50 animate-fade bg-navy/40"></div>
-            <aside class="fixed inset-y-0 right-0 z-[51] flex w-[420px] max-w-screen animate-slide-left flex-col bg-white shadow-[-20px_0_60px_rgba(10,22,51,.18)]">
+            <aside x-swipe-close:right="$store.ui.cart = false" class="fixed inset-y-0 right-0 z-[51] flex w-[420px] max-w-screen animate-slide-left flex-col bg-white shadow-[-20px_0_60px_rgba(10,22,51,.18)]">
                 <div class="flex items-center justify-between border-b border-line px-6 py-[22px]">
                     <span class="text-lg font-extrabold tracking-[0.4px] uppercase">{{ __('shop.cart') }} · {{ $this->count }}</span>
                     <button type="button" x-on:click="$store.ui.cart = false" aria-label="{{ __('shop.close') }}" class="size-10 rounded-[10px] bg-[#F1F5FC] text-xl text-navy">×</button>
@@ -176,7 +176,7 @@ new class extends Component
                     @endif
                     <div class="flex items-baseline justify-between">
                         <span class="font-bold">{{ __('shop.cart_drawer.total') }}</span>
-                        <span class="font-display text-2xl font-extrabold">{{ Catalog::money($this->total) }}</span>
+                        <span class="font-display text-2xl font-extrabold" data-flow="{{ $this->total }}">{{ Catalog::money($this->total) }}</span>
                     </div>
                     @if ($this->total > 0)
                         <a href="{{ route('checkout') }}" wire:navigate x-on:click="$store.ui.cart = false" class="grid h-[52px] place-items-center rounded-full bg-brand text-[15px] font-bold text-white shadow-[0_10px_24px_-8px_rgba(11,99,246,.6)] hover:bg-brand-dark hover:text-white">{{ __('shop.cart_drawer.checkout') }}</a>

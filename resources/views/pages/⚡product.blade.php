@@ -45,10 +45,10 @@ new class extends Component
     {
         $product = Catalog::find($this->productId);
 
-        if ($product) {
-            $product['description'] = Catalog::description($product['id']);
-            $product['images'] = Catalog::images($product['id']);
-        }
+        abort_unless($product, 404);
+
+        $product['description'] = Catalog::description($product['id']);
+        $product['images'] = Catalog::images($product['id']);
 
         $category = $product ? CategoryTree::find($product['categoryId']) : null;
 
@@ -298,7 +298,7 @@ new class extends Component
 
                 <div class="flex flex-col gap-1.5 border-y border-line-soft py-[18px]">
                     <div class="flex flex-wrap items-baseline gap-3">
-                        <span class="font-display text-[clamp(34px,3.4vw,42px)] leading-none font-extrabold tracking-[-1.4px]" x-text="money(total)">{{ $product['priceLabel'] }}</span>
+                        <span class="font-display text-[clamp(34px,3.4vw,42px)] leading-none font-extrabold tracking-[-1.4px]" data-flow="{{ $product['price'] }}" :data-flow="total">{{ $product['priceLabel'] }}</span>
                         <span x-show="unitOld" @if (! $product['old']) x-cloak @endif class="flex items-baseline gap-3">
                             <span class="text-[15px] text-subtle line-through" x-text="unitOld ? money(unitOld * qty) : ''">{{ $product['oldLabel'] }}</span>
                             <span class="h-6 rounded-full bg-[#FDECEC] px-2.5 text-xs leading-6 font-bold text-sale" x-text="unitOld ? '−' + money((unitOld - unitPrice) * qty) : ''">@if ($product['saveLabel'])−{{ $product['saveLabel'] }}@endif</span>
@@ -514,7 +514,7 @@ new class extends Component
                 <span class="truncate text-sm font-bold">{{ $product['name'] }}</span>
                 <span class="truncate text-xs text-faint" x-text="variantLabel"></span>
             </span>
-            <span class="font-display text-lg font-extrabold whitespace-nowrap sm:text-xl" x-text="money(total)">{{ $product['priceLabel'] }}</span>
+            <span class="font-display text-lg font-extrabold whitespace-nowrap sm:text-xl" data-flow="{{ $product['price'] }}" :data-flow="total">{{ $product['priceLabel'] }}</span>
             <button type="button" data-cart-origin x-on:click="add()" class="h-[46px] rounded-[14px] bg-brand px-4 text-sm font-bold whitespace-nowrap text-white hover:bg-brand-bright sm:px-[22px]">{{ __('product.to_cart') }}</button>
         </div>
     @endif

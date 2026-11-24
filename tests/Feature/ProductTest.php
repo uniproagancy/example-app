@@ -98,6 +98,16 @@ class ProductTest extends TestCase
         $this->get('/ka/product/sony-dualsense-edge-wireless-controller')->assertNotFound();
     }
 
+    public function test_a_product_sold_out_after_the_catalog_was_cached_gives_not_found_instead_of_an_error(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        Catalog::products();
+        Product::query()->where('sku', 'ds')->toBase()->update(['stock' => 0]);
+
+        $this->get('/ka/product/sony-dualsense-edge-wireless-controller')->assertNotFound();
+    }
+
     public function test_product_cards_link_to_product_pages(): void
     {
         $this->refreshApplicationWithLocale('ka');

@@ -15,6 +15,7 @@
         <div x-show="$store.ui.catalog" x-cloak>
             <div x-on:click="$store.ui.catalog = false" class="fixed inset-0 z-[70] animate-fade bg-navy/45"></div>
             <aside
+                x-swipe-close:left="$store.ui.catalog = false"
                 class="fixed inset-y-0 left-0 z-[71] grid w-screen animate-slide-in grid-cols-1 overflow-hidden bg-white shadow-[20px_0_60px_rgba(10,22,51,.3)] sm:w-[min(980px,100vw)] sm:grid-cols-[260px_minmax(0,1fr)] sm:rounded-r-[28px] lg:grid-cols-[300px_minmax(0,1fr)]"
             >
                 <div class="min-h-0 flex-col bg-navy font-caps text-white sm:flex" :class="pane === 'list' ? 'flex' : 'hidden'">

@@ -15,5 +15,9 @@
     },
     "optionalDependencies": {
         "@laravel/multiplex": "^0.4.1"
+    },
+    "dependencies": {
+        "motion": "^14.14.0",
+        "number-flow": "^0.6.2"
     }
 }
