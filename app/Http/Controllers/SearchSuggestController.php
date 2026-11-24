@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Support\Catalog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
 
 class SearchSuggestController extends Controller
 {
@@ -22,7 +23,10 @@ class SearchSuggestController extends Controller
 
         return response()->json([
             'products' => $found->take(self::SHOWN)
-                ->map(fn (array $product) => collect($product)->only(['id', 'url', 'image', 'brand', 'name', 'subLabel', 'priceLabel'])->all())
+                ->map(fn (array $product) => [
+                    ...collect($product)->only(['id', 'image', 'brand', 'name', 'subLabel', 'priceLabel'])->all(),
+                    'url' => LaravelLocalization::getLocalizedURL(app()->getLocale(), $product['url'], [], true) ?: $product['url'],
+                ])
                 ->values()
                 ->all(),
             'total' => $found->count(),

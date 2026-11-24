@@ -87,6 +87,7 @@ class CatalogTest extends TestCase
         $this->get(route('search.suggest', ['q' => mb_substr($speaker['name'], 0, 6)]))
             ->assertOk()
             ->assertJsonPath('products.0.id', $speaker['id'])
+            ->assertJsonPath('products.0.url', url('/ka/product/'.$speaker['slug']))
             ->assertJsonStructure(['products' => [['id', 'url', 'image', 'brand', 'name', 'subLabel', 'priceLabel']], 'total']);
 
         $this->get(route('search.suggest', ['q' => '']))->assertOk()->assertExactJson(['products' => [], 'total' => 0]);
