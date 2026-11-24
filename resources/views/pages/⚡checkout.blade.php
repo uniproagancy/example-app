@@ -32,8 +32,6 @@ new class extends Component
 
     public string $shipping = 'courier';
 
-    public string $city = 'tbilisi';
-
     public string $address = '';
 
     public string $apartment = '';
@@ -241,7 +239,6 @@ new class extends Component
                 'phone' => trim($this->phone),
                 'email' => mb_strtolower(trim($this->email)),
                 'shipping_method' => $this->shipping,
-                'city' => $this->city,
                 'address' => trim($this->address),
                 'apartment' => trim($this->apartment) ?: null,
                 'note' => trim($this->note) ?: null,
@@ -295,7 +292,7 @@ new class extends Component
 
         $this->placed = [
             'number' => $order->number,
-            'shipping' => __("checkout.methods.{$this->shipping}.title").' · '.__("checkout.cities.{$this->city}"),
+            'shipping' => __("checkout.methods.{$this->shipping}.title"),
             'payment' => $order->paymentLabel(),
             'total' => Catalog::money($order->total),
             'url' => $order->pageUrl(),
@@ -315,7 +312,6 @@ new class extends Component
             'phone' => ['required', 'string', 'regex:/^\+?[0-9\s\-()]{9,20}$/'],
             'email' => ['required', 'string', 'email', 'max:255'],
             'shipping' => ['required', Rule::in(Order::SHIPPING_METHODS)],
-            'city' => ['required', Rule::in(Order::CITIES)],
             'address' => ['required', 'string', 'max:255'],
             'apartment' => ['nullable', 'string', 'max:255'],
             'note' => ['nullable', 'string', 'max:500'],
@@ -338,7 +334,6 @@ new class extends Component
             'lastName' => __('checkout.last_name'),
             'phone' => __('checkout.phone'),
             'email' => __('checkout.email'),
-            'city' => __('checkout.city'),
             'address' => __('checkout.address'),
         ];
     }
@@ -464,21 +459,11 @@ new class extends Component
 
                     <section class="{{ $card }}">
                         <div class="flex flex-col gap-3.5">
-                            <div class="grid grid-cols-1 gap-3 sm:grid-cols-[260px_minmax(0,1fr)]">
-                                <label class="flex min-w-0 flex-col gap-1.5 text-xs font-bold text-[#3A4A68]">
-                                    {{ __('checkout.city') }}
-                                    <select wire:model="city" class="{{ $field }} border-[#E3E9F3] px-3.5">
-                                        @foreach (App\Models\Order::CITIES as $cityKey)
-                                            <option value="{{ $cityKey }}">{{ __("checkout.cities.$cityKey") }}</option>
-                                        @endforeach
-                                    </select>
-                                </label>
-                                <label class="flex min-w-0 flex-col gap-1.5 text-xs font-bold text-[#3A4A68]">
-                                    {{ __('checkout.address') }}
-                                    <input wire:model="address" autocomplete="street-address" placeholder="{{ __('checkout.address_placeholder') }}" @class([$field, 'border-sale' => $errors->has('address'), 'border-[#E3E9F3]' => ! $errors->has('address')])>
-                                    @error('address')<span class="text-xs font-semibold text-sale">{{ $message }}</span>@enderror
-                                </label>
-                            </div>
+                            <label class="flex min-w-0 flex-col gap-1.5 text-xs font-bold text-[#3A4A68]">
+                                {{ __('checkout.address') }}
+                                <input wire:model="address" autocomplete="street-address" placeholder="{{ __('checkout.address_placeholder') }}" @class([$field, 'border-sale' => $errors->has('address'), 'border-[#E3E9F3]' => ! $errors->has('address')])>
+                                @error('address')<span class="text-xs font-semibold text-sale">{{ $message }}</span>@enderror
+                            </label>
                             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <input wire:model="apartment" aria-label="{{ __('checkout.apartment_placeholder') }}" placeholder="{{ __('checkout.apartment_placeholder') }}" class="{{ $field }} border-[#E3E9F3] text-sm">
                                 <input wire:model="note" aria-label="{{ __('checkout.note_placeholder') }}" placeholder="{{ __('checkout.note_placeholder') }}" class="{{ $field }} border-[#E3E9F3] text-sm">

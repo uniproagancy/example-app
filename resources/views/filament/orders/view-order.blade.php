@@ -494,16 +494,9 @@
                         </x-filament::input.wrapper>
                     </label>
 
-                    <label class="flex flex-col gap-1">
-                        <span class="{{ $label }}">{{ __('admin.orders.city') }}</span>
-                        <x-filament::input.wrapper :disabled="! $editable">
-                            <x-filament::input.select wire:model="delivery.city" :disabled="! $editable">
-                                <option value="">{{ __('admin.orders.not_set') }}</option>
-                                @foreach (Order::CITIES as $city)
-                                    <option value="{{ $city }}">{{ __("checkout.cities.$city") }}</option>
-                                @endforeach
-                            </x-filament::input.select>
-                        </x-filament::input.wrapper>
+                    <label class="flex items-center gap-2 self-end pb-2.5">
+                        <x-filament::input.checkbox wire:model="delivery.is_region" :disabled="! $editable" />
+                        <span class="{{ $label }}">{{ __('checkout.region') }}</span>
                     </label>
 
                     @foreach (['address', 'apartment'] as $field)

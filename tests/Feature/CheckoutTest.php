@@ -154,9 +154,8 @@ class CheckoutTest extends TestCase
 
         Livewire::test('pages::checkout')
             ->set('agree', false)
-            ->set('city', 'paris')
             ->call('placeOrder')
-            ->assertHasErrors(['firstName', 'lastName', 'phone', 'email', 'address', 'city', 'agree']);
+            ->assertHasErrors(['firstName', 'lastName', 'phone', 'email', 'address', 'agree']);
 
         $component = $this->filled();
         session()->forget('cart');

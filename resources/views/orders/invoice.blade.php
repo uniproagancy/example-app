@@ -89,7 +89,7 @@
     @foreach ($orders as $order)
         @php
             $manual = $order instanceof Invoice;
-            $address = $manual ? $order->address : collect([$order->city ? __("checkout.cities.{$order->city}") : null, $order->address, $order->apartment])->filter()->implode(', ');
+            $address = $manual ? $order->address : collect([$order->placeLabel(), $order->address, $order->apartment])->filter()->implode(', ');
             $lines = $manual ? $order->items() : $order->items;
             $subtotal = $manual ? $order->subtotal() : $order->subtotal;
             $total = $manual ? $order->total() : $order->total;

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Support\Catalog;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -28,6 +29,19 @@ class AdminCreateOrderTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
     }
 
+    public function test_product_search_does_not_load_the_whole_catalog(): void
+    {
+        $speaker = Product::query()->where('sku', 'jbl')->first();
+        Catalog::flush();
+
+        $found = CreateOrder::searchProducts('jbl');
+
+        $this->assertArrayHasKey($speaker->id, $found);
+        $this->assertStringContainsString(Catalog::money(Catalog::find($speaker->id)['price']), $found[$speaker->id]);
+        $this->assertSame((float) Catalog::find($speaker->id)['price'], CreateOrder::currentPrice($speaker->id));
+        $this->assertFalse(Cache::has(Catalog::CACHE_KEY));
+    }
+
     public function test_operator_creates_a_phone_order_with_products(): void
     {
         $speaker = Product::query()->where('sku', 'jbl')->first();
@@ -42,8 +56,8 @@ class AdminCreateOrderTest extends TestCase
                 'first_name' => 'ლევანი',
                 'last_name' => 'გელაშვილი',
                 'phone' => '555 98 76 54',
-                'city' => 'batumi',
-                'address' => 'გორგილაძე 5',
+                'address' => 'გორგილაძე 5, ბათუმი',
+                'is_region' => true,
                 'payment_method' => 'card',
                 'products' => [
                     ['product_id' => $speaker->id, 'quantity' => 2, 'price' => $price - 10],
@@ -58,7 +72,9 @@ class AdminCreateOrderTest extends TestCase
         $this->assertSame('admin', $order->source);
         $this->assertSame('received', $order->status);
         $this->assertSame('card', $order->payment_method);
-        $this->assertSame('batumi', $order->city);
+        $this->assertTrue($order->is_region);
+        $this->assertNull($order->city);
+        $this->assertSame('გორგილაძე 5, ბათუმი', $order->address);
         $this->assertEquals(($price - 10) * 2, (float) $order->subtotal);
         $this->assertEquals((float) $order->subtotal + (float) $order->shipping, (float) $order->total);
         $this->assertSame(2, $order->items->sole()->quantity);
@@ -73,7 +89,6 @@ class AdminCreateOrderTest extends TestCase
             ->fillForm([
                 'first_name' => 'ლევანი',
                 'phone' => '555987654',
-                'city' => 'tbilisi',
                 'payment_method' => 'cash',
                 'products' => [],
             ])
@@ -84,7 +99,6 @@ class AdminCreateOrderTest extends TestCase
             ->fillForm([
                 'first_name' => 'ლევანი',
                 'phone' => '555987654',
-                'city' => 'tbilisi',
                 'payment_method' => 'cash',
                 'free_shipping' => true,
                 'products' => [['product_id' => $speaker->id, 'quantity' => 1, 'price' => 20]],

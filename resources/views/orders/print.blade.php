@@ -50,7 +50,7 @@
 
     @foreach ($orders as $order)
         @php
-            $address = collect([$order->city ? __("checkout.cities.{$order->city}") : null, $order->address, $order->apartment])->filter()->implode(', ');
+            $address = collect([$order->placeLabel(), $order->address, $order->apartment])->filter()->implode(', ');
             $toCollect = $order->isPaid() ? 0 : (float) $order->total;
         @endphp
         <section class="slip">

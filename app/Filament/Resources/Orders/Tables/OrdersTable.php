@@ -85,9 +85,6 @@ class OrdersTable
                 SelectFilter::make('payment_method')
                     ->label(__('admin.orders.payment_method'))
                     ->options(fn (): array => PaymentMethod::query()->withTranslation()->orderBy('sort_order')->get()->mapWithKeys(fn (PaymentMethod $method) => [$method->code => $method->name ?? $method->code])->all()),
-                SelectFilter::make('city')
-                    ->label(__('admin.orders.city'))
-                    ->options(collect(Order::CITIES)->mapWithKeys(fn (string $city) => [$city => __("checkout.cities.$city")])->all()),
                 Filter::make('created_at')
                     ->schema([
                         DatePicker::make('from')->label(__('admin.common.starts_at')),
@@ -100,6 +97,10 @@ class OrdersTable
                     ->label(__('admin.orders.with_deleted'))
                     ->checkbox()
                     ->query(fn (Builder $query): Builder => $query->withoutGlobalScopes([SoftDeletingScope::class])),
+                Filter::make('is_region')
+                    ->label(__('admin.orders.region_only'))
+                    ->checkbox()
+                    ->query(fn (Builder $query): Builder => $query->where('is_region', true)),
             ])
             ->recordActions([
                 ViewAction::make(),

@@ -172,8 +172,8 @@ class ViewOrder extends ViewRecord
         ];
         $this->delivery = [
             'shipping_method' => (string) $order->shipping_method,
-            'city' => (string) $order->city,
             'address' => (string) $order->address,
+            'is_region' => (bool) $order->is_region,
             'apartment' => (string) $order->apartment,
             'note' => (string) $order->note,
         ];
@@ -642,7 +642,7 @@ class ViewOrder extends ViewRecord
                 'phone' => trim($this->customer['phone']),
                 'email' => mb_strtolower(trim($this->customer['email'])) ?: null,
                 'shipping_method' => $this->delivery['shipping_method'] ?: null,
-                'city' => $this->delivery['city'] ?: null,
+                'is_region' => (bool) ($this->delivery['is_region'] ?? false),
                 'address' => trim($this->delivery['address']) ?: null,
                 'apartment' => trim($this->delivery['apartment']) ?: null,
                 'note' => trim($this->delivery['note']) ?: null,
@@ -652,7 +652,7 @@ class ViewOrder extends ViewRecord
 
             $sections = [
                 'customer' => ['first_name', 'last_name', 'phone', 'email'],
-                'delivery' => ['shipping_method', 'city', 'address', 'apartment', 'note'],
+                'delivery' => ['shipping_method', 'address', 'is_region', 'apartment', 'note'],
                 'payment' => ['payment_method'],
                 'shipping' => ['shipping'],
             ];
@@ -719,7 +719,7 @@ class ViewOrder extends ViewRecord
             'customer.phone' => ['required', 'string', 'max:30'],
             'customer.email' => ['nullable', 'email', 'max:255'],
             'delivery.shipping_method' => ['nullable', Rule::in(Order::SHIPPING_METHODS)],
-            'delivery.city' => ['nullable', Rule::in(Order::CITIES)],
+            'delivery.is_region' => ['boolean'],
             'delivery.address' => ['nullable', 'string', 'max:255'],
             'delivery.apartment' => ['nullable', 'string', 'max:255'],
             'delivery.note' => ['nullable', 'string', 'max:500'],
@@ -738,7 +738,7 @@ class ViewOrder extends ViewRecord
             'customer.phone' => __('admin.orders.phone'),
             'customer.email' => __('admin.orders.email'),
             'delivery.shipping_method' => __('admin.orders.shipping_method'),
-            'delivery.city' => __('admin.orders.city'),
+            'delivery.is_region' => __('checkout.region'),
             'delivery.address' => __('admin.orders.address'),
             'delivery.apartment' => __('admin.orders.apartment'),
             'delivery.note' => __('admin.orders.note'),

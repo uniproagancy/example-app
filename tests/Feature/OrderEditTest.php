@@ -82,7 +82,7 @@ class OrderEditTest extends TestCase
             ->assertSet('productSearch', '')
             ->call('increment', 'i'.$item->id)
             ->set('customer.phone', '599 11 22 33')
-            ->set('delivery.city', 'batumi')
+            ->set('delivery.is_region', true)
             ->set('delivery.address', 'Rustaveli 5')
             ->set('shippingFee', '12.50')
             ->call('save')
@@ -94,7 +94,7 @@ class OrderEditTest extends TestCase
         $this->assertSame(2, $order->items()->whereKey($item->id)->value('quantity'));
         $this->assertSame(1, $order->items()->where('product_id', $galaxy->id)->value('quantity'));
         $this->assertSame('599 11 22 33', $order->phone);
-        $this->assertSame('batumi', $order->city);
+        $this->assertTrue($order->is_region);
         $this->assertSame('Rustaveli 5', $order->address);
         $this->assertEquals(2000 + $galaxyPrice, (float) $order->subtotal);
         $this->assertEquals(12.5, (float) $order->shipping);

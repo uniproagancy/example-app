@@ -8,6 +8,7 @@ use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Support\Cart;
 use App\Support\Catalog;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -66,14 +67,14 @@ class CreateOrder extends CreateRecord
                 Section::make(__('admin.orders.create.delivery'))
                     ->columns(2)
                     ->schema([
-                        Select::make('city')
-                            ->label(__('checkout.city'))
-                            ->options(collect(Order::CITIES)->mapWithKeys(fn (string $city) => [$city => __("checkout.cities.$city")])->all())
-                            ->default('tbilisi')
-                            ->required(),
-                        TextInput::make('address')
+                        Textarea::make('address')
                             ->label(__('checkout.address'))
-                            ->maxLength(255),
+                            ->rows(2)
+                            ->maxLength(255)
+                            ->columnSpanFull(),
+                        Checkbox::make('is_region')
+                            ->label(__('checkout.region'))
+                            ->columnSpanFull(),
                         TextInput::make('apartment')
                             ->label(__('checkout.apartment_placeholder'))
                             ->maxLength(255),
@@ -104,7 +105,7 @@ class CreateOrder extends CreateRecord
                                     ->getSearchResultsUsing(fn (string $search): array => static::searchProducts($search))
                                     ->getOptionLabelUsing(fn ($value): ?string => static::productLabel((int) $value))
                                     ->live()
-                                    ->afterStateUpdated(fn ($state, callable $set) => $set('price', $state ? (Catalog::find((int) $state)['price'] ?? null) : null))
+                                    ->afterStateUpdated(fn ($state, callable $set) => $set('price', $state ? static::currentPrice((int) $state) : null))
                                     ->columnSpan(4),
                                 TextInput::make('quantity')
                                     ->label(__('admin.print.quantity'))
@@ -137,7 +138,7 @@ class CreateOrder extends CreateRecord
             return [];
         }
 
-        return Product::query()
+        $products = Product::query()
             ->with('kaTranslation')
             ->where(fn (Builder $query) => $query
                 ->where('sku', 'like', "%{$search}%")
@@ -146,21 +147,29 @@ class CreateOrder extends CreateRecord
             ->orderByDesc('is_active')
             ->orderByDesc('stock')
             ->limit(20)
-            ->get()
-            ->mapWithKeys(fn (Product $product) => [$product->id => static::describe($product)])
+            ->get();
+        $prices = Catalog::findMany($products->modelKeys())->pluck('price', 'id');
+
+        return $products
+            ->mapWithKeys(fn (Product $product) => [$product->id => static::describe($product, $prices->get($product->id))])
             ->all();
+    }
+
+    public static function currentPrice(int $id): ?float
+    {
+        return Catalog::find($id)['price'] ?? Product::query()->whereKey($id)->value('price');
     }
 
     public static function productLabel(int $id): ?string
     {
         $product = Product::query()->with('kaTranslation')->find($id);
 
-        return $product ? static::describe($product) : null;
+        return $product ? static::describe($product, Catalog::find($id)['price'] ?? null) : null;
     }
 
-    protected static function describe(Product $product): string
+    protected static function describe(Product $product, ?float $price): string
     {
-        $price = Catalog::find($product->id)['price'] ?? $product->price;
+        $price ??= (float) $product->price;
 
         return ($product->kaTranslation?->name ?? $product->sku).' — '.Catalog::money($price).($product->stock > 0 ? '' : ' · '.__('product.out_of_stock'));
     }
@@ -202,8 +211,8 @@ class CreateOrder extends CreateRecord
                 'phone' => trim($data['phone']),
                 'email' => filled($data['email'] ?? null) ? mb_strtolower(trim($data['email'])) : null,
                 'shipping_method' => 'courier',
-                'city' => $data['city'],
                 'address' => trim((string) ($data['address'] ?? '')) ?: null,
+                'is_region' => (bool) ($data['is_region'] ?? false),
                 'apartment' => trim((string) ($data['apartment'] ?? '')) ?: null,
                 'note' => trim((string) ($data['note'] ?? '')) ?: null,
                 'payment_method' => $data['payment_method'],

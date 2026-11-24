@@ -73,6 +73,19 @@ class OrdersExportTest extends TestCase
         $component->callTableAction('export')->assertFileDownloaded();
     }
 
+    public function test_orders_are_filtered_by_region(): void
+    {
+        $this->order('EL-000001', 'received', '2026-11-10 10:00:00');
+        $this->order('EL-000002', 'received', '2026-11-10 11:00:00', ['city' => null, 'is_region' => true]);
+
+        $component = Livewire::test(ListOrders::class)->filterTable('is_region', true);
+
+        $this->assertSame(['EL-000002'], $component->instance()->getFilteredTableQuery()->pluck('number')->all());
+
+        $sheet = app(OrdersExport::class)->spreadsheet(Order::query()->where('number', 'EL-000002'))->getActiveSheet()->toArray(null, true, false);
+        $this->assertSame(__('checkout.region'), $sheet[1][5]);
+    }
+
     public function test_selected_orders_can_be_exported(): void
     {
         $first = $this->order('EL-000001', 'received', '2026-11-10 10:00:00');

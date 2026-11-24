@@ -25,7 +25,7 @@ trait DescribesOrder
         }
 
         return collect([
-            $order->city ? __("checkout.cities.{$order->city}") : null,
+            $order->placeLabel(),
             $order->address,
             $order->apartment,
         ])->filter()->implode(', ');

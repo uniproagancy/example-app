@@ -15,7 +15,7 @@
         ['title' => __('admin.reports.by_payment'), 'rows' => $report->breakdown('payment_method'), 'label' => fn ($value) => $this->paymentLabel($value)],
         ['title' => __('admin.reports.by_status'), 'rows' => $report->breakdown('status'), 'label' => fn ($value) => $this->statusLabel($value)],
         ['title' => __('admin.reports.by_source'), 'rows' => $report->breakdown('source'), 'label' => fn ($value) => $this->sourceLabel($value)],
-        ['title' => __('admin.reports.by_city'), 'rows' => $report->breakdown('city'), 'label' => fn ($value) => $this->cityLabel($value)],
+        ['title' => __('admin.reports.by_region'), 'rows' => $report->breakdown('is_region'), 'label' => fn ($value) => $this->regionLabel($value)],
     ];
 @endphp
 

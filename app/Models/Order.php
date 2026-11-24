@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\URL;
 
 #[Fillable([
-    'number', 'user_id', 'status', 'source', 'first_name', 'last_name', 'phone', 'email', 'shipping_method', 'city', 'address',
+    'number', 'user_id', 'status', 'source', 'first_name', 'last_name', 'phone', 'email', 'shipping_method', 'city', 'address', 'is_region',
     'apartment', 'note', 'payment_method', 'payment_status', 'paid_at', 'completed_at', 'warranty_starts_at', 'warranty_issued_at', 'installment_months', 'bank', 'term_months', 'promo_code',
     'subtotal', 'discount', 'shipping', 'total', 'locale',
 ])]
@@ -30,8 +30,6 @@ class Order extends Model
     public const SOURCES = ['checkout', 'quick', 'admin'];
 
     public const SHIPPING_METHODS = ['courier'];
-
-    public const CITIES = ['tbilisi', 'batumi', 'kutaisi', 'rustavi', 'gori', 'zugdidi'];
 
     public const PAYMENT_PENDING = 'pending';
 
@@ -79,9 +77,19 @@ class Order extends Model
         }
     }
 
+    public function placeLabel(): ?string
+    {
+        if ($this->is_region) {
+            return __('checkout.region');
+        }
+
+        return $this->city ? __("checkout.cities.{$this->city}") : null;
+    }
+
     protected function casts(): array
     {
         return [
+            'is_region' => 'boolean',
             'term_months' => 'integer',
             'installment_months' => 'integer',
             'paid_at' => 'datetime',

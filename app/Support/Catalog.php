@@ -62,7 +62,18 @@ class Catalog
 
     public static function find(int|string $id): ?array
     {
-        return static::products()->firstWhere('id', (int) $id);
+        return static::findMany([(int) $id])->first();
+    }
+
+    public static function findMany(array $ids): Collection
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        return once(fn () => static::build(static::load($ids), app()->getLocale()));
     }
 
     public static function findBySku(string $sku): ?array
@@ -405,96 +416,98 @@ class Catalog
 
     protected static function productsFor(string $locale): Collection
     {
-        return once(function () use ($locale) {
-            $raw = static::raw();
-            $fallback = config('app.fallback_locale');
-            $translations = collect($raw['translations'])->groupBy('product_id');
-            $images = $raw['images'];
-            $filters = $raw['filters'] ?? [];
-            $attributes = collect($raw['filter_attributes'] ?? [])->keyBy('id');
-            $valueMeta = collect($raw['filter_values'] ?? [])
-                ->filter(fn (array $value) => $attributes->has($value['attribute_id']))
-                ->mapWithKeys(fn (array $value) => [(int) $value['id'] => [
-                    'attribute' => $attributes[$value['attribute_id']]['code'],
-                    'value' => (string) $value['code'],
-                    'filterable' => (bool) $attributes[$value['attribute_id']]['is_filterable'],
-                    'variant' => (bool) $attributes[$value['attribute_id']]['is_variant'],
-                ]]);
-            $options = collect($raw['options'] ?? [])->groupBy('product_id');
-            $deals = collect($raw['deals'] ?? [])
-                ->filter(fn (array $deal) => HomeContent::isLive($deal['starts_at'], $deal['ends_at']))
-                ->groupBy('product_id')
-                ->map(fn (Collection $rows) => $rows->first());
-            $campaignDiscounts = collect($raw['campaign_discounts'] ?? [])
-                ->filter(fn (array $discount) => HomeContent::isLive($discount['starts_at'], $discount['ends_at']))
-                ->groupBy('product_id')
-                ->map(fn (Collection $rows) => (int) $rows->max('discount_percent'));
-            $nodes = CategoryTree::nodes($locale);
+        return once(fn () => static::build(static::raw(), $locale));
+    }
 
-            return collect($raw['products'])
-                ->map(function (array $row) use ($raw, $translations, $images, $filters, $valueMeta, $options, $deals, $campaignDiscounts, $nodes, $locale, $fallback) {
-                    $node = $nodes->get($row['category_id']);
+    protected static function build(array $raw, string $locale): Collection
+    {
+        $fallback = config('app.fallback_locale');
+        $translations = collect($raw['translations'])->groupBy('product_id');
+        $images = $raw['images'];
+        $filters = $raw['filters'] ?? [];
+        $attributes = collect($raw['filter_attributes'] ?? [])->keyBy('id');
+        $valueMeta = collect($raw['filter_values'] ?? [])
+            ->filter(fn (array $value) => $attributes->has($value['attribute_id']))
+            ->mapWithKeys(fn (array $value) => [(int) $value['id'] => [
+                'attribute' => $attributes[$value['attribute_id']]['code'],
+                'value' => (string) $value['code'],
+                'filterable' => (bool) $attributes[$value['attribute_id']]['is_filterable'],
+                'variant' => (bool) $attributes[$value['attribute_id']]['is_variant'],
+            ]]);
+        $options = collect($raw['options'] ?? [])->groupBy('product_id');
+        $deals = collect($raw['deals'] ?? [])
+            ->filter(fn (array $deal) => HomeContent::isLive($deal['starts_at'], $deal['ends_at']))
+            ->groupBy('product_id')
+            ->map(fn (Collection $rows) => $rows->first());
+        $campaignDiscounts = collect($raw['campaign_discounts'] ?? [])
+            ->filter(fn (array $discount) => HomeContent::isLive($discount['starts_at'], $discount['ends_at']))
+            ->groupBy('product_id')
+            ->map(fn (Collection $rows) => (int) $rows->max('discount_percent'));
+        $nodes = CategoryTree::nodes($locale);
 
-                    if (! $node) {
-                        return null;
-                    }
+        return collect($raw['products'])
+            ->map(function (array $row) use ($raw, $translations, $images, $filters, $valueMeta, $options, $deals, $campaignDiscounts, $nodes, $locale, $fallback) {
+                $node = $nodes->get($row['category_id']);
 
-                    $rows = $translations->get($row['id'], collect());
-                    $translation = $rows->firstWhere('locale', $locale) ?? $rows->firstWhere('locale', $fallback) ?? $rows->first();
+                if (! $node) {
+                    return null;
+                }
 
-                    if (! $translation) {
-                        return null;
-                    }
+                $rows = $translations->get($row['id'], collect());
+                $translation = $rows->firstWhere('locale', $locale) ?? $rows->firstWhere('locale', $fallback) ?? $rows->first();
 
-                    $root = $node;
-                    while ($root['parent_id'] && $nodes->has($root['parent_id'])) {
-                        $root = $nodes->get($root['parent_id']);
-                    }
+                if (! $translation) {
+                    return null;
+                }
 
-                    $basePrice = (float) $row['price'];
-                    $deal = $deals->get($row['id']);
+                $root = $node;
+                while ($root['parent_id'] && $nodes->has($root['parent_id'])) {
+                    $root = $nodes->get($root['parent_id']);
+                }
 
-                    if ($deal) {
-                        $row['old_price'] = max((float) $row['price'], (float) $row['old_price']);
-                        $row['price'] = $deal['price'];
-                    }
+                $basePrice = (float) $row['price'];
+                $deal = $deals->get($row['id']);
 
-                    $campaignPercent = $campaignDiscounts->get($row['id']);
+                if ($deal) {
+                    $row['old_price'] = max((float) $row['price'], (float) $row['old_price']);
+                    $row['price'] = $deal['price'];
+                }
 
-                    if ($campaignPercent && ($campaignPrice = Campaign::discountedPrice($basePrice, $campaignPercent)) < (float) $row['price']) {
-                        $row['old_price'] = max($basePrice, (float) $row['old_price']);
-                        $row['price'] = $campaignPrice;
-                    }
+                $campaignPercent = $campaignDiscounts->get($row['id']);
 
-                    $picked = collect(explode(',', (string) ($filters[$row['id']] ?? '')))
-                        ->map(fn (string $id) => $valueMeta->get((int) $id))
-                        ->filter();
+                if ($campaignPercent && ($campaignPrice = Campaign::discountedPrice($basePrice, $campaignPercent)) < (float) $row['price']) {
+                    $row['old_price'] = max($basePrice, (float) $row['old_price']);
+                    $row['price'] = $campaignPrice;
+                }
 
-                    return [
-                        ...static::present($row, $translation, $rows->pluck('slug', 'locale')->all(), $node, $root, $images[$row['id']] ?? null),
-                        'supplierSku' => $row['supplier_sku'],
-                        'sold' => (int) ($raw['sold'][$row['id']] ?? 0),
-                        'variantGroup' => $row['variant_group'] ?? null,
-                        'variants' => $picked
-                            ->filter(fn (array $value) => (bool) ($value['variant'] ?? false))
-                            ->mapWithKeys(fn (array $value) => [$value['attribute'] => (string) $value['value']])
-                            ->all(),
-                        'filters' => $picked
-                            ->filter(fn (array $value) => (bool) ($value['filterable'] ?? true))
-                            ->groupBy('attribute')
-                            ->map(fn (Collection $values) => $values->pluck('value')->unique()->values()->all())
-                            ->all(),
-                        'deal' => $deal ? [
-                            'position' => (int) $deal['position'],
-                            'text' => HomeContent::localized($deal['text']),
-                            'endsAt' => $deal['ends_at'] ? Carbon::parse($deal['ends_at'])->toIso8601String() : null,
-                        ] : null,
-                        ...static::presentOptions($options->get($row['id'], collect()), $locale, $fallback, $campaignPercent),
-                    ];
-                })
-                ->filter()
-                ->values();
-        });
+                $picked = collect(explode(',', (string) ($filters[$row['id']] ?? '')))
+                    ->map(fn (string $id) => $valueMeta->get((int) $id))
+                    ->filter();
+
+                return [
+                    ...static::present($row, $translation, $rows->pluck('slug', 'locale')->all(), $node, $root, $images[$row['id']] ?? null),
+                    'supplierSku' => $row['supplier_sku'],
+                    'sold' => (int) ($raw['sold'][$row['id']] ?? 0),
+                    'variantGroup' => $row['variant_group'] ?? null,
+                    'variants' => $picked
+                        ->filter(fn (array $value) => (bool) ($value['variant'] ?? false))
+                        ->mapWithKeys(fn (array $value) => [$value['attribute'] => (string) $value['value']])
+                        ->all(),
+                    'filters' => $picked
+                        ->filter(fn (array $value) => (bool) ($value['filterable'] ?? true))
+                        ->groupBy('attribute')
+                        ->map(fn (Collection $values) => $values->pluck('value')->unique()->values()->all())
+                        ->all(),
+                    'deal' => $deal ? [
+                        'position' => (int) $deal['position'],
+                        'text' => HomeContent::localized($deal['text']),
+                        'endsAt' => $deal['ends_at'] ? Carbon::parse($deal['ends_at'])->toIso8601String() : null,
+                    ] : null,
+                    ...static::presentOptions($options->get($row['id'], collect()), $locale, $fallback, $campaignPercent),
+                ];
+            })
+            ->filter()
+            ->values();
     }
 
     protected static function present(array $row, array $translation, array $slugs, array $node, array $root, ?string $image): array
@@ -613,13 +626,21 @@ class Catalog
 
     protected static function raw(): array
     {
-        $live = fn () => DB::table('products')->select('id')->where('is_active', true)->whereNull('deleted_at');
+        return Cache::rememberForever(self::CACHE_KEY, fn () => static::load());
+    }
 
-        return Cache::rememberForever(self::CACHE_KEY, fn () => [
+    protected static function load(?array $ids = null): array
+    {
+        $whole = $ids === null;
+        $live = fn () => DB::table('products')->select('id')->where('is_active', true)->whereNull('deleted_at')
+            ->when(! $whole, fn ($query) => $query->whereIn('id', $ids));
+
+        return [
             'products' => DB::table('products')
                 ->leftJoin('brands', fn ($join) => $join->on('brands.id', '=', 'products.brand_id')->whereNull('brands.deleted_at'))
                 ->where('products.is_active', true)
                 ->whereNull('products.deleted_at')
+                ->when(! $whole, fn ($query) => $query->whereIn('products.id', $ids))
                 ->orderBy('products.position')
                 ->orderByDesc('products.id')
                 ->get([
@@ -638,7 +659,7 @@ class Catalog
                 ->whereRaw('pi.id = (select first.id from product_images as first where first.product_id = pi.product_id order by first.position, first.id limit 1)')
                 ->pluck('pi.path', 'pi.product_id')
                 ->all(),
-            'brands' => DB::table('brands')
+            'brands' => ! $whole ? [] : DB::table('brands')
                 ->whereNull('deleted_at')
                 ->where('is_active', true)
                 ->where('show_on_home', true)
@@ -662,14 +683,14 @@ class Catalog
                 ->get(['id', 'code', 'type', 'unit', 'sort_order', 'is_filterable', 'is_variant'])
                 ->map(fn ($row) => (array) $row)
                 ->all(),
-            'filter_attribute_names' => DB::table('attribute_translations as t')
+            'filter_attribute_names' => ! $whole ? [] : DB::table('attribute_translations as t')
                 ->join('attributes as a', 'a.id', '=', 't.attribute_id')
                 ->whereNull('a.deleted_at')
                 ->where(fn ($query) => $query->where('a.is_filterable', true)->orWhere('a.is_variant', true))
                 ->get(['t.attribute_id', 't.locale', 't.name'])
                 ->map(fn ($row) => (array) $row)
                 ->all(),
-            'filter_attribute_categories' => DB::table('attribute_category as ac')
+            'filter_attribute_categories' => ! $whole ? [] : DB::table('attribute_category as ac')
                 ->join('attributes as a', 'a.id', '=', 'ac.attribute_id')
                 ->whereNull('a.deleted_at')
                 ->where(fn ($query) => $query->where('a.is_filterable', true)->orWhere('a.is_variant', true))
@@ -677,6 +698,7 @@ class Catalog
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'filter_values' => DB::table('attribute_values as av')
+                ->when(! $whole, fn ($query) => $query->whereIn('av.id', DB::table('attribute_value_product')->select('attribute_value_id')->whereIn('product_id', $ids)))
                 ->join('attributes as a', 'a.id', '=', 'av.attribute_id')
                 ->whereNull('av.deleted_at')
                 ->whereNull('a.deleted_at')
@@ -686,7 +708,7 @@ class Catalog
                 ->get(['av.id', 'av.attribute_id', 'av.code', 'av.color_hex', 'av.sort_order'])
                 ->map(fn ($row) => (array) $row)
                 ->all(),
-            'filter_value_labels' => DB::table('attribute_value_translations as t')
+            'filter_value_labels' => ! $whole ? [] : DB::table('attribute_value_translations as t')
                 ->join('attribute_values as av', 'av.id', '=', 't.attribute_value_id')
                 ->join('attributes as a', 'a.id', '=', 'av.attribute_id')
                 ->whereNull('av.deleted_at')
@@ -700,11 +722,13 @@ class Catalog
                 ->whereNull('c.deleted_at')
                 ->where('c.is_active', true)
                 ->where('c.discount_percent', '>', 0)
+                ->when(! $whole, fn ($query) => $query->whereIn('cp.product_id', $ids))
                 ->get(['cp.product_id', 'c.discount_percent', 'c.starts_at', 'c.ends_at'])
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'deals' => DB::table('deals')
                 ->whereNull('deleted_at')
+                ->when(! $whole, fn ($query) => $query->whereIn('product_id', $ids))
                 ->where('is_active', true)
                 ->orderBy('position')
                 ->orderBy('id')
@@ -721,6 +745,7 @@ class Catalog
             'sold' => DB::table('order_items')
                 ->join('orders', 'orders.id', '=', 'order_items.order_id')
                 ->whereNotNull('order_items.product_id')
+                ->when(! $whole, fn ($query) => $query->whereIn('order_items.product_id', $ids))
                 ->whereNull('orders.deleted_at')
                 ->where('orders.status', '!=', 'cancelled')
                 ->groupBy('order_items.product_id')
@@ -728,6 +753,6 @@ class Catalog
                 ->pluck('quantity', 'order_items.product_id')
                 ->map(fn ($quantity) => (int) $quantity)
                 ->all(),
-        ]);
+        ];
     }
 }

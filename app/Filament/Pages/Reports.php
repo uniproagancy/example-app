@@ -126,9 +126,9 @@ class Reports extends Page
         return __("admin.reports.sources.$source");
     }
 
-    public function cityLabel(string $city): string
+    public function regionLabel(string $value): string
     {
-        return $city !== '' ? __("checkout.cities.$city") : __('admin.common.none');
+        return $value === '1' ? __('checkout.region') : __('checkout.cities.tbilisi');
     }
 
     public function ordersUrl(): string
