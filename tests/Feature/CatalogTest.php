@@ -35,6 +35,39 @@ class CatalogTest extends TestCase
         $this->assertSame(12, substr_count($response->getContent(), 'wire:key="category-product-'));
     }
 
+    public function test_out_of_stock_products_are_hidden_everywhere_on_the_site(): void
+    {
+        $speaker = Product::query()->where('sku', 'jbl')->sole();
+        $this->assertNotNull(Catalog::find($speaker->id));
+        $countBefore = Catalog::categoryCounts()->get($speaker->category_id);
+
+        $speaker->update(['stock' => 0]);
+        Catalog::flush();
+
+        $this->assertNull(Catalog::find($speaker->id));
+        $this->assertFalse(Catalog::products()->contains('id', $speaker->id));
+        $this->assertSame($countBefore - 1, Catalog::categoryCounts()->get($speaker->category_id, 0));
+        $this->assertSame([], Catalog::searchCandidates('jbl'));
+        $this->get(route('search.suggest', ['q' => 'jbl']))->assertOk()->assertJsonPath('total', 0);
+    }
+
+    public function test_header_search_asks_the_server_instead_of_shipping_every_product(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+        $speaker = Catalog::find(Product::query()->where('sku', 'jbl')->value('id'));
+        Catalog::flush();
+
+        $page = $this->get('/ka')->assertOk()->getContent();
+        $this->assertStringNotContainsString(e(json_encode($speaker['priceLabel'])), $page);
+
+        $this->get(route('search.suggest', ['q' => mb_substr($speaker['name'], 0, 6)]))
+            ->assertOk()
+            ->assertJsonPath('products.0.id', $speaker['id'])
+            ->assertJsonStructure(['products' => [['id', 'url', 'image', 'brand', 'name', 'subLabel', 'priceLabel']], 'total']);
+
+        $this->get(route('search.suggest', ['q' => '']))->assertOk()->assertExactJson(['products' => [], 'total' => 0]);
+    }
+
     public function test_home_sections_list_newest_products_first_unless_a_position_is_set(): void
     {
         Product::query()->update(['position' => 0]);
@@ -211,7 +244,7 @@ class CatalogTest extends TestCase
         $this->assertSame('popular', $component->get('sort'));
     }
 
-    public function test_popular_sort_puts_stock_then_best_sellers_first_and_price_sort_keeps_out_of_stock_last(): void
+    public function test_popular_sort_puts_best_sellers_first_and_out_of_stock_products_are_not_listed(): void
     {
         $cheapest = Product::query()->where('is_active', true)->orderBy('price')->firstOrFail();
         $cheapest->update(['stock' => 0]);
@@ -222,10 +255,10 @@ class CatalogTest extends TestCase
 
         $popular = Livewire::test('pages::catalog')->get('results');
         $this->assertSame($bestSeller->id, $popular->first()['id']);
-        $this->assertSame($cheapest->id, $popular->last()['id']);
+        $this->assertFalse($popular->contains('id', $cheapest->id));
 
         $byPrice = Livewire::test('pages::catalog')->call('setSort', 'price_asc')->get('results');
-        $this->assertSame($cheapest->id, $byPrice->last()['id']);
+        $this->assertFalse($byPrice->contains('id', $cheapest->id));
         $inStock = $byPrice->where('inStock', true)->pluck('price')->all();
         $sorted = $inStock;
         sort($sorted);

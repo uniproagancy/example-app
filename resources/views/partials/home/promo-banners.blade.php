@@ -6,7 +6,7 @@
     ];
 @endphp
 
-        <section class="mt-11 sm:mt-16" data-promo-group>
+        <section data-rise class="mt-11 sm:mt-16" data-promo-group>
             @if ($group->count() === 1)
                 @php($leadPromo = $group->first())
                 @php($leadTheme = $promoThemes[$leadPromo['theme']])

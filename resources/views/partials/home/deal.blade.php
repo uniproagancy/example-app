@@ -1,4 +1,4 @@
-        <section class="mt-11 grid min-h-[380px] grid-cols-1 overflow-hidden rounded-[28px] bg-navy text-white sm:mt-16 md:grid-cols-2">
+        <section data-rise class="mt-11 grid min-h-[380px] grid-cols-1 overflow-hidden rounded-[28px] bg-navy text-white sm:mt-16 md:grid-cols-2">
             <div class="flex flex-col justify-center gap-[18px] px-5 py-7 sm:p-11">
                 <span class="text-xs font-bold tracking-[0.8px] text-sky uppercase">{{ $block['kicker'] ?? __('shop.deal.kicker') }}</span>
                 <h2 class="m-0 font-sans text-[clamp(28px,3vw,38px)] leading-[1.15] font-extrabold normal-case">

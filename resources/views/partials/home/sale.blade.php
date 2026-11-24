@@ -1,4 +1,4 @@
-        <section id="home-campaigns" class="mt-11 scroll-mt-[140px] sm:mt-[72px]">
+        <section data-rise id="home-campaigns" class="mt-11 scroll-mt-[140px] sm:mt-[72px]">
             <div class="mb-[22px] flex flex-wrap items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <span class="grid size-12 place-items-center rounded-[14px] bg-sale font-display text-xl font-extrabold text-white">%</span>

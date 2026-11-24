@@ -37,12 +37,16 @@
     --color-foot: #AEB9CF;
     --color-foot-dim: #8193B5;
 
+    --ease-spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017 19.4%, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163 27%, 1.154, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1);
+    --ease-settle: linear(0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
     --animate-progress: elio-progress 7s linear forwards;
     --animate-fade: elio-fade 0.2s ease;
-    --animate-slide-in: elio-slide-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
-    --animate-slide-left: elio-slide-left 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
-    --animate-drop: elio-drop 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-    --animate-toast: elio-toast 0.25s ease;
+    --animate-slide-in: elio-slide-in 0.5s var(--ease-settle);
+    --animate-slide-left: elio-slide-left 0.5s var(--ease-settle);
+    --animate-drop: elio-drop 0.35s var(--ease-settle);
+    --animate-toast: elio-toast 0.55s var(--ease-spring);
 
     @keyframes elio-progress {
         from { width: 0; }
@@ -65,13 +69,28 @@
     }
 
     @keyframes elio-drop {
-        from { transform: translateY(-6px); opacity: 0; }
+        from { transform: translateY(-6px) scale(0.98); opacity: 0; }
         to { transform: none; opacity: 1; }
     }
 
     @keyframes elio-toast {
-        from { transform: translate(-50%, 12px); opacity: 0; }
+        from { transform: translate(-50%, 24px) scale(0.92); opacity: 0; }
         to { transform: translate(-50%, 0); opacity: 1; }
+    }
+
+    @keyframes elio-pop {
+        0% { scale: 0.86; }
+        100% { scale: 1; }
+    }
+
+    @keyframes elio-rise {
+        from { opacity: 0; translate: 0 32px; scale: 0.985; }
+        to { opacity: 1; translate: 0 0; scale: 1; }
+    }
+
+    @keyframes elio-drift {
+        from { scale: 1.08; }
+        to { scale: 1; }
     }
 }
 
@@ -109,6 +128,23 @@
     :focus-visible {
         outline: 2px solid var(--color-brand);
         outline-offset: 2px;
+    }
+
+    ::selection {
+        background: var(--color-tint-strong);
+        color: var(--color-navy);
+    }
+
+    :where(button, [role='button']) {
+        -webkit-tap-highlight-color: transparent;
+        transition-property: scale, color, background-color, border-color, box-shadow, opacity;
+        transition-duration: 160ms;
+        transition-timing-function: var(--ease-out-expo);
+    }
+
+    :where(button, [role='button']):active:not(:disabled) {
+        scale: 0.96;
+        transition-duration: 70ms;
     }
 
     [x-cloak] {
@@ -243,6 +279,83 @@
 @media (hover: none) {
     [data-reveal] {
         opacity: 1;
+    }
+}
+
+[data-card] {
+    transition:
+        translate 450ms var(--ease-spring),
+        box-shadow 400ms var(--ease-out-expo),
+        border-color 300ms ease;
+}
+
+[data-card] img {
+    transition:
+        opacity 300ms ease,
+        scale 900ms var(--ease-out-expo);
+}
+
+[data-addbtn='in'] {
+    animation: elio-pop 550ms var(--ease-spring);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    [data-card]:hover {
+        background:
+            radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgb(11 99 246 / 0.07), transparent 65%),
+            #fff;
+    }
+
+    [data-card]:hover img {
+        scale: 1.06;
+    }
+}
+
+header[data-scrolled] {
+    background: rgb(255 255 255 / 0.78);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+}
+
+[data-hero-img] {
+    animation: elio-drift 9s var(--ease-out-expo) both;
+}
+
+@supports (animation-timeline: view()) {
+    [data-rise] {
+        animation: elio-rise linear both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 70%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-rise],
+    [data-hero-img],
+    [data-addbtn='in'] {
+        animation: none;
+    }
+
+    [data-card],
+    [data-card] img {
+        transition: opacity 200ms ease;
+    }
+
+    [data-card]:hover,
+    [data-card]:hover img {
+        translate: none;
+        scale: none;
+    }
+
+    :where(button, [role='button']):active:not(:disabled) {
+        scale: none;
+    }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    header[data-scrolled] {
+        background: #fff;
+        backdrop-filter: none;
     }
 }
 

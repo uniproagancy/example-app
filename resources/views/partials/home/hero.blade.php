@@ -19,7 +19,7 @@
                     style="background: {{ $heroBackgrounds[$slide['theme']] }}"
                 >
                     @if ($slide['image'])
-                        <img src="{{ $slide['image'] }}" alt="" class="absolute inset-0 size-full object-cover" @if ($index > 0) loading="lazy" @endif>
+                        <img data-hero-img src="{{ $slide['image'] }}" alt="" class="absolute inset-0 size-full object-cover" @if ($index > 0) loading="lazy" @endif>
                     @elseif ($slide['icon'])
                         @include('partials.category-icon', ['icon' => $slide['icon'], 'class' => 'absolute top-1/2 right-[8%] hidden h-[78%] -translate-y-1/2 text-white/10 sm:block', 'stroke' => 0.6])
                     @endif

@@ -199,7 +199,7 @@ class ImportAdminTest extends TestCase
         $component->call('toggleAttribute', 'mekhsiereba', '128-gb');
         $this->assertEqualsCanonicalizing(['ip16', 's25'], $component->get('results')->pluck('sku')->all());
 
-        $this->get('/ka/catalog?f[mekhsiereba][0]=128-gb&f[bogus][0]=x')->assertOk()->assertSee('128 GB');
+        $this->get('/ka/catalog?f[mekhsiereba][0]=128-gb&f[bogus][0]=x')->assertOk()->assertSee('128 გბ');
 
         $laptops = Category::query()->where('code', 'laptops')->sole();
         $attribute->categories()->sync([$laptops->id]);

@@ -1,7 +1,6 @@
 @php
     use App\Support\Catalog;
 
-    $searchProducts = Catalog::products()->map(fn ($product) => collect($product)->only(['id', 'url', 'image', 'brand', 'name', 'subLabel', 'priceLabel']))->values();
     $searchCategories = Catalog::searchableCategories();
 
     $navItems = App\Models\MenuItem::for('header');
@@ -38,7 +37,7 @@
         </button>
 
         <div
-            x-data="searchBox(@js($searchProducts), @js($searchCategories), @js(route('catalog')))"
+            x-data="searchBox(@js($searchCategories), @js(route('catalog')), @js(route('search.suggest')))"
             class="relative order-5 min-w-0 flex-[1_0_100%] sm:order-none sm:flex-1"
         >
             <div
@@ -124,12 +123,12 @@
 
                 <template x-if="productMatches.length">
                     <button type="button" x-on:click="submit()" class="flex h-12 w-full items-center justify-center gap-2 border-t border-line-soft text-[13px] font-bold text-brand hover:bg-field">
-                        <span x-text="@js(__('shop.all_results', ['count' => '__N__'])).replace('__N__', productMatches.length)"></span>
+                        <span x-text="@js(__('shop.all_results', ['count' => '__N__'])).replace('__N__', total)"></span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                     </button>
                 </template>
 
-                <template x-if="!productMatches.length && !categoryMatches.length">
+                <template x-if="!loading && !productMatches.length && !categoryMatches.length">
                     <div class="px-4 py-7 text-center text-sm text-muted" x-text="@js(__('shop.nothing_found', ['query' => '__Q__'])).replace('__Q__', query.trim())"></div>
                 </template>
             </div>

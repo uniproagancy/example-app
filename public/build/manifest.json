@@ -28,7 +28,7 @@
     "src": "_montserrat-variable-normal-l_AIctKy.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-tszHk8Qb.css",
+    "file": "assets/app-C2Pw55hJ.css",
     "name": "app",
     "names": [
       "app.css"
@@ -37,7 +37,7 @@
     "isEntry": true
   },
   "resources/css/filament/admin/theme.css": {
-    "file": "assets/theme-DZ3r23LG.css",
+    "file": "assets/theme-CDsqlN6w.css",
     "name": "theme",
     "names": [
       "theme.css"
@@ -50,7 +50,7 @@
     "src": "resources/images/elio-mark.png"
   },
   "resources/js/app.js": {
-    "file": "assets/app-CI0IY9BN.js",
+    "file": "assets/app-CknWzbYE.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

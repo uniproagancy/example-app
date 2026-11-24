@@ -9,6 +9,7 @@ use App\Http\Controllers\JsonUploadController;
 use App\Http\Controllers\OrderPrintController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicFileController;
+use App\Http\Controllers\SearchSuggestController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\WarrantyLinkController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,7 @@ Route::get('/w/{number}', WarrantyLinkController::class)->middleware(['signed', 
 
 Route::get('/feed/facebook.xml', [FeedController::class, 'facebook'])->name('feed.facebook');
 Route::get('/feed/google.xml', [FeedController::class, 'google'])->name('feed.google');
+Route::get('/search/suggest', SearchSuggestController::class)->middleware('throttle:120,1')->name('search.suggest');
 
 Route::controller(PaymentController::class)->prefix('payment')->name('payment.')->group(function () {
     Route::match(['get', 'post', 'put'], 'callback/{driver}', 'callback')

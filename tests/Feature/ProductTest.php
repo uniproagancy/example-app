@@ -85,14 +85,17 @@ class ProductTest extends TestCase
     {
         $this->refreshApplicationWithLocale('ka');
 
-        Product::query()->where('sku', 'ds')->first()->update(['price' => 555, 'old_price' => 700, 'stock' => 0]);
+        $controller = Product::query()->where('sku', 'ds')->first();
+        $controller->update(['price' => 555, 'old_price' => 700, 'stock' => 3]);
 
         $this->get('/ka/product/sony-dualsense-edge-wireless-controller')
             ->assertOk()
             ->assertSee('555 ₾')
-            ->assertSee('700 ₾')
-            ->assertSee(__('product.out_of_stock', [], 'ka'))
-            ->assertSee(__('product.unavailable', [], 'ka'));
+            ->assertSee('700 ₾');
+
+        $controller->update(['stock' => 0]);
+
+        $this->get('/ka/product/sony-dualsense-edge-wireless-controller')->assertNotFound();
     }
 
     public function test_product_cards_link_to_product_pages(): void

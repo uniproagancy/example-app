@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Brand;
 use App\Models\Campaign;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -106,10 +107,52 @@ class Catalog
             ->values();
     }
 
+    public static function visibleProducts(): Builder
+    {
+        return DB::table('products')
+            ->where('products.is_active', true)
+            ->whereNull('products.deleted_at')
+            ->where('products.stock', '>', 0);
+    }
+
+    public static function categoryCounts(): Collection
+    {
+        return once(fn () => static::visibleProducts()
+            ->whereNotNull('products.category_id')
+            ->groupBy('products.category_id')
+            ->selectRaw('products.category_id, count(*) as total')
+            ->pluck('total', 'products.category_id')
+            ->map(fn ($total) => (int) $total));
+    }
+
+    public static function searchCandidates(string $query, int $limit = 300): array
+    {
+        $words = array_slice(preg_split('/\s+/u', mb_strtolower(trim($query)), -1, PREG_SPLIT_NO_EMPTY) ?: [], 0, 5);
+
+        if ($words === []) {
+            return [];
+        }
+
+        $locales = array_unique([app()->getLocale(), (string) config('app.fallback_locale')]);
+        $candidates = static::visibleProducts()
+            ->join('product_translations as t', fn ($join) => $join->on('t.product_id', '=', 'products.id')->whereIn('t.locale', $locales))
+            ->leftJoin('brands as b', 'b.id', '=', 'products.brand_id');
+
+        foreach ($words as $word) {
+            $like = '%'.addcslashes(static::searchStem($word), '%_\\').'%';
+            $candidates->where(fn ($query) => $query
+                ->where('t.name', 'like', $like)
+                ->orWhere('b.name', 'like', $like)
+                ->orWhere('products.sku', 'like', $like));
+        }
+
+        return $candidates->distinct()->limit($limit)->pluck('products.id')->all();
+    }
+
     public static function searchableCategories(): Collection
     {
         $nodes = CategoryTree::nodes();
-        $counts = static::products()->countBy('categoryId');
+        $counts = static::categoryCounts();
 
         return $nodes
             ->map(fn (array $node) => [
@@ -176,15 +219,13 @@ class Catalog
 
     public static function categories(): Collection
     {
-        $products = static::products();
-
         $filled = fn (array $category) => $category['count'] > 0;
 
         return CategoryTree::roots()->map(fn (array $root) => [
-            ...static::presentCategory($root, $products),
+            ...static::presentCategory($root),
             'groups' => CategoryTree::children($root['id'])->map(fn (array $group) => [
-                ...static::presentCategory($group, $products),
-                'subs' => CategoryTree::children($group['id'])->map(fn (array $sub) => static::presentCategory($sub, $products))->filter($filled)->values()->all(),
+                ...static::presentCategory($group),
+                'subs' => CategoryTree::children($group['id'])->map(fn (array $sub) => static::presentCategory($sub))->filter($filled)->values()->all(),
             ])->filter($filled)->values()->all(),
         ])->filter($filled)->values();
     }
@@ -611,8 +652,10 @@ class Catalog
         ];
     }
 
-    protected static function presentCategory(array $node, Collection $products): array
+    protected static function presentCategory(array $node, ?Collection $products = null): array
     {
+        $counts = $products === null ? static::categoryCounts() : null;
+
         return [
             'id' => $node['code'] ?? (string) $node['id'],
             'key' => $node['id'],
@@ -620,7 +663,9 @@ class Catalog
             'short' => $node['short'],
             'icon' => $node['icon'],
             'url' => CategoryTree::url($node),
-            'count' => static::productsIn($node, $products)->count(),
+            'count' => $counts !== null
+                ? (int) collect($node['subtree'])->sum(fn (int $id) => $counts->get($id, 0))
+                : static::productsIn($node, $products)->count(),
         ];
     }
 
@@ -632,14 +677,15 @@ class Catalog
     protected static function load(?array $ids = null): array
     {
         $whole = $ids === null;
-        $live = fn () => DB::table('products')->select('id')->where('is_active', true)->whereNull('deleted_at')
-            ->when(! $whole, fn ($query) => $query->whereIn('id', $ids));
+        $live = fn () => static::visibleProducts()->select('products.id')
+            ->when(! $whole, fn ($query) => $query->whereIn('products.id', $ids));
 
         return [
             'products' => DB::table('products')
                 ->leftJoin('brands', fn ($join) => $join->on('brands.id', '=', 'products.brand_id')->whereNull('brands.deleted_at'))
                 ->where('products.is_active', true)
                 ->whereNull('products.deleted_at')
+                ->where('products.stock', '>', 0)
                 ->when(! $whole, fn ($query) => $query->whereIn('products.id', $ids))
                 ->orderBy('products.position')
                 ->orderByDesc('products.id')

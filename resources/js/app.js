@@ -160,6 +160,24 @@ window.addEventListener('toast', (event) => {
     }
 });
 
+if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    let spotFrame = 0;
+    document.addEventListener('pointermove', (event) => {
+        const card = event.target.closest?.('[data-card]');
+
+        if (!card || spotFrame) {
+            return;
+        }
+
+        spotFrame = requestAnimationFrame(() => {
+            spotFrame = 0;
+            const box = card.getBoundingClientRect();
+            card.style.setProperty('--mx', `${event.clientX - box.left}px`);
+            card.style.setProperty('--my', `${event.clientY - box.top}px`);
+        });
+    }, { passive: true });
+}
+
 window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         Alpine.store('ui').closeAll();
@@ -427,24 +445,63 @@ const searchScore = (text, term) => {
     return words.length && words.every((word) => haystack.includes(searchStem(word))) ? 1 : 0;
 };
 
-Alpine.data('searchBox', (products, categories, resultsUrl) => ({
+Alpine.data('searchBox', (categories, resultsUrl, suggestUrl) => ({
     query: '',
     focused: false,
+    productMatches: [],
+    total: 0,
+    loading: false,
+    found: {},
+    timer: null,
+    request: null,
+    init() {
+        this.$watch('query', () => this.suggest());
+    },
     get term() {
         return this.query.trim().toLowerCase();
     },
     get open() {
         return this.focused && this.term !== '';
     },
-    get productMatches() {
-        if (!this.term) {
-            return [];
+    suggest() {
+        clearTimeout(this.timer);
+        this.request?.abort();
+        const term = this.term;
+
+        if (!term) {
+            this.productMatches = [];
+            this.total = 0;
+            this.loading = false;
+            return;
         }
-        return products
-            .map((product) => ({ product, score: searchScore(`${product.name} ${product.brand} ${product.subLabel}`, this.term) }))
-            .filter((match) => match.score > 0)
-            .sort((a, b) => b.score - a.score)
-            .map((match) => match.product);
+
+        if (this.found[term]) {
+            ({ products: this.productMatches, total: this.total } = this.found[term]);
+            this.loading = false;
+            return;
+        }
+
+        this.loading = true;
+        this.timer = setTimeout(async () => {
+            const request = new AbortController();
+            this.request = request;
+
+            try {
+                const response = await fetch(`${suggestUrl}?q=${encodeURIComponent(term)}`, { signal: request.signal, headers: { Accept: 'application/json' } });
+                const answer = response.ok ? await response.json() : { products: [], total: 0 };
+                this.found[term] = answer;
+
+                if (this.term === term) {
+                    this.productMatches = answer.products;
+                    this.total = answer.total;
+                    this.loading = false;
+                }
+            } catch (error) {
+                if (error.name !== 'AbortError' && this.term === term) {
+                    this.loading = false;
+                }
+            }
+        }, 180);
     },
     get categoryMatches() {
         if (!this.term) {

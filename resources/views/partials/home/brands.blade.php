@@ -1,4 +1,4 @@
-        <section id="brands" class="mt-11 scroll-mt-[140px] sm:mt-[72px]">
+        <section data-rise id="brands" class="mt-11 scroll-mt-[140px] sm:mt-[72px]">
             <div class="mb-[22px] flex flex-col gap-1.5">
                 <h2 class="m-0 text-xl font-extrabold tracking-[0.3px] sm:text-[28px]">{{ $block['title'] ?? __('shop.brands.title') }}</h2>
             </div>

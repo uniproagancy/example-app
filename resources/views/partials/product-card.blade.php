@@ -2,7 +2,7 @@
     data-card
     x-data="{ id: @js($product['id']), loaded: false }"
     @isset($filter) x-show="visible(@js($product['sub']))" @endisset
-    class="@container relative flex flex-col rounded-[18px] border border-line-soft bg-white px-1.5 pt-1.5 pb-3 transition duration-200 hover:-translate-y-0.5 hover:border-transparent hover:shadow-[0_18px_40px_-12px_rgba(10,22,51,.16)] sm:px-2 sm:pt-2 sm:pb-4"
+    class="@container relative flex flex-col rounded-[18px] border border-line-soft bg-white px-1.5 pt-1.5 pb-3 hover:-translate-y-1 hover:border-transparent hover:shadow-[0_18px_40px_-12px_rgba(10,22,51,.16)] sm:px-2 sm:pt-2 sm:pb-4"
 >
     <div class="relative aspect-[4/4.3] w-full overflow-hidden rounded-[14px] bg-card">
         <a href="{{ $product['url'] }}" wire:navigate tabindex="-1" aria-hidden="true" class="absolute inset-0 grid place-items-center">

@@ -2,6 +2,7 @@
                 id="sec-{{ $section['id'] }}"
                 wire:key="section-{{ $section['id'] }}"
                 x-data="productSection"
+                data-rise
                 class="mt-11 scroll-mt-[140px] sm:mt-16"
             >
                 <div class="mb-4 flex flex-wrap items-center justify-between gap-4">
