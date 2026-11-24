@@ -83,8 +83,12 @@ class ImportPipelineTest extends TestCase
         $this->assertSame(2, SupplierAttributeMap::query()->count());
 
         $memory = Attribute::query()->where('code', 'shida-mekhsiereba')->sole();
-        $this->assertTrue($memory->is_filterable);
+        $this->assertFalse($memory->is_filterable);
         $this->assertContains('256-gb', $product->attributeValues->pluck('code')->all());
+        $this->assertTrue(Catalog::filterAttributes()->isEmpty());
+
+        $memory->update(['is_filterable' => true]);
+        Catalog::flush();
         $this->assertSame(['shida-mekhsiereba' => ['256-gb']], Catalog::filterAttributes()->map(fn (array $attribute) => array_keys($attribute['values']))->all());
         $this->assertSame(['ka'], $product->specs->firstWhere('attribute_id', $memory->id)->translations->pluck('locale')->all());
 

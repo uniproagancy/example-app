@@ -207,7 +207,7 @@ class TaxonomyResolver
             : $rows;
     }
 
-    public function productAttribute(Supplier $supplier, Product $product, string $name, array $rows, bool $filterable = false): ?Attribute
+    public function productAttribute(Supplier $supplier, Product $product, string $name, array $rows): ?Attribute
     {
         $name = trim((string) Text::utf8($name));
         $categoryId = $product->category_id !== null ? (int) $product->category_id : null;
@@ -237,7 +237,7 @@ class TaxonomyResolver
             }
         }
 
-        return $this->attribute($supplier, $name, $filterable);
+        return $this->attribute($supplier, $name);
     }
 
     protected function attributeCode(string $name): string
@@ -302,7 +302,7 @@ class TaxonomyResolver
             ]);
     }
 
-    public function attribute(Supplier $supplier, string $name, bool $filterable = false): ?Attribute
+    public function attribute(Supplier $supplier, string $name): ?Attribute
     {
 
         $name = trim((string) Text::utf8($name));
@@ -332,7 +332,7 @@ class TaxonomyResolver
             ['code' => $this->attributeCode($names['ka'] ?: $name)],
             [
                 'type' => Str::contains(Str::lower($name), ['color', 'colour', 'ფერი']) ? 'color' : 'select',
-                'is_filterable' => $filterable,
+                'is_filterable' => false,
                 'is_variant' => false,
                 'sort_order' => 100,
             ],

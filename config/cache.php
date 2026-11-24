@@ -6,6 +6,8 @@ return [
 
     'default' => env('CACHE_STORE', 'database'),
 
+    'page_cache' => (bool) env('PAGE_CACHE', true),
+
     'stores' => [
 
         'array' => [
@@ -24,6 +26,12 @@ return [
         'file' => [
             'driver' => 'file',
             'path' => storage_path('framework/cache/data'),
+            'lock_path' => storage_path('framework/cache/locks'),
+        ],
+
+        'pages' => [
+            'driver' => env('PAGE_CACHE_STORE', 'file'),
+            'path' => storage_path('framework/cache/pages'),
             'lock_path' => storage_path('framework/cache/locks'),
         ],
 

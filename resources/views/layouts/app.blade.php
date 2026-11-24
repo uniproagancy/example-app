@@ -24,14 +24,14 @@
         @livewireStyles
     </head>
     <body class="min-h-screen bg-white pb-[calc(68px+env(safe-area-inset-bottom))] font-sans text-navy antialiased sm:pb-0">
-        @include('partials.pixel')
+        {!! App\Http\Middleware\CacheGuestPages::fresh('partials.pixel') !!}
         @include('partials.header')
 
         {{ $slot }}
 
         @include('partials.footer')
         @include('partials.overlays')
-        @include('partials.cookie-consent')
+        {!! App\Http\Middleware\CacheGuestPages::fresh('partials.cookie-consent') !!}
 
         @livewireScriptConfig
     </body>

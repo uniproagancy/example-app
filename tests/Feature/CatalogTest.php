@@ -223,6 +223,65 @@ class CatalogTest extends TestCase
         $this->assertSame([1, 2, 3], Catalog::search($products, '')->pluck('id')->all());
     }
 
+    public function test_brand_pages_list_the_brands_stocked_products_and_reach_the_sitemap(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+
+        $speaker = Product::query()->with('brand')->where('sku', 'jbl')->sole();
+        $brand = $speaker->brand;
+        $others = Product::query()->where('is_active', true)->where('stock', '>', 0)->where('brand_id', '!=', $brand->id)->with('kaTranslation')->first();
+
+        $page = $this->get('/ka/brands/'.$brand->slug)
+            ->assertOk()
+            ->assertSee('<link rel="canonical" href="'.route('brand', ['brand' => $brand->slug]).'">', false)
+            ->assertSee(__('catalog.brand_title', ['name' => $brand->name]).' — ', false)
+            ->assertSee('wire:key="category-product-'.$speaker->id.'"', false)
+            ->assertDontSee('wire:key="category-product-'.$others->id.'"', false);
+
+        $this->assertStringContainsString('"BreadcrumbList"', $page->getContent());
+
+        $this->get('/ka/brands/no-such-brand')->assertNotFound();
+
+        $this->get('/sitemap.xml')->assertOk()->assertSee('/ka/brands/'.$brand->slug, false);
+
+        Product::query()->where('brand_id', $brand->id)->update(['stock' => 0]);
+        Catalog::flush();
+
+        $this->get('/ka/brands/'.$brand->slug)->assertNotFound();
+    }
+
+    public function test_search_matches_across_alphabets_and_synonyms(): void
+    {
+        $products = collect([
+            ['id' => 1, 'name' => 'Samsung ტელევიზორი 55"', 'brand' => 'Samsung', 'subLabel' => 'ტელევიზორები'],
+            ['id' => 2, 'name' => 'Apple iPhone 16 Pro', 'brand' => 'Apple', 'subLabel' => 'სმარტფონები'],
+            ['id' => 3, 'name' => 'Lenovo IdeaPad ლეპტოპი', 'brand' => 'Lenovo', 'subLabel' => 'ლეპტოპები'],
+            ['id' => 4, 'name' => 'Xiaomi ხელსაწყოების ნაკრები', 'brand' => 'Xiaomi', 'subLabel' => 'ხელსაწყოები'],
+        ]);
+
+        $found = fn (string $query) => Catalog::search($products, $query)->pluck('id')->all();
+
+        $this->assertSame([1], $found('სამსუნგი'));
+        $this->assertSame([1], $found('televizori'));
+        $this->assertSame([1], $found('ტვ'));
+        $this->assertSame([2], $found('აიფონი'));
+        $this->assertSame([2], $found('aifoni'));
+        $this->assertSame([3], $found('notebook'));
+        $this->assertSame([3], $found('ლაპტოპი'));
+        $this->assertSame([4], $found('xelsats'));
+        $this->assertSame([4], $found('შიაომი'));
+        $this->assertSame([], $found('მაცივარი'));
+    }
+
+    public function test_header_search_finds_products_typed_in_the_other_alphabet(): void
+    {
+        $speaker = Catalog::find(Product::query()->where('sku', 'jbl')->value('id'));
+        $georgian = strtr(mb_strtolower($speaker['brand']), ['j' => 'ჯ', 'b' => 'ბ', 'l' => 'ლ']);
+
+        $this->assertContains($speaker['id'], Catalog::searchCandidates($georgian));
+        $this->get(route('search.suggest', ['q' => $georgian]))->assertOk()->assertJsonPath('products.0.id', $speaker['id']);
+    }
+
     public function test_filters_narrow_results_and_reset_pagination(): void
     {
         $this->refreshApplicationWithLocale('ka');

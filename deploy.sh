@@ -153,11 +153,17 @@ release() {
     artisan config:clear
     artisan route:clear
     artisan cache:clear
+    artisan cache:clear pages
     artisan config:cache
     artisan view:cache
 
     log "Publishing public files to $WEB"
     find public -mindepth 1 -maxdepth 1 ! -name storage -exec cp -R {} "$WEB/" \;
+
+    if [ -f "$WEB/robots.txt" ] && [ ! -f public/robots.txt ]; then
+        mv "$WEB/robots.txt" "$WEB/robots.txt.disabled-$(date +%Y%m%d%H%M%S)"
+        log "Moved the static $WEB/robots.txt aside so the site serves its own robots.txt"
+    fi
 
     artisan queue:restart
 

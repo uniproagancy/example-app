@@ -85,7 +85,10 @@ class SeoController extends Controller
         $campaigns = Campaign::listing()
             ->map(fn (array $campaign) => ['alternates' => $this->localized(fn () => '/promotions/'.$campaign['slug']), 'images' => []]);
 
-        return $static->concat($pages)->concat($campaigns)->concat($categories)->concat($products)
+        $brands = Catalog::brandPages()
+            ->map(fn (array $brand) => ['alternates' => $this->localized(fn () => '/brands/'.$brand['slug']), 'images' => []]);
+
+        return $static->concat($pages)->concat($campaigns)->concat($categories)->concat($brands)->concat($products)
             ->filter(fn (array $entry) => $entry['alternates'] !== []);
     }
 

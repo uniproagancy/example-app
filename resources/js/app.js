@@ -618,8 +618,22 @@ const searchStem = (word) => {
     return word.length >= 4 ? word.slice(0, -1) : word;
 };
 
-const searchScore = (text, term) => {
-    const haystack = String(text ?? '').toLowerCase();
+const georgianLatin = { ა: 'a', ბ: 'b', გ: 'g', დ: 'd', ე: 'e', ვ: 'v', ზ: 'z', თ: 't', ი: 'i', კ: 'k', ლ: 'l', მ: 'm', ნ: 'n', ო: 'o', პ: 'p', ჟ: 'zh', რ: 'r', ს: 's', ტ: 't', უ: 'u', ფ: 'p', ქ: 'k', ღ: 'gh', ყ: 'k', შ: 'sh', ჩ: 'ch', ც: 'ts', ძ: 'dz', წ: 'ts', ჭ: 'ch', ხ: 'kh', ჯ: 'j', ჰ: 'h' };
+
+const searchKey = (text) => String(text ?? '')
+    .toLowerCase()
+    .replace(/[ა-ჰ]/g, (letter) => georgianLatin[letter] ?? letter)
+    .replace(/ch|ph|th|ck|q|w|y|x|f|c/g, (pair) => ({ ch: 'ch', ph: 'p', th: 't', ck: 'k', q: 'k', w: 'v', y: 'i', x: 'kh', f: 'p', c: 'k' })[pair])
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+const searchScore = (text, query) => {
+    const haystack = searchKey(text);
+    const term = searchKey(query);
+
+    if (!term || !haystack) {
+        return 0;
+    }
 
     if (haystack.split(/\s+/).some((word) => word.startsWith(term))) {
         return 3;

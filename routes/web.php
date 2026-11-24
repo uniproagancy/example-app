@@ -12,6 +12,7 @@ use App\Http\Controllers\PublicFileController;
 use App\Http\Controllers\SearchSuggestController;
 use App\Http\Controllers\SeoController;
 use App\Http\Controllers\WarrantyLinkController;
+use App\Http\Middleware\CacheGuestPages;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Mcamara\LaravelLocalization\Facades\LaravelLocalization;
@@ -63,17 +64,17 @@ Route::prefix(LaravelLocalization::setLocale())
     ->group(function () {
         Livewire::setUpdateRoute(fn ($handle, $path) => Route::post($path, $handle)->name('livewire.update'));
 
-        Route::livewire('/', 'pages::home')->name('home');
+        Route::livewire('/', 'pages::home')->name('home')->middleware(CacheGuestPages::class);
 
-        Route::livewire('about', 'pages::about')->name('about');
+        Route::livewire('about', 'pages::about')->name('about')->middleware(CacheGuestPages::class);
 
         Route::livewire('contact', 'pages::contact')->name('contact');
 
-        Route::livewire('promotions', 'pages::promotions')->name('promotions');
+        Route::livewire('promotions', 'pages::promotions')->name('promotions')->middleware(CacheGuestPages::class);
 
-        Route::livewire('promotions/{campaign}', 'pages::catalog')->name('promotions.show');
+        Route::livewire('promotions/{campaign}', 'pages::catalog')->name('promotions.show')->middleware(CacheGuestPages::class);
 
-        Route::livewire('info/{slug}', 'pages::info')->name('page');
+        Route::livewire('info/{slug}', 'pages::info')->name('page')->middleware(CacheGuestPages::class);
 
         Route::livewire('checkout', 'pages::checkout')->name('checkout');
 
@@ -83,9 +84,11 @@ Route::prefix(LaravelLocalization::setLocale())
 
         Route::livewire('warranty/{number}', 'pages::warranty')->name('warranty');
 
-        Route::livewire('catalog', 'pages::catalog')->name('catalog');
+        Route::livewire('catalog', 'pages::catalog')->name('catalog')->middleware(CacheGuestPages::class);
 
-        Route::livewire('categories/{slug}', 'pages::catalog')->name('category');
+        Route::livewire('categories/{slug}', 'pages::catalog')->name('category')->middleware(CacheGuestPages::class);
+
+        Route::livewire('brands/{brand}', 'pages::catalog')->name('brand')->middleware(CacheGuestPages::class);
 
         Route::livewire('product/{slug}', 'pages::product')->name('product');
 

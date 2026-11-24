@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Http\Middleware\CacheGuestPages;
 use App\Models\Brand;
 use App\Models\Campaign;
 use Illuminate\Database\Query\Builder;
@@ -15,6 +16,8 @@ use Illuminate\Support\Once;
 class Catalog
 {
     public const CACHE_KEY = 'catalog.products';
+
+    public const SEARCH_KEY = 'catalog.search';
 
     public const FREE_SHIPPING_FROM = 100;
 
@@ -33,6 +36,8 @@ class Catalog
     public static function flush(): void
     {
         Cache::forget(self::CACHE_KEY);
+        Cache::forget(self::SEARCH_KEY);
+        CacheGuestPages::flush();
         Once::flush();
     }
 
@@ -129,26 +134,42 @@ class Catalog
 
     public static function searchCandidates(string $query, int $limit = 300): array
     {
-        $words = array_slice(preg_split('/\s+/u', mb_strtolower(trim($query)), -1, PREG_SPLIT_NO_EMPTY) ?: [], 0, 5);
+        $score = SearchText::scorer($query);
+        $found = [];
 
-        if ($words === []) {
-            return [];
+        foreach (static::searchIndex() as $id => $key) {
+            if ($points = $score($key)) {
+                $found[$id] = $points;
+            }
         }
 
-        $locales = array_unique([app()->getLocale(), (string) config('app.fallback_locale')]);
-        $candidates = static::visibleProducts()
-            ->join('product_translations as t', fn ($join) => $join->on('t.product_id', '=', 'products.id')->whereIn('t.locale', $locales))
-            ->leftJoin('brands as b', 'b.id', '=', 'products.brand_id');
+        arsort($found);
 
-        foreach ($words as $word) {
-            $like = '%'.addcslashes(static::searchStem($word), '%_\\').'%';
-            $candidates->where(fn ($query) => $query
-                ->where('t.name', 'like', $like)
-                ->orWhere('b.name', 'like', $like)
-                ->orWhere('products.sku', 'like', $like));
-        }
+        return array_slice(array_keys($found), 0, $limit);
+    }
 
-        return $candidates->distinct()->limit($limit)->pluck('products.id')->all();
+    /**
+     * @return array<int, string>
+     */
+    public static function searchIndex(): array
+    {
+        return Cache::rememberForever(self::SEARCH_KEY, function (): array {
+            $titles = CategoryTree::nodes(Locales::default())->map(fn (array $node) => $node['title']);
+            $index = [];
+
+            static::visibleProducts()
+                ->join('product_translations as t', fn ($join) => $join->on('t.product_id', '=', 'products.id')->where('t.locale', Locales::default()))
+                ->leftJoin('brands as b', 'b.id', '=', 'products.brand_id')
+                ->select(['products.id', 'products.sku', 'products.category_id', 't.name', 'b.name as brand'])
+                ->orderBy('products.id')
+                ->chunk(2000, function ($rows) use (&$index, $titles): void {
+                    foreach ($rows as $row) {
+                        $index[(int) $row->id] = SearchText::key("{$row->name} {$row->brand} {$titles->get($row->category_id)} {$row->sku}");
+                    }
+                });
+
+            return $index;
+        });
     }
 
     public static function searchableCategories(): Collection
@@ -173,16 +194,16 @@ class Catalog
 
     public static function search(Collection $products, string $query): Collection
     {
-        $term = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $query) ?? ''));
-
-        if ($term === '') {
+        if (SearchText::key($query) === '') {
             return $products->values();
         }
+
+        $score = SearchText::scorer($query);
 
         return $products
             ->map(fn (array $product) => [
                 'product' => $product,
-                'score' => static::searchScore("{$product['name']} {$product['brand']} {$product['subLabel']}", $term),
+                'score' => $score(SearchText::key(($product['name'] ?? '').' '.($product['brand'] ?? '').' '.($product['subLabel'] ?? '').' '.($product['sku'] ?? ''))),
             ])
             ->filter(fn (array $match) => $match['score'] > 0)
             ->sortByDesc('score')
@@ -192,20 +213,7 @@ class Catalog
 
     public static function searchScore(string $text, string $term): int
     {
-        $haystack = mb_strtolower($text);
-        $words = preg_split('/\s+/u', $haystack, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        if (collect($words)->contains(fn (string $word) => str_starts_with($word, $term))) {
-            return 3;
-        }
-
-        if (str_contains($haystack, $term)) {
-            return 2;
-        }
-
-        $termWords = preg_split('/\s+/u', $term, -1, PREG_SPLIT_NO_EMPTY) ?: [];
-
-        return $termWords !== [] && collect($termWords)->every(fn (string $word) => str_contains($haystack, static::searchStem($word))) ? 1 : 0;
+        return SearchText::scorer($term)(SearchText::key($text));
     }
 
     public static function searchStem(string $word): string
@@ -297,8 +305,38 @@ class Catalog
         $counts = static::products()->countBy('brand');
 
         return collect(static::raw()['brands'])
-            ->map(fn (array $brand) => ['name' => $brand['name'], 'count' => $counts->get($brand['name'], 0)])
+            ->map(fn (array $brand) => [
+                'name' => $brand['name'],
+                'count' => $counts->get($brand['name'], 0),
+                'url' => filled($brand['slug'] ?? null) && $counts->get($brand['name'], 0) > 0 ? route('brand', ['brand' => $brand['slug']]) : null,
+            ])
             ->values();
+    }
+
+    public static function brandPages(): Collection
+    {
+        return once(fn () => static::visibleProducts()
+            ->join('brands as b', 'b.id', '=', 'products.brand_id')
+            ->whereNull('b.deleted_at')
+            ->where('b.is_active', true)
+            ->whereNotNull('b.slug')
+            ->where('b.slug', '!=', '')
+            ->groupBy('b.id', 'b.name', 'b.slug')
+            ->orderBy('b.name')
+            ->selectRaw('b.id, b.name, b.slug, count(*) as total')
+            ->get()
+            ->map(fn (object $brand) => [
+                'id' => (int) $brand->id,
+                'name' => (string) $brand->name,
+                'slug' => (string) $brand->slug,
+                'count' => (int) $brand->total,
+                'url' => route('brand', ['brand' => $brand->slug]),
+            ]));
+    }
+
+    public static function brandPage(string $slug): ?array
+    {
+        return static::brandPages()->firstWhere('slug', $slug);
     }
 
     public static function filterAttributes(?string $locale = null): Collection
@@ -719,7 +757,7 @@ class Catalog
                 ->orderBy('home_position')
                 ->orderBy('name')
                 ->limit(Brand::HOME_LIMIT)
-                ->get(['id', 'name'])
+                ->get(['id', 'name', 'slug'])
                 ->map(fn ($row) => (array) $row)
                 ->all(),
             'filters' => DB::table('attribute_value_product as avp')

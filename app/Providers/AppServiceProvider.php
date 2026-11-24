@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\CacheGuestPages;
 use App\Jobs\ImportProductJob;
 use App\Models\Supplier;
 use App\Services\Facebook\Pixel;
@@ -9,7 +10,11 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
+use Illuminate\Queue\Events\JobProcessed;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Mcamara\LaravelLocalization\Traits\LoadsTranslatedCachedRoutes;
@@ -26,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Model::preventLazyLoading($this->app->environment('local', 'testing'));
+
+        DB::listen(fn (QueryExecuted $query) => CacheGuestPages::noticeQuery($query->sql));
+        Event::listen(JobProcessed::class, fn () => CacheGuestPages::flushIfDirty());
+        $this->app->terminating(fn () => CacheGuestPages::flushIfDirty());
 
         RouteServiceProvider::loadCachedRoutesUsing(fn () => $this->loadCachedRoutes());
 

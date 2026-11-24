@@ -29,6 +29,8 @@ new class extends Component
     #[Locked]
     public ?string $campaignSlug = null;
 
+    public ?string $brandSlug = null;
+
     #[Url(except: 'popular')]
     public string $sort = 'popular';
 
@@ -55,8 +57,17 @@ new class extends Component
 
     public int $limit = self::PER_PAGE;
 
-    public function mount(?string $slug = null, ?string $campaign = null): void
+    public function mount(?string $slug = null, ?string $campaign = null, ?string $brand = null): void
     {
+        if ($brand !== null) {
+            abort_unless(Catalog::brandPage($brand), 404);
+
+            $this->brandSlug = $brand;
+            $this->normalize();
+
+            return;
+        }
+
         if ($campaign !== null) {
             abort_unless(Campaign::findLive($campaign), 404);
 
@@ -166,10 +177,20 @@ new class extends Component
     }
 
     #[Computed]
+    public function brandPage(): ?array
+    {
+        return $this->brandSlug !== null ? Catalog::brandPage($this->brandSlug) : null;
+    }
+
+    #[Computed]
     public function baseProducts(): Collection
     {
         if ($this->campaignSlug !== null) {
             return $this->campaign['products'] ?? collect();
+        }
+
+        if ($this->brandSlug !== null) {
+            return Catalog::products()->where('brand', $this->brandPage['name'] ?? null)->values();
         }
 
         return $this->category ? Catalog::productsIn($this->category) : Catalog::products();
@@ -279,7 +300,7 @@ new class extends Component
 
     public function isLanding(): bool
     {
-        return $this->categoryId === null && $this->campaignSlug === null && ! $this->browseAll && $this->searchTerm() === '' && $this->activeCount() === 0;
+        return $this->categoryId === null && $this->campaignSlug === null && $this->brandSlug === null && ! $this->browseAll && $this->searchTerm() === '' && $this->activeCount() === 0;
     }
 
     protected function landingTiles(): Collection
@@ -325,6 +346,24 @@ new class extends Component
             return ['rows' => [], 'back' => null];
         }
 
+        if ($this->brandSlug !== null) {
+            $products = $this->baseProducts;
+
+            return [
+                'rows' => CategoryTree::roots()
+                    ->map(fn (array $root) => [
+                        'id' => $root['id'],
+                        'name' => $root['title'],
+                        'url' => CategoryTree::url($root).'?'.http_build_query(['brand' => [$this->brandPage['name'] ?? '']]),
+                        'count' => Catalog::productsIn($root, $products)->count(),
+                    ])
+                    ->filter(fn (array $row) => $row['count'] > 0)
+                    ->values()
+                    ->all(),
+                'back' => ['label' => __('catalog.back_all'), 'url' => route('catalog')],
+            ];
+        }
+
         $node = $this->category;
         $products = Catalog::products();
         $present = fn (array $item) => [
@@ -355,6 +394,10 @@ new class extends Component
     {
         if ($this->campaignSlug !== null) {
             return $this->renderCampaign();
+        }
+
+        if ($this->brandSlug !== null) {
+            return $this->renderBrand();
         }
 
         $node = $this->category;
@@ -390,9 +433,39 @@ new class extends Component
             'ancestors' => $node ? CategoryTree::ancestors($node['id']) : collect(),
             'navigation' => $this->navigation(),
             'campaign' => null,
+            'brand' => null,
             'others' => collect(),
             'shown' => $this->results->take($this->limit),
         ])->title($node['title'] ?? ($term !== '' ? __('catalog.search.title', ['term' => $term]) : __('catalog.title')));
+    }
+
+    protected function renderBrand()
+    {
+        $brand = $this->brandPage;
+
+        abort_unless($brand, 404);
+
+        Seo::set([
+            'canonical' => $brand['url'],
+            'description' => Seo::text(__('seo.brand_description', ['name' => $brand['name'], 'count' => $brand['count'], 'site' => Site::name()])),
+            'schema' => [Seo::breadcrumbs([
+                ['name' => __('catalog.title'), 'url' => route('catalog')],
+                ['name' => $brand['name'], 'url' => $brand['url']],
+            ])],
+        ]);
+
+        return $this->view([
+            'landing' => false,
+            'term' => $this->searchTerm(),
+            'tiles' => collect(),
+            'node' => null,
+            'ancestors' => collect(),
+            'navigation' => $this->navigation(),
+            'campaign' => null,
+            'brand' => $brand,
+            'others' => collect(),
+            'shown' => $this->results->take($this->limit),
+        ])->title(__('catalog.brand_title', ['name' => $brand['name']]));
     }
 
     protected function renderCampaign()
@@ -419,6 +492,7 @@ new class extends Component
             'ancestors' => collect(),
             'navigation' => $this->navigation(),
             'campaign' => $campaign,
+            'brand' => null,
             'others' => Campaign::listing()->where('slug', '!=', $this->campaignSlug)->take(3)->values(),
             'shown' => $this->results->take($this->limit),
         ])->title($campaign['title']);
@@ -455,6 +529,10 @@ new class extends Component
             @endforeach
             <span class="size-1 rounded-full bg-[#C9D3E3]"></span>
             <span class="font-semibold text-navy">{{ $node['title'] }}</span>
+        @elseif ($brand)
+            <a href="{{ route('catalog') }}" wire:navigate class="text-muted hover:text-brand">{{ __('catalog.title') }}</a>
+            <span class="size-1 rounded-full bg-[#C9D3E3]"></span>
+            <span class="font-semibold text-navy">{{ $brand['name'] }}</span>
         @else
             <span class="font-semibold text-navy">{{ __('catalog.title') }}</span>
         @endif
@@ -468,6 +546,8 @@ new class extends Component
     <h1 class="m-0 mt-[22px] flex items-start gap-3.5 text-[clamp(26px,3.4vw,46px)] leading-[1.1] font-extrabold tracking-[0.2px] text-balance">
         @if ($node)
             {{ $node['title'] }}
+        @elseif ($brand)
+            {{ $brand['name'] }}
         @elseif ($term !== '')
             {{ __('catalog.search.heading') }}
         @elseif ($landing)

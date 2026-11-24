@@ -380,9 +380,8 @@ class ProductImporter
         $now = now();
 
         foreach (collect($incoming)->groupBy('name') as $name => $rows) {
-            $filterable = (bool) ($rows->first()['filterable'] ?? false);
             $description = $derived[(string) $name] ?? null;
-            $attribute = $description['attribute'] ?? $this->taxonomy->productAttribute($supplier, $product, (string) $name, $rows->all(), $filterable);
+            $attribute = $description['attribute'] ?? $this->taxonomy->productAttribute($supplier, $product, (string) $name, $rows->all());
 
             if (! $attribute) {
                 continue;
