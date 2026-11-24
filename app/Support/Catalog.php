@@ -28,6 +28,8 @@ class Catalog
 
     public const INSTALLMENT_MONTHS = 24;
 
+    public const NEW_FOR_DAYS = 2;
+
     public static function flush(): void
     {
         Cache::forget(self::CACHE_KEY);
@@ -438,6 +440,11 @@ class Catalog
         return CategoryTree::label($key);
     }
 
+    public static function isFresh(?string $createdAt): bool
+    {
+        return $createdAt !== null && Carbon::parse($createdAt)->greaterThanOrEqualTo(now()->subDays(self::NEW_FOR_DAYS));
+    }
+
     public static function money(int|float|string $amount): string
     {
         return number_format((float) $amount, 0, '.', ' ').' ₾';
@@ -556,7 +563,7 @@ class Catalog
         $price = (float) $row['price'];
         $old = $row['old_price'] !== null ? (float) $row['old_price'] : null;
         $old = $old && $old > $price ? $old : null;
-        $isNew = (bool) $row['is_new'];
+        $isNew = (bool) $row['is_new'] || static::isFresh($row['created_at'] ?? null);
         $imageUrls = $image !== null ? [Storage::disk('public')->url($image)] : [];
 
         return [
@@ -691,7 +698,7 @@ class Catalog
                 ->orderByDesc('products.id')
                 ->get([
                     'products.id', 'products.category_id', 'products.sku', 'products.supplier_sku', 'products.price', 'products.old_price',
-                    'products.stock', 'products.is_new', 'products.variant_group', 'products.position', 'products.updated_at', 'brands.name as brand_name',
+                    'products.stock', 'products.is_new', 'products.variant_group', 'products.position', 'products.created_at', 'products.updated_at', 'brands.name as brand_name',
                 ])
                 ->map(fn ($row) => (array) $row)
                 ->all(),

@@ -35,6 +35,30 @@ class CatalogTest extends TestCase
         $this->assertSame(12, substr_count($response->getContent(), 'wire:key="category-product-'));
     }
 
+    public function test_products_added_in_the_last_two_days_get_the_new_badge(): void
+    {
+        $speaker = Product::query()->where('sku', 'jbl')->sole();
+        $speaker->forceFill(['is_new' => false, 'old_price' => null, 'created_at' => now()->subDay()])->save();
+        Catalog::flush();
+
+        $shown = Catalog::find($speaker->id);
+        $this->assertTrue($shown['isNew']);
+        $this->assertSame(__('shop.badge_new'), $shown['badge']);
+
+        $speaker->forceFill(['created_at' => now()->subDays(3)])->save();
+        Catalog::flush();
+
+        $shown = Catalog::find($speaker->id);
+        $this->assertFalse($shown['isNew']);
+        $this->assertNull($shown['badge']);
+
+        $this->travel(3)->days();
+        $speaker->forceFill(['is_new' => true])->save();
+        Catalog::flush();
+
+        $this->assertTrue(Catalog::find($speaker->id)['isNew']);
+    }
+
     public function test_out_of_stock_products_are_hidden_everywhere_on_the_site(): void
     {
         $speaker = Product::query()->where('sku', 'jbl')->sole();
