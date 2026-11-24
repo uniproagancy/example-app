@@ -47,6 +47,7 @@ new class extends Component
 
         if ($product) {
             $product['description'] = Catalog::description($product['id']);
+            $product['images'] = Catalog::images($product['id']);
         }
 
         $category = $product ? CategoryTree::find($product['categoryId']) : null;
