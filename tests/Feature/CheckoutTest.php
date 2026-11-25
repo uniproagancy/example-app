@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Order;
+use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\PromoCode;
 use App\Models\User;
@@ -40,6 +41,23 @@ class CheckoutTest extends TestCase
             ->set('phone', '+995 555 12 34 56')
             ->set('email', 'Nino@Mail.ge')
             ->set('address', 'ჭავჭავაძის გამზ. 21');
+    }
+
+    public function test_cash_on_delivery_is_refused_above_its_maximum_total(): void
+    {
+        $this->fillCart();
+        PaymentMethod::query()->where('code', 'cash')->update(['max_total' => 500]);
+
+        $checkout = $this->filled()->set('agree', true);
+
+        $this->assertNotContains('cash', $checkout->instance()->methods->pluck('code')->all());
+
+        $checkout->set('payment', 'cash')->call('placeOrder')->assertHasErrors('payment');
+        $this->assertSame(0, Order::query()->count());
+
+        PaymentMethod::query()->where('code', 'cash')->update(['max_total' => 1000000]);
+
+        $this->assertContains('cash', $this->filled()->instance()->methods->pluck('code')->all());
     }
 
     public function test_checkout_page_renders_cart_lines(): void
