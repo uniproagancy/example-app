@@ -101,6 +101,20 @@ class TextPagesTest extends TestCase
             ->assertDontSee('alert(1)', false);
     }
 
+    public function test_deeply_nested_rich_text_can_be_edited(): void
+    {
+        $this->refreshApplicationWithLocale('ka');
+        $this->actingAs(User::factory()->admin()->create());
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+
+        $delivery = Page::query()->where('slug', 'delivery')->sole();
+        $text = ['type' => 'text', 'text' => 'ჩადგმული პუნქტი'];
+
+        Livewire::test(EditTextPage::class, ['record' => $delivery->getRouteKey()])
+            ->set('data.kaTranslation.body.content.1.content.2.content.2.content.0', $text)
+            ->assertSet('data.kaTranslation.body.content.1.content.2.content.2.content.0', $text);
+    }
+
     public function test_footer_survives_a_database_without_the_pages_table(): void
     {
         $this->refreshApplicationWithLocale('ka');

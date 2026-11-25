@@ -6,12 +6,14 @@ use App\Http\Middleware\CacheGuestPages;
 use App\Jobs\ImportProductJob;
 use App\Models\Supplier;
 use App\Services\Facebook\Pixel;
+use App\Support\ServedVite;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider;
+use Illuminate\Foundation\Vite;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(Pixel::class);
+        $this->app->singleton(Vite::class, ServedVite::class);
     }
 
     public function boot(): void

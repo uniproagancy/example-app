@@ -19,6 +19,7 @@ use App\Models\PromoCode;
 use App\Models\User;
 use App\Support\Cart;
 use App\Support\RecentlyViewed;
+use App\Support\ServedVite;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -144,7 +145,7 @@ class CacheGuestPages
 
     protected function key(Request $request): string
     {
-        $build = @filemtime(public_path('build/manifest.json')) ?: 0;
+        $build = @md5_file(ServedVite::manifestFile()) ?: '';
 
         return 'page:'.md5(app()->getLocale().'|'.$request->url().'|'.$build.'|'.Cache::get(self::VERSION_KEY, 0));
     }
