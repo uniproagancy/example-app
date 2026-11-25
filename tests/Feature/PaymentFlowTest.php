@@ -291,6 +291,19 @@ class PaymentFlowTest extends TestCase
             ->assertSee('shop-7', false);
     }
 
+    public function test_credo_split_adds_nothing_to_the_price(): void
+    {
+        config(['credo.split.merchant_id' => 'shop-8', 'credo.split.secret' => 'secret']);
+        $order = $this->order('credo_split');
+        $order->rememberInSession();
+
+        Livewire::test('pages::order', ['number' => $order->number])->call('pay');
+
+        $transaction = $order->transactions()->sole();
+        $this->assertSame('credo-split', $transaction->driver);
+        $this->assertSame('1000.00', $transaction->amount);
+    }
+
     public function test_sweeper_settles_pending_payments(): void
     {
         $this->configureBog();
