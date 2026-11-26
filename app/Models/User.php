@@ -32,12 +32,22 @@ class User extends Authenticatable implements FilamentUser
             'notification_preferences' => 'array',
             'is_admin' => 'boolean',
             'is_operator' => 'boolean',
+            'is_courier' => 'boolean',
         ];
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
+        if ($panel->getId() === 'courier') {
+            return $this->is_admin === true || $this->is_courier === true;
+        }
+
         return $this->is_admin === true || $this->is_operator === true;
+    }
+
+    public function isCourier(): bool
+    {
+        return $this->is_admin !== true && $this->is_courier === true;
     }
 
     public function isOperator(): bool

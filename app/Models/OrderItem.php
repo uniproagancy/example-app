@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
-#[Fillable(['order_id', 'product_id', 'name', 'options', 'unit_price', 'quantity', 'total', 'warranty_months', 'serial_number'])]
+#[Fillable(['order_id', 'product_id', 'name', 'options', 'unit_price', 'quantity', 'total', 'warranty_months', 'serial_number', 'serial_photo'])]
 class OrderItem extends Model
 {
     protected function casts(): array

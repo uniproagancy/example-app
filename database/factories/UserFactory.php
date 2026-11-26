@@ -35,6 +35,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function courier(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'is_courier' => true,
+        ]);
+    }
+
     public function operator(): static
     {
         return $this->state(fn (array $attributes) => [

@@ -124,6 +124,12 @@
                                         @if ($lineEnd = $lineWarranty->warrantyEndsAt()) · {{ __('admin.warranty.until', ['date' => $lineEnd->format('d.m.Y')]) }}@endif
                                     </span>
                                 @endif
+                                @if ($line['item_id'] && ($photoItem = $this->warrantyItems->get($line['item_id'])) && $photoItem->serial_photo)
+                                    <a href="{{ route('serial-photo', $photoItem) }}" target="_blank" class="mt-0.5 inline-flex w-fit items-center gap-1 text-xs font-medium text-primary-600 hover:underline dark:text-primary-400">
+                                        <x-filament::icon icon="heroicon-o-camera" class="size-3.5" />
+                                        {{ __('courier.deliveries.photo') }}@if ($photoItem->serial_number) · {{ $photoItem->serial_number }}@endif
+                                    </a>
+                                @endif
                             </div>
 
                             <span class="w-24 text-end text-sm text-gray-600 dark:text-gray-300">{{ Catalog::money($line['price']) }}</span>

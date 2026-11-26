@@ -93,6 +93,11 @@ class UserResource extends Resource
                     ->helperText(__('admin.users.is_operator_help'))
                     ->hidden(fn (Get $get): bool => (bool) $get('is_admin'))
                     ->columnSpanFull(),
+                Toggle::make('is_courier')
+                    ->label(__('admin.users.is_courier'))
+                    ->helperText(__('admin.users.is_courier_help'))
+                    ->hidden(fn (Get $get): bool => (bool) $get('is_admin'))
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -115,6 +120,10 @@ class UserResource extends Resource
                     ->alignCenter(),
                 IconColumn::make('is_operator')
                     ->label(__('admin.users.is_operator'))
+                    ->boolean()
+                    ->alignCenter(),
+                IconColumn::make('is_courier')
+                    ->label(__('admin.users.is_courier'))
                     ->boolean()
                     ->alignCenter(),
                 TextColumn::make('created_at')
@@ -142,6 +151,8 @@ class UserResource extends Resource
                     ->label(__('admin.users.admins_only')),
                 TernaryFilter::make('is_operator')
                     ->label(__('admin.users.is_operator')),
+                TernaryFilter::make('is_courier')
+                    ->label(__('admin.users.is_courier')),
             ])
             ->recordActions([
                 EditAction::make()
