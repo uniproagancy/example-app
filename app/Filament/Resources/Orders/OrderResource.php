@@ -109,6 +109,7 @@ class OrderResource extends Resource
             'confirmed' => 'primary',
             'completed' => 'success',
             'cancelled' => 'danger',
+            'returned' => 'danger',
             default => 'gray',
         };
     }

@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Http\Middleware\CacheGuestPages;
 use App\Models\Brand;
 use App\Models\Campaign;
+use App\Models\Order;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -838,7 +839,7 @@ class Catalog
                 ->whereNotNull('order_items.product_id')
                 ->when(! $whole, fn ($query) => $query->whereIn('order_items.product_id', $ids))
                 ->whereNull('orders.deleted_at')
-                ->where('orders.status', '!=', 'cancelled')
+                ->whereNotIn('orders.status', Order::LOST_STATUSES)
                 ->groupBy('order_items.product_id')
                 ->selectRaw('order_items.product_id, sum(order_items.quantity) as quantity')
                 ->pluck('quantity', 'order_items.product_id')

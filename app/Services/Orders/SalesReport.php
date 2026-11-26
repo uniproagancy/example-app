@@ -57,7 +57,7 @@ class SalesReport
 
     public function validOrders(): Builder
     {
-        return $this->orders()->where('status', '!=', self::CANCELLED);
+        return $this->orders()->whereNotIn('status', Order::LOST_STATUSES);
     }
 
     public function summary(): array
@@ -149,7 +149,7 @@ class SalesReport
 
     public function breakdown(string $column): Collection
     {
-        $revenueColumn = "SUM(CASE WHEN status != 'cancelled' THEN total ELSE 0 END)";
+        $revenueColumn = "SUM(CASE WHEN status NOT IN ('cancelled', 'returned') THEN total ELSE 0 END)";
 
         return $this->orders()
             ->selectRaw("{$column} as value, COUNT(*) as orders, {$revenueColumn} as revenue")

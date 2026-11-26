@@ -31,6 +31,8 @@ class Deliveries extends Page
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
 
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $slug = 'deliveries';
 
     protected string $view = 'filament.courier.deliveries';
@@ -163,7 +165,7 @@ class Deliveries extends Page
         $collected = ! $order->isPaid() && ($this->collected['o'.$order->id] ?? false);
 
         DB::transaction(function () use ($order, $courier, $collected): void {
-            $order->update(['status' => 'completed']);
+            $order->update(['status' => 'completed', 'courier_id' => auth()->id()]);
             $order->log('status', __('courier.deliveries.delivered_log', ['courier' => $courier]), self::STATUS, 'completed');
 
             if ($collected) {
@@ -178,6 +180,22 @@ class Deliveries extends Page
         unset($this->collected['o'.$order->id], $this->orders);
 
         Notification::make()->title(__('courier.deliveries.delivered', ['number' => $order->number]))->success()->send();
+    }
+
+    public function markReturned(int $orderId): void
+    {
+        $order = Order::query()->findOrFail($orderId);
+
+        abort_unless($order->status === self::STATUS, 403);
+
+        DB::transaction(function () use ($order): void {
+            $order->update(['status' => 'returned', 'returned_at' => now(), 'courier_id' => auth()->id()]);
+            $order->log('status', __('courier.deliveries.returned_log', ['courier' => (string) auth()->user()?->name]), self::STATUS, 'returned');
+        });
+
+        unset($this->collected['o'.$order->id], $this->orders);
+
+        Notification::make()->title(__('courier.deliveries.returned', ['number' => $order->number]))->warning()->send();
     }
 
     protected function fillItems(): void

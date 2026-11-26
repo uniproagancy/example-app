@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\URL;
 
 #[Fillable([
     'number', 'user_id', 'status', 'source', 'first_name', 'last_name', 'phone', 'email', 'shipping_method', 'city', 'address', 'is_region',
-    'apartment', 'note', 'payment_method', 'payment_status', 'paid_at', 'completed_at', 'warranty_starts_at', 'warranty_issued_at', 'installment_months', 'bank', 'term_months', 'promo_code',
+    'apartment', 'note', 'payment_method', 'payment_status', 'paid_at', 'completed_at', 'returned_at', 'courier_id', 'warranty_starts_at', 'warranty_issued_at', 'installment_months', 'bank', 'term_months', 'promo_code',
     'subtotal', 'discount', 'shipping', 'total', 'locale',
 ])]
 class Order extends Model
@@ -23,7 +23,9 @@ class Order extends Model
     use LogsActivity;
     use SoftDeletes;
 
-    public const STATUSES = ['new', 'received', 'confirmed', 'cancelled', 'no_answer', 'call_later', 'completed'];
+    public const STATUSES = ['new', 'received', 'confirmed', 'cancelled', 'no_answer', 'call_later', 'completed', 'returned'];
+
+    public const LOST_STATUSES = ['cancelled', 'returned'];
 
     public const NOTIFIABLE_STATUSES = ['confirmed', 'completed', 'cancelled'];
 
@@ -94,6 +96,7 @@ class Order extends Model
             'installment_months' => 'integer',
             'paid_at' => 'datetime',
             'completed_at' => 'datetime',
+            'returned_at' => 'datetime',
             'warranty_starts_at' => 'date',
             'warranty_issued_at' => 'datetime',
             'subtotal' => 'decimal:2',
@@ -146,7 +149,7 @@ class Order extends Model
 
     public function awaitsBankTransfer(): bool
     {
-        return $this->payment_method === PaymentMethod::TRANSFER && ! $this->isPaid() && $this->status !== 'cancelled';
+        return $this->payment_method === PaymentMethod::TRANSFER && ! $this->isPaid() && ! $this->isLost();
     }
 
     public function invoiceNumber(): string
@@ -206,7 +209,7 @@ class Order extends Model
 
     public function warrantyIssued(): bool
     {
-        return $this->warranty_issued_at !== null && $this->status !== 'cancelled';
+        return $this->warranty_issued_at !== null && ! $this->isLost();
     }
 
     public function warrantyVisibleToVisitor(): bool
@@ -254,7 +257,17 @@ class Order extends Model
 
     public function isEditable(): bool
     {
-        return ! in_array($this->status, ['completed', 'cancelled'], true);
+        return ! in_array($this->status, ['completed', ...self::LOST_STATUSES], true);
+    }
+
+    public function isLost(): bool
+    {
+        return in_array($this->status, self::LOST_STATUSES, true);
+    }
+
+    public function courier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'courier_id');
     }
 
     public function log(string $type, ?string $note = null, ?string $from = null, ?string $to = null): OrderEvent

@@ -3,6 +3,8 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Courier\Pages\Deliveries;
+use App\Filament\Courier\Pages\Pickups;
+use App\Filament\Courier\Pages\Report;
 use App\Http\Middleware\SetAdminLocale;
 use App\Support\Site;
 use Filament\Enums\ThemeMode;
@@ -51,7 +53,7 @@ class CourierPanelProvider extends PanelProvider
             ->topNavigation()
             ->maxContentWidth(Width::ScreenLarge)
             ->renderHook(PanelsRenderHook::HEAD_END, fn () => Blade::render('@fonts'))
-            ->pages([Deliveries::class])
+            ->pages([Pickups::class, Deliveries::class, Report::class])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

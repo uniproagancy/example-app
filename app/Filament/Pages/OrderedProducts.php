@@ -8,7 +8,12 @@ use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Support\Catalog;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
@@ -21,6 +26,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
@@ -172,6 +178,82 @@ class OrderedProducts extends Page implements HasTable
                 TextColumn::make('ordered_at')
                     ->label(__('admin.ordered_products.ordered_at'))
                     ->dateTime('d.m.Y H:i'),
+                TextColumn::make('procurement')
+                    ->label(__('admin.ordered_products.procurement'))
+                    ->state(fn (OrderItem $record): string => $this->procurementLabel($record))
+                    ->badge()
+                    ->color(fn (OrderItem $record): string => match (true) {
+                        $record->picked_up_at !== null => 'success',
+                        $record->supplier_ordered_at !== null => 'info',
+                        default => 'warning',
+                    })
+                    ->description(fn (OrderItem $record): ?string => collect([$record->pickup_warehouse, $record->pickup_address])->filter()->implode(' · ') ?: null)
+                    ->wrap(),
+            ])
+            ->recordActions([
+                Action::make('markOrdered')
+                    ->label(__('admin.ordered_products.mark_ordered'))
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('success')
+                    ->button()
+                    ->size('sm')
+                    ->visible(fn (OrderItem $record): bool => $record->supplier_ordered_at === null)
+                    ->action(fn (OrderItem $record) => $this->markOrdered($record)),
+                Action::make('unmarkOrdered')
+                    ->label(__('admin.ordered_products.unmark_ordered'))
+                    ->icon(Heroicon::OutlinedArrowUturnLeft)
+                    ->color('gray')
+                    ->link()
+                    ->requiresConfirmation()
+                    ->visible(fn (OrderItem $record): bool => $record->supplier_ordered_at !== null && $record->picked_up_at === null)
+                    ->action(fn (OrderItem $record) => $record->update(['supplier_ordered_at' => null, 'supplier_ordered_by' => null])),
+                Action::make('pickup')
+                    ->label(__('admin.ordered_products.edit_pickup'))
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->color('gray')
+                    ->link()
+                    ->modalHeading(fn (OrderItem $record): string => $record->name)
+                    ->fillForm(fn (OrderItem $record): array => [
+                        'pickup_warehouse' => $record->pickup_warehouse,
+                        'pickup_address' => $record->pickup_address,
+                        'pickup_note' => $record->pickup_note,
+                        'ordered' => $record->supplier_ordered_at !== null,
+                    ])
+                    ->schema([
+                        TextInput::make('pickup_warehouse')
+                            ->label(__('admin.ordered_products.pickup_warehouse'))
+                            ->maxLength(255),
+                        TextInput::make('pickup_address')
+                            ->label(__('admin.ordered_products.pickup_address'))
+                            ->maxLength(255),
+                        Textarea::make('pickup_note')
+                            ->label(__('admin.ordered_products.pickup_note'))
+                            ->rows(3)
+                            ->maxLength(2000),
+                        Toggle::make('ordered')
+                            ->label(__('admin.ordered_products.mark_ordered')),
+                    ])
+                    ->action(function (OrderItem $record, array $data): void {
+                        $record->update([
+                            'pickup_warehouse' => trim((string) ($data['pickup_warehouse'] ?? '')) ?: null,
+                            'pickup_address' => trim((string) ($data['pickup_address'] ?? '')) ?: null,
+                            'pickup_note' => trim((string) ($data['pickup_note'] ?? '')) ?: null,
+                        ]);
+
+                        if (($data['ordered'] ?? false) && $record->supplier_ordered_at === null) {
+                            $this->markOrdered($record);
+                        } elseif (! ($data['ordered'] ?? false) && $record->supplier_ordered_at !== null && $record->picked_up_at === null) {
+                            $record->update(['supplier_ordered_at' => null, 'supplier_ordered_by' => null]);
+                        }
+                    }),
+            ])
+            ->toolbarActions([
+                BulkAction::make('markOrderedBulk')
+                    ->label(__('admin.ordered_products.mark_ordered_bulk'))
+                    ->icon(Heroicon::OutlinedCheckCircle)
+                    ->color('success')
+                    ->action(fn (Collection $records) => $records->each(fn (OrderItem $record) => $record->supplier_ordered_at === null ? $this->markOrdered($record) : null))
+                    ->deselectRecordsAfterCompletion(),
             ])
             ->filters([
                 SelectFilter::make('status')
@@ -189,6 +271,19 @@ class OrderedProducts extends Page implements HasTable
                     ->label(__('admin.ordered_products.period'))
                     ->options(collect(self::PERIODS)->mapWithKeys(fn (string $period) => [$period => __("admin.ordered_products.periods.{$period}")])->all())
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'] ?? null, fn (Builder $query, string $period) => $this->applyPeriod($query, $period))),
+                SelectFilter::make('procurement')
+                    ->label(__('admin.ordered_products.procurement'))
+                    ->options([
+                        'to_order' => __('admin.ordered_products.to_order'),
+                        'ordered' => __('admin.ordered_products.ordered'),
+                        'picked' => __('admin.ordered_products.picked'),
+                    ])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'to_order' => $query->whereNull('order_items.supplier_ordered_at'),
+                        'ordered' => $query->whereNotNull('order_items.supplier_ordered_at')->whereNull('order_items.picked_up_at'),
+                        'picked' => $query->whereNotNull('order_items.picked_up_at'),
+                        default => $query,
+                    }),
                 Filter::make('ordered_between')
                     ->schema([
                         DatePicker::make('from')->label(__('admin.ordered_products.from')),
@@ -201,6 +296,23 @@ class OrderedProducts extends Page implements HasTable
             ]);
     }
 
+    public function markOrdered(OrderItem $record): void
+    {
+        $record->update(['supplier_ordered_at' => now(), 'supplier_ordered_by' => auth()->id()]);
+    }
+
+    protected function procurementLabel(OrderItem $record): string
+    {
+        return match (true) {
+            $record->picked_up_at !== null => __('admin.ordered_products.picked_at', [
+                'date' => $record->picked_up_at->format('d.m H:i'),
+                'courier' => (string) $record->pickedUpBy?->name,
+            ]),
+            $record->supplier_ordered_at !== null => __('admin.ordered_products.ordered_at_label', ['date' => $record->supplier_ordered_at->format('d.m H:i')]),
+            default => __('admin.ordered_products.to_order'),
+        };
+    }
+
     protected function scopedQuery(): Builder
     {
         $supplierId = ctype_digit($this->supplier) ? (int) $this->supplier : null;
@@ -210,7 +322,7 @@ class OrderedProducts extends Page implements HasTable
             ->whereNull('orders.deleted_at')
             ->select('order_items.*', 'orders.created_at as ordered_at', 'orders.number as order_number', 'orders.status as order_status')
             ->selectRaw($this->supplierNameSql().' as supplier_name')
-            ->with(['product' => fn ($query) => $query->withTrashed(), 'product.coverImage', 'product.offers.supplier'])
+            ->with(['product' => fn ($query) => $query->withTrashed(), 'product.coverImage', 'product.offers.supplier', 'pickedUpBy'])
             ->when($supplierId, fn (Builder $query, int $id) => $query->whereHas('product.offers', fn (Builder $offers) => $offers->where('supplier_id', $id)))
             ->when($this->supplier === self::MANUAL, fn (Builder $query) => $query->where(fn (Builder $query) => $query
                 ->whereNull('order_items.product_id')

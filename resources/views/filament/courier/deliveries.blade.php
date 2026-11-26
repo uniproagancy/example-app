@@ -121,9 +121,14 @@
                                 {{ __('courier.deliveries.collected', ['amount' => App\Support\Catalog::money($order->total)]) }}
                             </label>
                         @endunless
-                        <x-filament::button color="success" icon="heroicon-m-check-circle" wire:click="markDelivered({{ $order->id }})" wire:confirm="{{ $question }}" wire:target="markDelivered({{ $order->id }})" class="ms-auto">
-                            {{ __('courier.deliveries.mark_delivered') }}
-                        </x-filament::button>
+                        <div class="ms-auto flex flex-wrap gap-2">
+                            <x-filament::button color="danger" outlined icon="heroicon-m-arrow-uturn-left" wire:click="markReturned({{ $order->id }})" wire:confirm="{{ __('courier.deliveries.confirm_returned', ['number' => $order->number]) }}" wire:target="markReturned({{ $order->id }})">
+                                {{ __('courier.deliveries.mark_returned') }}
+                            </x-filament::button>
+                            <x-filament::button color="success" icon="heroicon-m-check-circle" wire:click="markDelivered({{ $order->id }})" wire:confirm="{{ $question }}" wire:target="markDelivered({{ $order->id }})">
+                                {{ __('courier.deliveries.mark_delivered') }}
+                            </x-filament::button>
+                        </div>
                     </div>
                 </div>
             </x-filament::section>

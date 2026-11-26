@@ -33,7 +33,7 @@ class StoreStats extends StatsOverviewWidget
     protected function getStats(): array
     {
         $monthRevenue = Order::query()
-            ->where('status', '!=', 'cancelled')
+            ->whereNotIn('status', Order::LOST_STATUSES)
             ->where('created_at', '>=', now()->startOfMonth())
             ->sum('total');
 

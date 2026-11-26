@@ -388,11 +388,11 @@ class AdminPanelTest extends TestCase
         $this->assertSame(1, $callLater->events()->where('type', 'opened')->count());
         $this->assertSame('ახალი შეკვეთა', OrderResource::statusOptions()['new']);
         $this->assertSame(
-            ['new', 'received', 'confirmed', 'cancelled', 'no_answer', 'call_later', 'completed'],
+            ['new', 'received', 'confirmed', 'cancelled', 'no_answer', 'call_later', 'completed', 'returned'],
             array_keys(OrderResource::statusOptions()),
         );
         $this->assertSame(
-            ['ახალი შეკვეთა', 'ნანახი შეკვეთა', 'დადასტურებული შეკვეთა', 'გაუქმებული შეკვეთა', 'მომხმარებელი არ პასუხობს', 'მოგვიანებით დამირეკეთ', 'დასრულებულია'],
+            ['ახალი შეკვეთა', 'ნანახი შეკვეთა', 'დადასტურებული შეკვეთა', 'გაუქმებული შეკვეთა', 'მომხმარებელი არ პასუხობს', 'მოგვიანებით დამირეკეთ', 'დასრულებულია', 'დაბრუნებული შეკვეთა'],
             array_values(OrderResource::statusOptions()),
         );
     }

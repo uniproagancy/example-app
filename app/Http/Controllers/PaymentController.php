@@ -114,7 +114,7 @@ class PaymentController extends Controller
 
     protected function linkMethod(Order $order, string $code): ?PaymentMethod
     {
-        if ($code === '' || $order->isPaid() || $order->status === 'cancelled') {
+        if ($code === '' || $order->isPaid() || $order->isLost()) {
             return null;
         }
 

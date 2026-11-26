@@ -22,6 +22,8 @@ class PaymentMethod extends Model
 
     public const TRANSFER = 'transfer';
 
+    public const CASH = 'cash';
+
     protected array $translatable = ['name', 'note'];
 
     protected function casts(): array

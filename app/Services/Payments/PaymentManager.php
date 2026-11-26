@@ -52,7 +52,7 @@ class PaymentManager
             $current = Order::query()->lockForUpdate()->findOrFail($order->id);
             $method = $current->paymentMethod;
 
-            if ($current->isPaid() || $current->status === 'cancelled') {
+            if ($current->isPaid() || $current->isLost()) {
                 throw new RuntimeException(__('payments.already_paid'));
             }
 

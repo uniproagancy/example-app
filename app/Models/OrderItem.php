@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
-#[Fillable(['order_id', 'product_id', 'name', 'options', 'unit_price', 'quantity', 'total', 'warranty_months', 'serial_number', 'serial_photo'])]
+#[Fillable(['order_id', 'product_id', 'name', 'options', 'unit_price', 'quantity', 'total', 'warranty_months', 'serial_number', 'serial_photo', 'supplier_ordered_at', 'supplier_ordered_by', 'pickup_warehouse', 'pickup_address', 'pickup_note', 'picked_up_at', 'picked_up_by'])]
 class OrderItem extends Model
 {
     protected function casts(): array
@@ -19,6 +19,8 @@ class OrderItem extends Model
             'quantity' => 'integer',
             'total' => 'decimal:2',
             'warranty_months' => 'integer',
+            'supplier_ordered_at' => 'datetime',
+            'picked_up_at' => 'datetime',
         ];
     }
 
@@ -32,6 +34,16 @@ class OrderItem extends Model
     public function order(): BelongsTo
     {
         return $this->belongsTo(Order::class);
+    }
+
+    public function orderedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'supplier_ordered_by');
+    }
+
+    public function pickedUpBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'picked_up_by');
     }
 
     public function product(): BelongsTo

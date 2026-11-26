@@ -429,7 +429,7 @@ class ViewOrder extends ViewRecord
     {
         $order = $this->order();
 
-        abort_if($order->status === 'cancelled', 403);
+        abort_if($order->isLost(), 403);
 
         $this->validate([
             'warranty.starts_at' => ['required', 'date'],

@@ -310,7 +310,7 @@ class Pixel
 
     public function isSale(Order $order): bool
     {
-        return $order->status !== self::CANCELLED && ($order->isPaid() || $order->status === self::COMPLETED);
+        return ! $order->isLost() && ($order->isPaid() || $order->status === self::COMPLETED);
     }
 
     protected function freezePurchase(Order $order, OrderPixelData $snapshot, bool $offline): void
