@@ -33,7 +33,7 @@ class OrderedProducts extends Page implements HasTable
 
     public const MANUAL = 'manual';
 
-    public const CONFIRMED = ['received', 'shipped', 'completed'];
+    public const CONFIRMED = ['confirmed'];
 
     public const PERIODS = ['today', 'yesterday', '3', '7', '30'];
 
@@ -101,6 +101,8 @@ class OrderedProducts extends Page implements HasTable
             ])
             ->defaultGroup('ordered_on', 'desc')
             ->groupingSettingsHidden()
+            ->emptyStateHeading(__('admin.ordered_products.empty'))
+            ->emptyStateDescription(__('admin.ordered_products.empty_help'))
             ->paginated([25, 50, 100])
             ->defaultPaginationPageOption(50)
             ->columns([

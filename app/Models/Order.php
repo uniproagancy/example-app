@@ -23,9 +23,9 @@ class Order extends Model
     use LogsActivity;
     use SoftDeletes;
 
-    public const STATUSES = ['new', 'received', 'no_answer', 'call_later', 'shipped', 'completed', 'cancelled'];
+    public const STATUSES = ['new', 'received', 'confirmed', 'cancelled', 'no_answer', 'call_later', 'completed'];
 
-    public const NOTIFIABLE_STATUSES = ['received', 'shipped', 'completed', 'cancelled'];
+    public const NOTIFIABLE_STATUSES = ['confirmed', 'completed', 'cancelled'];
 
     public const SOURCES = ['checkout', 'quick', 'admin'];
 

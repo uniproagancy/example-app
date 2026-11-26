@@ -11,6 +11,7 @@ use App\Services\Orders\OrderNotifier;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -45,11 +46,11 @@ class StatusSmsTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         Livewire::test(ManageSettings::class)
-            ->fillForm(['status_sms' => ['shipped', 'completed']])
+            ->fillForm(['status_sms' => ['confirmed', 'completed']])
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->assertSame(['shipped', 'completed'], OrderNotifier::statusSmsList());
+        $this->assertSame(['confirmed', 'completed'], OrderNotifier::statusSmsList());
 
         $order = $this->order();
 
@@ -60,12 +61,27 @@ class StatusSmsTest extends TestCase
         Http::assertNothingSent();
 
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])
-            ->set('status', 'shipped')
+            ->set('status', 'confirmed')
             ->call('changeStatus');
 
         Http::assertSent(fn (Request $request) => str_contains((string) $request['content'], $order->number)
-            && str_contains((string) $request['content'], 'კურიერს'));
-        $this->assertTrue($order->events()->where('note', 'like', '%კურიერთან გადაეცა%')->exists());
+            && str_contains((string) $request['content'], 'დადასტურდა'));
+        $this->assertTrue($order->events()->where('note', 'like', '%დადასტურებული შეკვეთა%')->exists());
+    }
+
+    public function test_shipped_orders_and_old_sms_choices_move_to_confirmed(): void
+    {
+        $shipped = $this->order();
+        $completed = $this->order();
+        DB::table('orders')->where('id', $shipped->id)->update(['status' => 'shipped']);
+        DB::table('orders')->where('id', $completed->id)->update(['status' => 'completed']);
+        DB::table('settings')->updateOrInsert(['key' => 'status_sms'], ['value' => 'received,shipped,cancelled']);
+
+        (require database_path('migrations/2026_11_26_172241_add_confirmed_order_status.php'))->up();
+
+        $this->assertSame('confirmed', $shipped->fresh()->status);
+        $this->assertSame('completed', $completed->fresh()->status);
+        $this->assertSame('confirmed,cancelled', DB::table('settings')->where('key', 'status_sms')->value('value'));
     }
 
     public function test_nothing_is_sent_while_status_sms_is_off(): void

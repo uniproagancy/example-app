@@ -35,8 +35,7 @@ return [
         'staff' => 'ახალი შეკვეთა :number, :amount. :name :phone',
         'price_drop' => ':site: ":product" გაიაფდა — ახლა :price. :url',
         'status' => [
-            'received' => 'შეკვეთა :number დადასტურდა და მზადდება გასაგზავნად. :site',
-            'shipped' => 'შეკვეთა :number გადაეცა კურიერს და მალე მიიღებთ. გადასახდელი: :amount. :site',
+            'confirmed' => 'შეკვეთა :number დადასტურდა და მზადდება გასაგზავნად. :site',
             'completed' => 'შეკვეთა :number მიწოდებულია. მადლობა, რომ :site აირჩიეთ!',
             'cancelled' => 'შეკვეთა :number გაუქმდა. კითხვებისთვის: :phone. :site',
         ],

@@ -106,7 +106,7 @@ class OrderResource extends Resource
             'received' => 'gray',
             'no_answer' => 'primary',
             'call_later' => 'info',
-            'shipped' => 'primary',
+            'confirmed' => 'primary',
             'completed' => 'success',
             'cancelled' => 'danger',
             default => 'gray',

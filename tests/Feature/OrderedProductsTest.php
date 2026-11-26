@@ -40,8 +40,10 @@ class OrderedProductsTest extends TestCase
         $speaker = Product::query()->where('sku', 'jbl')->sole();
         $phone->offers()->create(['supplier_id' => $zoommer->id, 'external_id' => 'Z-777', 'cost_price' => 900, 'stock' => 1]);
 
-        $today = $this->item('received', $phone, now()->toDateTimeString(), 2);
-        $older = $this->item('completed', $speaker, now()->subDays(10)->toDateTimeString());
+        $today = $this->item('confirmed', $phone, now()->toDateTimeString(), 2);
+        $older = $this->item('confirmed', $speaker, now()->subDays(10)->toDateTimeString());
+        $done = $this->item('completed', $speaker, now()->toDateTimeString());
+        $seen = $this->item('received', $phone, now()->toDateTimeString());
         $cancelled = $this->item('cancelled', $phone, now()->toDateTimeString());
         $unconfirmed = $this->item('new', $speaker, now()->toDateTimeString());
 
@@ -49,13 +51,17 @@ class OrderedProductsTest extends TestCase
 
         $page = Livewire::test(OrderedProducts::class)
             ->assertCanSeeTableRecords([$today, $older])
-            ->assertCanNotSeeTableRecords([$cancelled, $unconfirmed])
+            ->assertCanNotSeeTableRecords([$cancelled, $unconfirmed, $done, $seen])
             ->assertSee('Z-777')
             ->assertSee(__('admin.ordered_products.total_quantity'));
 
         $page->call('showSupplier', (string) $zoommer->id)
             ->assertCanSeeTableRecords([$today])
             ->assertCanNotSeeTableRecords([$older]);
+
+        Livewire::test(OrderedProducts::class)
+            ->assertTableFilterExists('status')
+            ->assertSet('tableFilters.status.values', ['confirmed']);
 
         $page->call('showSupplier', OrderedProducts::MANUAL)
             ->assertCanSeeTableRecords([$older])
@@ -69,7 +75,7 @@ class OrderedProductsTest extends TestCase
         Livewire::test(OrderedProducts::class)
             ->filterTable('status', ['new'])
             ->assertCanSeeTableRecords([$unconfirmed])
-            ->assertCanNotSeeTableRecords([$today, $older, $cancelled]);
+            ->assertCanNotSeeTableRecords([$today, $older, $cancelled, $done, $seen]);
     }
 
     public function test_operators_cannot_open_the_page(): void
