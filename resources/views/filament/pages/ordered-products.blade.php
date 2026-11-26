@@ -3,7 +3,6 @@
         @foreach ($this->tabs as $tab)
             <x-filament::tabs.item
                 :active="$supplier === $tab['key']"
-                :badge="$tab['count']"
                 wire:click="showSupplier('{{ $tab['key'] }}')"
             >
                 {{ $tab['label'] }}
