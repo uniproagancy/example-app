@@ -90,17 +90,37 @@ class OrderedProducts extends Page implements HasTable
             ->query(fn (): Builder => $this->scopedQuery())
             ->defaultSort(fn (Builder $query): Builder => $query->orderByDesc('orders.created_at')->orderByDesc('order_items.id'))
             ->groups([
+                Group::make('day_supplier')
+                    ->label(__('admin.ordered_products.day_supplier'))
+                    ->titlePrefixedWithLabel(false)
+                    ->getKeyFromRecordUsing(fn (OrderItem $record): string => Carbon::parse($record->ordered_at)->toDateString().'|'.($record->supplier_name ?? ''))
+                    ->getTitleFromRecordUsing(fn (OrderItem $record): string => Carbon::parse($record->ordered_at)->format('d.m.Y').' · '.$this->supplierTitle($record))
+                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderByRaw('date(orders.created_at) '.$this->direction($direction))->orderBy('supplier_name'))
+                    ->scopeQueryByKeyUsing(function (Builder $query, ?string $key): Builder {
+                        [$day, $supplier] = array_pad(explode('|', (string) $key, 2), 2, '');
+
+                        return $this->whereSupplierName($query->whereDate('orders.created_at', $day), $supplier);
+                    })
+                    ->groupQueryUsing(fn ($query) => $query->groupByRaw($this->concatSql($query, 'date(order_items.ordered_at)', "coalesce(order_items.supplier_name, '')")))
+                    ->collapsible(),
+                Group::make('supplier_only')
+                    ->label(__('admin.ordered_products.supplier'))
+                    ->getKeyFromRecordUsing(fn (OrderItem $record): string => (string) ($record->supplier_name ?? ''))
+                    ->getTitleFromRecordUsing(fn (OrderItem $record): string => $this->supplierTitle($record))
+                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderBy('supplier_name', $this->direction($direction)))
+                    ->scopeQueryByKeyUsing(fn (Builder $query, ?string $key): Builder => $this->whereSupplierName($query, (string) $key))
+                    ->groupQueryUsing(fn ($query) => $query->groupByRaw("coalesce(order_items.supplier_name, '')"))
+                    ->collapsible(),
                 Group::make('ordered_on')
                     ->label(__('admin.ordered_products.day'))
                     ->getKeyFromRecordUsing(fn (OrderItem $record): string => Carbon::parse($record->ordered_at)->toDateString())
                     ->getTitleFromRecordUsing(fn (OrderItem $record): string => Carbon::parse($record->ordered_at)->format('d.m.Y'))
-                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderBy('orders.created_at', $direction))
+                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderBy('orders.created_at', $this->direction($direction)))
                     ->scopeQueryByKeyUsing(fn (Builder $query, string $key): Builder => $query->whereDate('orders.created_at', $key))
                     ->groupQueryUsing(fn ($query) => $query->groupByRaw('date(order_items.ordered_at)'))
                     ->collapsible(),
             ])
-            ->defaultGroup('ordered_on', 'desc')
-            ->groupingSettingsHidden()
+            ->defaultGroup('day_supplier', 'desc')
             ->emptyStateHeading(__('admin.ordered_products.empty'))
             ->emptyStateDescription(__('admin.ordered_products.empty_help'))
             ->paginated([25, 50, 100])
@@ -189,11 +209,43 @@ class OrderedProducts extends Page implements HasTable
             ->join('orders', 'orders.id', '=', 'order_items.order_id')
             ->whereNull('orders.deleted_at')
             ->select('order_items.*', 'orders.created_at as ordered_at', 'orders.number as order_number', 'orders.status as order_status')
+            ->selectRaw($this->supplierNameSql().' as supplier_name')
             ->with(['product' => fn ($query) => $query->withTrashed(), 'product.coverImage', 'product.offers.supplier'])
             ->when($supplierId, fn (Builder $query, int $id) => $query->whereHas('product.offers', fn (Builder $offers) => $offers->where('supplier_id', $id)))
             ->when($this->supplier === self::MANUAL, fn (Builder $query) => $query->where(fn (Builder $query) => $query
                 ->whereNull('order_items.product_id')
                 ->orWhereDoesntHave('product.offers')));
+    }
+
+    protected function supplierNameSql(): string
+    {
+        $only = ctype_digit($this->supplier) ? ' and product_offers.supplier_id = '.(int) $this->supplier : '';
+
+        return '(select suppliers.name from product_offers inner join suppliers on suppliers.id = product_offers.supplier_id'
+            .' where product_offers.product_id = order_items.product_id'.$only
+            .' order by product_offers.cost_price asc, product_offers.id asc limit 1)';
+    }
+
+    protected function whereSupplierName(Builder $query, string $name): Builder
+    {
+        return $query->whereRaw('coalesce('.$this->supplierNameSql().", '') = ?", [$name]);
+    }
+
+    protected function supplierTitle(OrderItem $record): string
+    {
+        return filled($record->supplier_name) ? (string) $record->supplier_name : __('admin.ordered_products.manual');
+    }
+
+    protected function concatSql($query, string ...$parts): string
+    {
+        return $query->getConnection()->getDriverName() === 'sqlite'
+            ? implode(" || '|' || ", $parts)
+            : 'concat('.implode(", '|', ", $parts).')';
+    }
+
+    protected function direction(string $direction): string
+    {
+        return strtolower($direction) === 'asc' ? 'asc' : 'desc';
     }
 
     protected function offersOf(OrderItem $record)

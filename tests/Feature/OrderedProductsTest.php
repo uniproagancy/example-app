@@ -53,7 +53,18 @@ class OrderedProductsTest extends TestCase
             ->assertCanSeeTableRecords([$today, $older])
             ->assertCanNotSeeTableRecords([$cancelled, $unconfirmed, $done, $seen])
             ->assertSee('Z-777')
+            ->assertSee(__('admin.ordered_products.total_quantity'))
+            ->assertSee(now()->format('d.m.Y').' · Zoommer-test')
+            ->assertSee(now()->subDays(10)->format('d.m.Y').' · '.__('admin.ordered_products.manual'));
+
+        Livewire::test(OrderedProducts::class)
+            ->set('tableGrouping', 'supplier_only:asc')
+            ->assertCanSeeTableRecords([$today, $older])
             ->assertSee(__('admin.ordered_products.total_quantity'));
+
+        Livewire::test(OrderedProducts::class)
+            ->set('tableGrouping', 'ordered_on:desc')
+            ->assertCanSeeTableRecords([$today, $older]);
 
         $page->call('showSupplier', (string) $zoommer->id)
             ->assertCanSeeTableRecords([$today])
